@@ -4,31 +4,34 @@
 #include <Eigen/Dense>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <fstream>
+#define _USE_MATH_DEFINES
 
 using Eigen::MatrixXd;
+using namespace std;
+using namespace Eigen;
 
-std::vector<std::vector<double>> load_csv (const std::string path) {
-    std::ifstream indata;
+vector<vector<double>> load_csv (const string path) {
+    ifstream indata;
     indata.open(path);
-    std::string line;
-    std::vector<std::vector<double>> values;
+    string line;
+    vector<vector<double>> values;
     uint rows = 0;
 
-    while (std::getline(indata, line)) {
+    while (getline(indata, line)) {
         if(rows<1){
             ++rows;
             continue;
         }
-        std::vector<double> values_i;
-        std::stringstream lineStream(line);
-        std::string cell;
+        vector<double> values_i;
+        stringstream lineStream(line);
+        string cell;
         uint cols=0;
-        while (std::getline(lineStream, cell, ',')) {
+        while (getline(lineStream, cell, ',')) {
             if(cols<3){
                 cols++;
                 continue;
             }
-            values_i.push_back(std::stod(cell));
+            values_i.push_back(stod(cell));
         }
         values.push_back(values_i);
         ++rows;
@@ -36,10 +39,9 @@ std::vector<std::vector<double>> load_csv (const std::string path) {
     return values;
 }
 
-Eigen::Tensor<double, 3> read_manipulabilities(std::string file_path){
-    std::vector<std::vector<double>> data = load_csv(file_path);
-    Eigen::Tensor<double, 3> manipulabilities(data.size(), 8, 8);
-    std::cout<<data.size()<<std::endl;
+Tensor<double, 3> read_manipulabilities(string file_path){
+    vector<vector<double>> data = load_csv(file_path);
+    Tensor<double, 3> manipulabilities(data.size(), 8, 8);
     manipulabilities.setZero();
     for(int t=0; t<data.size();t++){
         for(int i=0; i<8;i++) {
@@ -48,16 +50,71 @@ Eigen::Tensor<double, 3> read_manipulabilities(std::string file_path){
             }
         }
     }
-
     return manipulabilities;
 }
 
-MatrixXd tensor_product(MatrixXd x, MatrixXd y){
-
+Tensor<double, 6> tensor_outer_product(Tensor<double, 3> x, Tensor<double, 3> y){
+    Eigen::array<IndexPair<long>,0> empty_index_list = {};
+    Tensor<double, 6> prod = x.contract(y, empty_index_list);
+    return prod;
 }
 
-MatrixXd tensor_covariance(MatrixXd x){
-
+// TODO N is number of trials? --> check if correct
+Tensor<double, 6> tensor_covariance(vector<Tensor<double, 3>> x){
+    try{
+        int N = x.size(); // number of trials
+        if(N==1) throw "(N==1) Only one trial provided. Need at least two.";
+        Tensor<double, 6> cov(x[0].dimension(0), x[0].dimension(1), x[0].dimension(2),x[0].dimension(0), x[0].dimension(1), x[0].dimension(2));
+        cov.setZero();
+        for(int i=0; i<N; i++){
+            cov=cov+ tensor_outer_product(x[i],x[i]);
+        }
+        cov=cov* (double) (1/(N-1));
+        return cov;
+    }
+    catch (const char* msg) {
+        cerr << msg << endl;
+    }
 }
+
+// TODO centers around mean of matrix at each time step t --> check if correct
+Tensor<double,3> tensor_center(Tensor<double, 3> x){
+    Eigen::array<int, 2> dims({1,2});
+    Tensor<double, 1> mean = x.mean(dims); //mean of each time step slice
+    Tensor<double, 3> c(x.dimension(0), x.dimension(1), x.dimension(2));
+    c.setZero();
+    for(int t=0; t< c.dimension(0);t++) {
+        for(int i=0; i<c.dimension(1);i++) {
+            for (int j = 0; j < c.dimension(2); j++) {
+                c(t,i,j) = x(t,i,j) - mean(t);
+            }
+        }
+    }
+    return c;
+}
+
+Tensor<double,3> get_normal(Tensor<double, 3> x, Tensor<double, 6> cov, Tensor<double,3> mu){
+    float d = 8+8*(8-7)/2;
+    vector<Tensor<double,3>> xt = {x};
+    Tensor<double, 3> tmp = (1/pow(2*M_PI, d)) *exp(-0.5* get_log(x, mu)*get_inverse(cov)*get_log(x, mu));
+}
+
+Tensor<double,3> get_log(Tensor<double,3> x, Tensor<double,3> mu){
+    auto tmp = pow(mu, 0.5);
+    auto tmp2 = pow(mu, -0.5);
+    return tmp * log(tmp2*x*tmp2)*tmp;
+}
+
+Tensor<double,3> get_exp(Tensor<double,3> x,Tensor<double,3> mu){
+    auto tmp = pow(mu, 0.5);
+    auto tmp2 = pow(mu, -0.5);
+    return tmp * exp(tmp2*x*tmp2)*tmp;
+}
+
+double get_gedesic_distance(Tensor<double,3> a, Tensor<double, 3> b){
+    return 0.0;
+}
+
+
 
 #endif //MA_THESIS_UTILS_H

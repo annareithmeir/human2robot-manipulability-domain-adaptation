@@ -3,24 +3,29 @@
 
 #include <Eigen/Dense>
 #include <vector>
-#include <SPD.h>
+#include <unsupported/Eigen/CXX11/Tensor>
 
-using Eigen::MatrixXd;
+
+using Eigen::Matrix3d;
 using Eigen::VectorXd;
 
 class GMM {
 public:
     int k;
-    std::vector<float> priors;
-    std::vector<float> nks;
-    std::vector<MatrixXd> covs;
-    std::vector<VectorXd> means;
+    int n;
+    float eps;
+    std::vector<double> priors;
+    std::vector<double> nks;
+    std::vector<Matrix3d> covs;
+    std::vector<Eigen::array<double, 3>> means;
+    std::vector<Eigen::Tensor<double, 3>> data;
 
-    GMM(int k, std::vector<float> priors, std::vector<VectorXd> means ,std::vector<MatrixXd> covs );
-    SPD get_px(SPD x);
-    SPD get_pkxi(SPD x, int k, int i);
+    GMM(std::vector<double> priors, std::vector<Eigen::array<double, 3>> means ,std::vector<Matrix3d> covs );
+    std::vector<double> get_pkxi(Eigen::Tensor<double,3> xi);
     void e_step();
     void m_step();
+    void train(std::vector<Eigen::Tensor<double, 3>> data);
+
 };
 
 

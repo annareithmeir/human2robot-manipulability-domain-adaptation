@@ -5,21 +5,22 @@
 using namespace std;
 using namespace Eigen;
 int main() {
-//    vector<float> priors = { 0.5, 0.5};
-//    MatrixXd cov;
-//    cov << 1,2,2,1;
-//    vector<MatrixXd> covs = {cov, cov};
-//    Eigen::Vector2d m1(1,1);
-//    Eigen::Vector2d m2(3,3);
-//    vector<VectorXd> means = {m1 , m2};
-//    GMM gmm = GMM(2, priors, means, covs);
+    // Load the demonstration data
+    //string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/";
+//    MatrixXd data_pos(4, 2*21);
+//    vector<Tensor3d> data_m;
+//    load_data(data_path, 2, 21, &data_m, &data_pos);
 
-    string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/EEpos_manipulability_trial_1.csv";
-    Tensor<double, 3> m = read_manipulabilities(data_path);
-    Tensor<double, 6> mm = tensor_outer_product(m,m);
-    tensor_center(m);
-    vector<Tensor<double,3>> v = {m,m};
-    cout <<tensor_covariance(v);
+    string cmat_path="/home/nnrthmr/C_Mat.csv";
+    MatrixXd data(3, 400);
+    vector<Tensor3d> data_m;
+    load_data_cmat(cmat_path, &data);
+
+    // Build GMM for trajectories in cartesian coordinates
+    GMM model1 = GMM();
+    model1.InitTrajModel(&data_m, &data);
+    model1.TrainEM();
+
 
 
     return 0;

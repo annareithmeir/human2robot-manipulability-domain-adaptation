@@ -42,8 +42,9 @@ public:
     void TrainEM();
     Eigen::VectorXd GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig);
     std::vector<int> linspace(double a, double b, std::size_t N);
-    Eigen::MatrixXd SPDMean();
-    Eigen::VectorXd Symmat2Vec(Eigen::MatrixXd mat);
+    Eigen::MatrixXd SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter);
+    Eigen::MatrixXd Symmat2Vec(Eigen::MatrixXd mat);
+    std::vector<Eigen::MatrixXd> Symmat2Vec(std::vector<Eigen::MatrixXd> mat);
     std::vector<Eigen::MatrixXd> Vec2Symmat(Eigen::MatrixXd vec);
     void CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result);
 

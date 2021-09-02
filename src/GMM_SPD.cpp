@@ -46,12 +46,6 @@ void GMM_SPD::InitModel(Eigen::MatrixXd *data){
     this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
 
     std::vector<int> timing = linspace(0, this->m_n, this->m_k+1);
-    for(int i=0;i<timing.size();i++){
-        std::cout<<timing[i]<<std::endl;
-    }
-
-
-
     for(int i=0; i<this->m_k;i++){
         std::vector<int> collected;
         for(int d=0;d<this->m_nDemos; d++) {
@@ -84,12 +78,56 @@ void GMM_SPD::InitModel(Eigen::MatrixXd *data){
     this->m_gamma2 = MatrixXd(this->m_k, data->cols());
 }
 
-Eigen::MatrixXd GMM_SPD::SPDMean() {
-    return Eigen::MatrixXd();
+// TODO Wrong results because logm and expm in MATLAB gve imaginary results --> maybe download matlab.hpp?
+Eigen::MatrixXd GMM_SPD::SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter) {
+    MatrixXd M = mat[0];
+    for(int iter=0;iter<nIter;iter++){
+        MatrixXd L(mat[0].rows(), mat[0].cols());
+        L.setZero();
+        for(int i=0;i<mat.size();i++){
+            MatrixXd tmp = (M.array().pow(-0.5).matrix()*mat[i]*(M.array().pow(-0.5)).matrix());
+            L=L + (tmp.array().log()).matrix();
+        }
+        M=(M.array().pow(0.5)).matrix()*(L.array() / mat.size()).exp().matrix()*(M.array().pow(0.5)).matrix();
+    }
+    return M;
 }
 
-Eigen::VectorXd GMM_SPD::Symmat2Vec(Eigen::MatrixXd mat) {
-    return Eigen::VectorXd();
+// Checked!
+Eigen::MatrixXd GMM_SPD::Symmat2Vec(Eigen::MatrixXd mat) {
+    int N=mat.rows();
+    std::vector<double> v;
+    Eigen::VectorXd dia = mat.diagonal();
+    std::cout<<dia<<std::endl;
+    for(int x=0;x<dia.size();x++){
+        v.push_back(dia(x));
+    }
+    int  row, col;
+    for(int n=1;n<N;n++){
+        row=0;
+        col=n;
+        for(int ni=n;ni<N;ni++) {
+            v.push_back(sqrt(2) * mat(row, col));
+            row++;
+            col++;
+        }
+    }
+    MatrixXd vm(1,v.size());
+    for(int x=0;x<v.size();x++){
+        vm(0,x)=v[x]; //one row
+    }
+    return vm;
+}
+
+// Checked!
+std::vector<Eigen::MatrixXd> GMM_SPD::Symmat2Vec(std::vector<Eigen::MatrixXd> mat_vec) {
+    int N =mat_vec.size();
+    std::vector<Eigen::MatrixXd> vec;
+    for(int i=0; i<N;i++){
+        Eigen::MatrixXd vn = Symmat2Vec(mat_vec[i]);
+        vec.push_back(vn);
+    }
+    return vec;
 }
 
 std::vector<Eigen::MatrixXd> GMM_SPD::Vec2Symmat(Eigen::MatrixXd vec) {

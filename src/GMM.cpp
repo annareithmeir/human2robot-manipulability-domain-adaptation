@@ -1,19 +1,4 @@
 #include "GMM.h"
-#include <numeric>
-#include <iostream>
-#include <cmath>
-
-std::vector<double> linspace(double a, double b, std::size_t N)
-{
-    double h = (b - a) / static_cast<double>(N-1);
-    std::vector<double> xs(N);
-    std::vector<double>::iterator x;
-    double val;
-    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h) {
-        *x = val;
-    }
-    return xs;
-}
 
 GMM::GMM() {
     this->m_k = 5;
@@ -34,24 +19,35 @@ GMM::GMM() {
     this->m_regTerm = 1e-4;
 }
 
-//Checked!
-void GMM::InitTrajModel(std::vector<Tensor3d> *data_m, MatrixXd *data_pos){
-    this->m_n = data_pos->cols() / this->m_nDemos;
-    this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
-    this->m_data_pos = *data_pos;
-    this->m_data_m= *data_m;
+std::vector<double> GMM::linspace(double a, double b, std::size_t N)
+{
+    double h = (b - a) / static_cast<double>(N-1);
+    std::vector<double> xs(N);
+    std::vector<double>::iterator x;
+    double val;
+    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h) {
+        *x = val;
+    }
+    return xs;
+}
 
-    std::vector<double> timing = linspace((*data_pos)(0,0), (*data_pos)(0,data_pos->cols()-1), this->m_k+1);
+//Checked!
+void GMM::InitModel(MatrixXd *data){
+    this->m_n = data->cols() / this->m_nDemos;
+    this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
+    this->m_data_pos = *data;
+
+    std::vector<double> timing = linspace((*data)(0, 0), (*data)(0, data->cols() - 1), this->m_k + 1);
     for(int i=0; i<this->m_k;i++){
         int tmp=0;
-        Eigen::MatrixXd collected(3, data_pos->cols());
+        Eigen::MatrixXd collected(3, data->cols());
         collected.setZero();
-        for(int t=0;t<data_pos->cols(); t++) {
-            if((*data_pos)(0,t)>=timing[i] & (*data_pos)(0,t) < timing[i+1]) {
-                collected(0,tmp) = (*data_pos)(0,t);
-                collected(1,tmp) = (*data_pos)(1,t);
-                collected(2,tmp) = (*data_pos)(2,t);
-//                collected(3,tmp) = (*data_pos)(3,t);
+        for(int t=0; t < data->cols(); t++) {
+            if((*data)(0, t) >= timing[i] & (*data)(0, t) < timing[i + 1]) {
+                collected(0,tmp) = (*data)(0, t);
+                collected(1,tmp) = (*data)(1, t);
+                collected(2,tmp) = (*data)(2, t);
+//                collected(3,tmp) = (*data)(3,t);
                 tmp++;
             }
         }
@@ -68,13 +64,9 @@ void GMM::InitTrajModel(std::vector<Tensor3d> *data_m, MatrixXd *data_pos){
         d /= priorsSum;
     }
 
-    this->m_L = MatrixXd(this->m_k, data_pos->cols());
-    this->m_gamma = MatrixXd(this->m_k, data_pos->cols());
-    this->m_gamma2 = MatrixXd(this->m_k, data_pos->cols());
-}
-
-void GMM::InitManipModel(std::vector<Tensor3d> *data_m, MatrixXd *data_pos){
-
+    this->m_L = MatrixXd(this->m_k, data->cols());
+    this->m_gamma = MatrixXd(this->m_k, data->cols());
+    this->m_gamma2 = MatrixXd(this->m_k, data->cols());
 }
 
 //Checked! (numerical slightly different

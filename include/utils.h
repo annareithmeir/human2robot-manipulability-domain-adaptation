@@ -101,13 +101,24 @@ void load_data_cmat(string data_path, MatrixXd *data_pos){
     }
 }
 
+void load_data_mmat(string data_path, MatrixXd *data_m){
+    data_m->setZero();
+
+    vector<vector<double>> data = load_csv(data_path);
+    for (int t = 0; t < 400; t++) {
+        (*data_m)(t, 0) = data[t][0];
+        (*data_m)(t, 1) = data[t][1];
+        (*data_m)(t, 2) = data[t][2];
+        (*data_m)(t, 3) = data[t][3];
+    }
+}
+
 Tensor<double, 6> tensor_outer_product(Tensor<double, 3> x, Tensor<double, 3> y){
     Eigen::array<IndexPair<long>,0> empty_index_list = {};
     Tensor<double, 6> prod = x.contract(y, empty_index_list);
     return prod;
 }
 
-// TODO N is number of trials? --> check if correct
 Tensor<double, 6> tensor_covariance(vector<Tensor<double, 3>> x){
     try{
         int N = x.size(); // number of trials
@@ -140,33 +151,4 @@ Tensor<double,3> tensor_center(Tensor<double, 3> x){
     }
     return c;
 }
-
-//Tensor<double,3> get_normal(Tensor<double, 3> x, Tensor<double, 6> cov, Tensor<double,3> m_mu){
-//    float d = 8+8*(8-7)/2;
-//    vector<Tensor<double,3>> xt = {x};
-//    Tensor<double, 3> tmp = (1/pow(2*M_PI, d)) *exp(-0.5* get_log(x, m_mu)*get_inverse(cov)*get_log(x, m_mu));
-//}
-//
-//Tensor<double,3> get_log(Tensor<double,3> x, Tensor<double,3> m_mu){
-//    auto tmp = pow(m_mu, 0.5);
-//    auto tmp2 = pow(m_mu, -0.5);
-//    return tmp * log(tmp2*x*tmp2)*tmp;
-//}
-//
-//Tensor<double,3> get_exp(Tensor<double,3> x,Tensor<double,3> m_mu){
-//    auto tmp = pow(m_mu, 0.5);
-//    auto tmp2 = pow(m_mu, -0.5);
-//    return tmp * exp(tmp2*x*tmp2)*tmp;
-//}
-
-//double get_geodesic_distance(Tensor<double,3> a, Tensor<double, 3> b){
-//    return 0.0;
-//}
-//
-//double get_approx_geodesic_distance(Tensor<double,3> a, Tensor<double, 3> b){
-//    return 0.0;//Stein divergence
-//}
-
-
-
 #endif //MA_THESIS_UTILS_H

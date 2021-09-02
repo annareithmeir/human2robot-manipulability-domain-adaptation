@@ -1,5 +1,5 @@
-#ifndef MA_THESIS_GMM_H
-#define MA_THESIS_GMM_H
+#ifndef MA_THESIS_GMM_SPD_H
+#define MA_THESIS_GMM_SPD_H
 
 #include <Eigen/Dense>
 #include <vector>
@@ -13,7 +13,7 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Tensor3d = Eigen::Tensor<double, 3>;
 
-class GMM {
+class GMM_SPD {
 public:
     int m_k;
     int m_n; //number of measured points on trajectory
@@ -35,15 +35,19 @@ public:
     MatrixXd m_data_pos;
     MatrixXd m_L, m_gamma, m_gamma2;
 
-    GMM();
+    GMM_SPD();
     void InitModel(MatrixXd *data);
     void EStep();
     void MStep();
     void TrainEM();
     Eigen::VectorXd GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig);
-    std::vector<double> linspace(double a, double b, std::size_t N);
+    std::vector<int> linspace(double a, double b, std::size_t N);
+    Eigen::MatrixXd SPDMean();
+    Eigen::VectorXd Symmat2Vec(Eigen::MatrixXd mat);
+    std::vector<Eigen::MatrixXd> Vec2Symmat(Eigen::MatrixXd vec);
+    void CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result);
 
 };
 
 
-#endif //MA_THESIS_GMM_H
+#endif //MA_THESIS_GMM_SPD_H

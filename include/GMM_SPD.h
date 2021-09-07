@@ -4,12 +4,15 @@
 #include <Eigen/Dense>
 #include <vector>
 #include <unsupported/Eigen/CXX11/Tensor>
+#include <unsupported/Eigen/MatrixFunctions>
+#include <Eigen/Eigenvalues>
 #include <numeric>
 #include <iostream>
 #include <cmath>
 
 
 using Eigen::MatrixXd;
+using Eigen::MatrixXcd;
 using Eigen::VectorXd;
 using Tensor3d = Eigen::Tensor<double, 3>;
 
@@ -30,10 +33,11 @@ public:
     int m_kp; //controller gain
     std::vector<double> m_priors;
     std::vector<MatrixXd> m_sigma;
-    Eigen::MatrixXd m_mu;
+    Eigen::MatrixXd m_mu, m_muMan;
     std::vector<Tensor3d> m_data_m;
     MatrixXd m_data_pos;
     MatrixXd m_L, m_gamma, m_gamma2;
+    Tensor3d m_xts;
 
     GMM_SPD();
     void InitModel(MatrixXd *data);
@@ -46,7 +50,10 @@ public:
     Eigen::MatrixXd Symmat2Vec(Eigen::MatrixXd mat);
     std::vector<Eigen::MatrixXd> Symmat2Vec(std::vector<Eigen::MatrixXd> mat);
     std::vector<Eigen::MatrixXd> Vec2Symmat(Eigen::MatrixXd vec);
+    std::vector<Eigen::MatrixXd> Vec2Symmat(std::vector<Eigen::MatrixXd> vec);
     void CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result);
+    std::vector<MatrixXd> LogmapVec(MatrixXd x, MatrixXd s);
+    std::vector<MatrixXd> LogMap(std::vector<MatrixXd> X, MatrixXd S);
 
 };
 

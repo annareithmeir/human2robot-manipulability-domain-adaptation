@@ -57,6 +57,7 @@ void GMM::InitModel(MatrixXd *data){
         this->m_mu.block(0, i, 3, 1)= collected.rowwise().mean();
         MatrixXd centered = collected.colwise() - collected.rowwise().mean();
         MatrixXd cov = (centered * centered.adjoint()) / double(collected.cols() - 1);
+//        MatrixXd cov = (centered * centered.adjoint()) / double(collected.cols() - 1)+ MatrixXd(this->m_dimVar, this->m_dimVar).setConstant(this->m_regTerm);;
         this->m_sigma.push_back(cov);
     }
     double priorsSum = (double) (std::accumulate(this->m_priors.begin(), this->m_priors.end(), 0.0f));

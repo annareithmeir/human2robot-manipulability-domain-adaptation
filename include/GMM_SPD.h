@@ -35,9 +35,9 @@ public:
     std::vector<MatrixXd> m_sigma;
     Eigen::MatrixXd m_mu, m_muMan;
     std::vector<Tensor3d> m_data_m;
-    MatrixXd m_data_pos;
-    MatrixXd m_L, m_gamma, m_gamma2;
-    Tensor3d m_xts;
+    MatrixXd m_data;
+    MatrixXd m_L, m_gamma, m_H;
+    std::vector<MatrixXd> m_xts;
 
     GMM_SPD();
     void InitModel(MatrixXd *data);

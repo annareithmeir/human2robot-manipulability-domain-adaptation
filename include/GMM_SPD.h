@@ -44,7 +44,7 @@ public:
     void EStep();
     void MStep();
     void TrainEM();
-    Eigen::VectorXd GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig);
+    Eigen::VectorXd GaussPDF(Eigen::MatrixXd data, Eigen::MatrixXd mu, Eigen::MatrixXd sig);
     std::vector<int> linspace(double a, double b, std::size_t N);
     Eigen::MatrixXd SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter);
     Eigen::MatrixXd Symmat2Vec(Eigen::MatrixXd mat);
@@ -54,6 +54,8 @@ public:
     void CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result);
     std::vector<MatrixXd> LogmapVec(MatrixXd x, MatrixXd s);
     std::vector<MatrixXd> LogMap(std::vector<MatrixXd> X, MatrixXd S);
+    std::vector<MatrixXd> ExpmapVec(MatrixXd x, MatrixXd s);
+    std::vector<MatrixXd> ExpMap(std::vector<MatrixXd> X, MatrixXd S);
 
 };
 

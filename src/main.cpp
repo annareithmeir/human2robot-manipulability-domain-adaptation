@@ -22,26 +22,22 @@ int main() {
 //    model.InitModel(&data);
 //    model.TrainEM();
 
-    // Build GMM for Manifold
+//     Build GMM for Manifold
     string mmat_path="/home/nnrthmr/Manip_Mat.csv";
     MatrixXd data(400, 4);
     load_data_mmat(mmat_path, &data);
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(&data);
-//    model2.TrainEM();
+    model2.TrainEM();
 
-//    Eigen::MatrixXd a(2,2);
-//    Eigen::MatrixXd b(2,2);
-//    Eigen::MatrixXd c(2,2);
-//    a<<179.8335,-92.6434,-92.6434,69.5882;
-//    b<<121.7359,47.8177,47.8177,45.2877;
-//    c<<184.0555,  -84.8547, -84.8547 ,  60.9048;
-//    std::vector<Eigen::MatrixXd> dd;
-//    dd.push_back(a);
-//    dd.push_back(b);
-//    dd.push_back(c);
-//    model2.SPDMean(dd,10);
 
+
+//    Eigen::MatrixXd u(3,1);
+//    Eigen::MatrixXd s(3,1);
+//    u<<6.42476713410204,-0.355139982816209,-2.78592768882965;
+//    s<<146.096605076556,44.2213672844795,-71.9140893269118;
+//    std::vector<MatrixXd> result = model2.ExpmapVec(u,s);
+//    std::cout<<result[0]<<std::endl;
 
     return 0;
 }

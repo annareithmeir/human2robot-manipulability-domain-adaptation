@@ -113,6 +113,19 @@ void load_data_mmat(string data_path, MatrixXd *data_m){
     }
 }
 
+void load_data_mmat2(string data_path, MatrixXd *data_m){
+    data_m->setZero();
+
+    vector<vector<double>> data = load_csv(data_path);
+//    for (int t = 0; t < 400; t++) {
+//        (*data_m)(t, 0) = data[t][0];
+//        (*data_m)(t, 1) = data[t][1];
+//        (*data_m)(t, 2) = data[t][2];
+//        (*data_m)(t, 3) = data[t][3];
+//        (*data_m)(t, 4) = data[t][4];
+//    }
+}
+
 Tensor<double, 6> tensor_outer_product(Tensor<double, 3> x, Tensor<double, 3> y){
     Eigen::array<IndexPair<long>,0> empty_index_list = {};
     Tensor<double, 6> prod = x.contract(y, empty_index_list);

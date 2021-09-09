@@ -34,6 +34,7 @@ std::vector<double> GMM::linspace(double a, double b, std::size_t N)
 //Checked!
 void GMM::InitModel(MatrixXd *data){
     this->m_n = data->cols() / this->m_nDemos;
+    this->m_nData = data->cols();
     this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
     this->m_data_pos = *data;
 
@@ -76,7 +77,25 @@ Eigen::VectorXd GMM::GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig){
     Eigen::MatrixXd dataCentered = this->m_data_pos.transpose() - mu.transpose().replicate(this->m_data_pos.cols(),1);
     Eigen::MatrixXd tmp = dataCentered*(sig.inverse());
     pdf = (tmp.array() * dataCentered.array()).matrix().rowwise().sum();
-    pdf = (-0.5*pdf).array().exp() / sqrt(pow(2*M_PI, this->m_dimVar)*abs(sig.determinant()));
+    pdf = (-0.5*pdf).array().exp() / sqrt(pow(2*M_PI, this->m_dimVar)*abs(sig.determinant())+std::numeric_limits<double>::min());
+    return pdf;
+}
+
+double GMM::GaussPDF(double data, double mu, double sig){
+    double pdf;
+    double dataCentered = data- mu;
+    double tmp = dataCentered/sig;
+//    std::cout<<"\n\n IN GAUSS\n"<<std::endl;
+//    std::cout<<"\ndata\n"<<data<<std::endl;
+//    std::cout<<"\nmu\n"<<mu<<std::endl;
+//    std::cout<<"\nsig\n"<<sig<<std::endl;
+//
+//    std::cout<<"\ndatacentered\n"<<dataCentered<<std::endl;
+//    std::cout<<"\ntmp\n"<<tmp<<std::endl;
+    pdf = tmp*dataCentered;
+//    std::cout<<"\npdf\n"<<pdf<<std::endl;
+    pdf = exp(-0.5*pdf) / sqrt(2*M_PI*abs(sig)+std::numeric_limits<double>::min());
+//    std::cout<<"\npdf\n"<<pdf<<std::endl;
     return pdf;
 }
 
@@ -125,4 +144,43 @@ void GMM::TrainEM(){
         }
     }
     std::cout<<" The maximum number of iterations has been reached."<<std::endl;
+}
+
+void GMM::GMR(MatrixXd *expData, std::vector<MatrixXd> *expSigma, MatrixXd *H){
+    MatrixXd muTmp(this->m_dimOut, this->m_k);
+    MatrixXd HTmp(this->m_k, this->m_nData);
+    double regTerm = 1e-8;
+    for(int t=1; t<this->m_nData;t++){
+        double DataIn = t*this->m_dt;
+        muTmp.setZero();
+        HTmp.setZero();
+        expData->setZero();
+        expSigma->clear();
+
+
+        for(int tt=0; tt<this->m_nData;tt++){
+            // Compute activation weights
+            for(int k=0;k<this->m_k;k++){
+                HTmp(k,tt) = this->m_priors[k] * GaussPDF(DataIn, this->m_mu(0,k), this->m_sigma[k](0,0));
+            }
+            HTmp.col(tt) = (HTmp.col(tt).array() / (HTmp.col(tt).array()+std::numeric_limits<double>::min()).sum()).matrix();
+
+            // Checked until here next 2 rows only mock for stopping
+
+            MatrixXd muTmp(this->m_dimOut, 3);
+            muTmp.block(2,2,2,2)= MatrixXd(1,1);
+//            //Compute conditional means
+//            for(int k=0;k<this->m_k;k++){
+//                muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0)*this->m_sigma[k].topRows(1).rightCols(2);
+//                (*expData).col(tt) = (*expData).col(tt) + HTmp(k,tt) * muTmp.col(k);
+//            }
+//            //Compute conditional covariances
+//            for(int k=0;k<this->m_k;k++){
+//                MatrixXd sigmaTmp = this->m_sigma[k].block(2,2,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
+//                (*expSigma)[tt]=(*expSigma)[tt] + HTmp(k,tt)*(sigmaTmp + muTmp.col(k)*muTmp.col(k));
+//            }
+//            (*expSigma)[tt] = (*expSigma)[tt] - (*expData)[tt]*(*expData)[tt].transpose() + (MatrixXd(this->m_dimOut, this->m_dimOut).setIdentity()*regTerm);
+        }
+
+    }
 }

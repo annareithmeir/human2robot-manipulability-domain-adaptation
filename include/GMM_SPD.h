@@ -44,6 +44,7 @@ public:
     void EStep();
     void MStep();
     void TrainEM();
+    void GMR();
     Eigen::VectorXd GaussPDF(Eigen::MatrixXd data, Eigen::MatrixXd mu, Eigen::MatrixXd sig);
     std::vector<int> linspace(double a, double b, std::size_t N);
     Eigen::MatrixXd SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter);

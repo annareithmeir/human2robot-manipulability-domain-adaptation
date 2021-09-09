@@ -256,7 +256,7 @@ VectorXd GMM_SPD::GaussPDF(MatrixXd data, MatrixXd mu, MatrixXd sig){
     Eigen::MatrixXd dataCentered = data.transpose() - mu.transpose().replicate(data.cols(),1);
     Eigen::MatrixXd tmp = dataCentered*(sig.inverse());
     pdf = (tmp.array() * dataCentered.array()).matrix().rowwise().sum();
-    pdf = (-0.5*pdf).array().exp() / sqrt(pow(2*M_PI, this->m_dimVar)*abs(sig.determinant()));
+    pdf = (-0.5*pdf).array().exp() / sqrt(pow(2*M_PI, this->m_dimVar)*abs(sig.determinant())+std::numeric_limits<double>::min());
     return pdf;
 }
 
@@ -379,14 +379,17 @@ void GMM_SPD::SigmaEigenDecomposition(std::vector<MatrixXd> *Sigma, std::vector<
 }
 
 void GMM_SPD::GMR(){
-    MatrixXd xIn= Eigen::VectorXd::LinSpaced(this->m_nData, 0, this->m_nData*this->m_dt).matrix();
-    MatrixXd uHat(3,this->m_nData);
-    MatrixXd xHat(3,this->m_nData);
-    std::vector<MatrixXd> uOut; //3x5x400
-    std::vector<MatrixXd> uexpSigma; //3x3x400
-    std::vector<MatrixXd> H;
-    uHat.setZero();
-    xHat.setZero();
+//    MatrixXd xIn= Eigen::VectorXd::LinSpaced(this->m_nData, 0, this->m_nData*this->m_dt).matrix();
+//    MatrixXd uHat(3,this->m_nData);
+//    MatrixXd xHat(3,this->m_nData);
+//    std::vector<MatrixXd> uOut; //3x5x400
+//    std::vector<MatrixXd> uexpSigma; //3x3x400
+//    std::vector<MatrixXd> H;
+//    uHat.setZero();
+//    xHat.setZero();
+    for(int t=0; t<this->m_nData;t++){
+
+    }
 
 
 

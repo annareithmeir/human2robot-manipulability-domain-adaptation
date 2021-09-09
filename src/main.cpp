@@ -14,22 +14,29 @@ int main() {
 
 
     // Build GMM for trajectories in cartesian coordinates
-//    string cmat_path="/home/nnrthmr/C_Mat.csv";
-//    MatrixXd data(3, 400);
-//    vector<Tensor3d> data_m;
-//    load_data_cmat(cmat_path, &data);
-//    GMM model = GMM();
-//    model.InitModel(&data);
-//    model.TrainEM();
+    string cmat_path="/home/nnrthmr/C_Mat.csv";
+    MatrixXd data(3, 400);
+    vector<Tensor3d> data_m;
+    load_data_cmat(cmat_path, &data);
+    GMM model = GMM();
+    model.InitModel(&data);
+    model.TrainEM();
+
+    MatrixXd expData(2, 2);
+    expData.setZero();
+    MatrixXd H(2, 2);
+    H.setZero();
+    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+    model.GMR(&expData, &expSigma, &H);
 
 //     Build GMM for Manifold
-    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
-    MatrixXd data(400, 4);
-    load_data_mmat(mmat_path, &data);
-//    std::cout.precision(20);
-    GMM_SPD model2 = GMM_SPD();
-    model2.InitModel(&data);
-    model2.TrainEM();
+//    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
+//    MatrixXd data(400, 4);
+//    load_data_mmat(mmat_path, &data);
+////    std::cout.precision(20);
+//    GMM_SPD model2 = GMM_SPD();
+//    model2.InitModel(&data);
+//    model2.TrainEM();
 
 
 

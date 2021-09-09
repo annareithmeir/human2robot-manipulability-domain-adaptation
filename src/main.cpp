@@ -26,6 +26,7 @@ int main() {
     string mmat_path="/home/nnrthmr/Manip_Mat.csv";
     MatrixXd data(400, 4);
     load_data_mmat(mmat_path, &data);
+//    std::cout.precision(20);
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(&data);
     model2.TrainEM();

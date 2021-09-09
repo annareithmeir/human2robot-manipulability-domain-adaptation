@@ -6,8 +6,8 @@ GMM_SPD::GMM_SPD() {
 //    this->m_nks=std::vector<double>(this->m_k, 0.0);
     this->m_n = 0;
     this->m_maxDiffLL=1e-4; //Likelihood increase threshold to sop algorithm
-    this->m_minIterEM=5;
-    this->m_maxIterEM=100;
+    this->m_maxIterEM=1;
+    this->m_maxIterM=10;
     this->m_dimOut=2;
     this->m_dimOutVec = this->m_dimOut + this->m_dimOut * (this->m_dimOut - 1) / 2;
     this->m_dimVar = 3;
@@ -17,10 +17,9 @@ GMM_SPD::GMM_SPD() {
     this->m_regTerm = 1e-4;
     this->m_kp=100;
     this->m_nDemos=4;
-    this->m_regTerm = 1e-4;
 }
 
-
+// Checked!
 std::vector<int> GMM_SPD::linspace(double a, double b, std::size_t N)
 {
     double h = (b - a) / static_cast<double>(N-1);
@@ -33,6 +32,7 @@ std::vector<int> GMM_SPD::linspace(double a, double b, std::size_t N)
     return xs;
 }
 
+// Checked!
 void GMM_SPD::CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result) {
     result(0)=input[0];
     for (int i = 1; i < input.size(); i++) {
@@ -43,10 +43,14 @@ void GMM_SPD::CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& resul
 //Checked!
 void GMM_SPD::InitModel(Eigen::MatrixXd *data){
     this->m_n = data->rows() / this->m_nDemos; //nbData
+    this->m_nData = data->rows() ; //nb
     this->m_muMan= MatrixXd(4, this->m_k);
     this->m_mu= MatrixXd(this->m_muMan.rows(), this->m_muMan.cols());
     this->m_mu.setZero();
     this->m_data = *data;
+
+//    std::cout<<"\nTHIS DATA\n"<<std::endl;
+//    std::cout<<this->m_data<<std::endl;
 
 //    this->m_muMan=MatrixXd(4,this->m_k);
     this->m_muMan.setZero();
@@ -88,9 +92,8 @@ void GMM_SPD::InitModel(Eigen::MatrixXd *data){
 
         // Cov calculation checked!
         MatrixXd centeredTangent = dataTangentMatrix.colwise() - dataTangentMatrix.rowwise().mean();
-        MatrixXd cov = (centeredTangent * centeredTangent.adjoint()) / double(dataTangentMatrix.cols() - 1);
-        //MatrixXd cov = (centered * centered.adjoint()) / double(dataTangent.cols() - 1)+ MatrixXd(this->m_dimVarVec, this->m_dimVarVec).setConstant(this->m_regTerm);;
-
+//        MatrixXd cov = (centeredTangent * centeredTangent.adjoint()) / double(dataTangentMatrix.cols() - 1);
+        MatrixXd cov = (centeredTangent * centeredTangent.adjoint()) / double(dataTangentMatrix.cols() - 1)+ MatrixXd(this->m_dimVarVec, this->m_dimVarVec).setConstant(this->m_regTerm);
         this->m_sigma.push_back(cov);
     }
 
@@ -104,8 +107,15 @@ void GMM_SPD::InitModel(Eigen::MatrixXd *data){
     this->m_L.setZero();
     this->m_gamma = MatrixXd(this->m_k, data->cols());
     this->m_H = MatrixXd(this->m_k, data->cols());
-//    this->m_xts = std::vector<MatrixXd>(this->m_k);
+
+    std::cout << "\n\n\nAFTER INITIALISATION\n" << std::endl;
+    std::cout << "muMan= \n" << this->m_muMan << std::endl; // error of up to 0.3
+    for(int k=0; k<this->m_k; k++) {
+        std::cout << "sigma= \n" << this->m_sigma[k] << std::endl;
+        std::cout << "prior= \n" << this->m_priors[k] << std::endl;
+    }
 }
+
 
 // Checked!
 Eigen::MatrixXd GMM_SPD::SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter) {
@@ -204,6 +214,10 @@ std::vector<Eigen::MatrixXd> GMM_SPD::Vec2Symmat(std::vector<Eigen::MatrixXd> ve
 // Checked!
 std::vector<MatrixXd> GMM_SPD::LogmapVec(MatrixXd x, MatrixXd s){
     std::vector<MatrixXd> X = Vec2Symmat(x);
+//    std::cout<<"\n\n\nIN LOGMAP VEC (vec2symmat)\n"<<std::endl;
+//    std::cout<<"x: \n"<<x<<std::endl;
+//    std::cout<<"X: \n"<<X[0]<<std::endl;
+//    std::cout<<"\n\n\nEND LOGMAP VEC\n"<<std::endl;
     std::vector<MatrixXd> S = Vec2Symmat(s);
     std::vector<MatrixXd> U = LogMap(X,S[0]); //Vec2Symmat gives back vector of size 1 here
     std::vector<MatrixXd> u= Symmat2Vec(U);
@@ -261,60 +275,64 @@ void GMM_SPD::EStep() {
         }
         this->m_xts.push_back(xts);
 //        std::cout<<"prior: \n"<<this->m_priors[k]<<std::endl;
-//        std::cout<<"this->m_xts[k].transpose(): \n"<<this->m_xts[k].transpose()<<std::endl;
-//        std::cout<<"this->m_mu: \n"<<this->m_mu.col(k)<<std::endl;
-//        std::cout<<"this->m_sigma[k]: \n"<<this->m_sigma[k]<<std::endl;
+        std::cout<<"HERE"<<std::endl;
+        std::cout<<"this->m_xts[k].transpose(): \n"<<this->m_xts[k].transpose()<<std::endl; // already here instabilities
+        std::cout<<"this->m_mu: \n"<<this->m_mu.col(k)<<std::endl;
+        std::cout<<"this->m_sigma[k]: \n"<<this->m_sigma[k]<<std::endl;
+        std::cout<<"GaussPDF(this->m_xts[k], this->m_mu.col(k), this->m_sigma[k]): \n"<<GaussPDF(this->m_xts[k], this->m_mu.col(k), this->m_sigma[k])<<std::endl;
         this->m_L.row(k) = this->m_priors[k] * GaussPDF(this->m_xts[k], this->m_mu.col(k), this->m_sigma[k]).transpose();
-//        std::cout<<"\n\n\n this->m_L.row(0)\n"<< this->m_L.row(k)<<std::endl;
     }
+//    this->m_gamma = (this->m_L.array() / (this->m_L.colwise().sum().array()).replicate(this->m_k, 1).array()).matrix();
     this->m_gamma = (this->m_L.array() / (this->m_L.colwise().sum().array()+std::numeric_limits<double>::min()).replicate(this->m_k, 1).array()).matrix();
-//    std::cout<<this->m_gamma<<std::endl;
-//    std::cout<<"\n\n\n"<<std::endl;
+//    this->m_H = (this->m_gamma.array() / (this->m_gamma.rowwise().sum().array()).replicate(1,this->m_n*this->m_nDemos).array()).matrix();
     this->m_H = (this->m_gamma.array() / (this->m_gamma.rowwise().sum().array()+std::numeric_limits<double>::min()).replicate(1,this->m_n*this->m_nDemos).array()).matrix();
-//    std::cout<<this->m_H<<std::endl;
+
 }
 
 //Checked!
 void GMM_SPD::MStep() {
     for(int k=0; k<this->m_k; k++){
         this->m_priors[k] = this->m_gamma.row(k).sum() /this->m_data.rows();
-        std::cout<<"this->m_gamma.row(k).sum() \n"<<this->m_gamma.row(k).sum()<<std::endl;
-        std::cout<<"this->m_data.rows() \n"<<this->m_data.rows()<<std::endl;
-        std::cout<<"updated priors[k]= \n"<<this->m_priors[k]<<std::endl;
         MatrixXd uTmp(this->m_dimVarVec, this->m_data.rows());
-        for(int n=0; n<10; n++){
+        for(int n=0; n<this->m_maxIterM; n++){
+
             //Upd on tangent space
             uTmp.setZero();
             MatrixXd tmp(1,this->m_n * m_nDemos);
             tmp.setConstant(this->m_muMan(0,k));
-            std::cout<<"tmp= \n"<<tmp<<std::endl;
             uTmp.row(0) = this->m_data.col(0).transpose()-tmp;
             std::vector<MatrixXd> logmapvec = LogmapVec(this->m_data.transpose().bottomRows(3), this->m_muMan.block(1,k,3,1)); //row vector
             for(int v=0;v<logmapvec.size();v++){
                 uTmp.block(1,v,3,1) = logmapvec[v].transpose();
             }
-            std::cout<<"utmp= \n"<<uTmp<<std::endl;
             MatrixXd uTmpTot = (uTmp.array() * (this->m_H.row(k).replicate(this->m_dimVarVec,1)).array()).matrix().rowwise().sum();
-            std::cout<<"utmptot= \n"<<uTmpTot<<std::endl;
-
-            //Checked until here!
 
             //Upd on manifold
             this->m_muMan(0,k) = uTmpTot(0) + this->m_muMan(0,k);
-            this->m_muMan.block(1,k,3,1) = ExpmapVec(uTmpTot.block(1,0,3,uTmpTot.cols()), this->m_muMan.block(1,k,3,1))[0];
-            std::cout<<"muman= \n"<<this->m_muMan<<std::endl;
+            this->m_muMan.block(1,k,3,1) = ExpmapVec(uTmpTot.bottomRows(3), this->m_muMan.block(1,k,3,1))[0].transpose();
         }
-            this->m_sigma[k] = (uTmp * this->m_H.row(k).asDiagonal() * uTmp.transpose()) + (MatrixXd(this->m_dimVarVec, this->m_dimVarVec).setIdentity()*this->m_regTerm);
+        this->m_sigma[k] = (uTmp * this->m_H.row(k).asDiagonal() * uTmp.transpose()) + (MatrixXd(this->m_dimVarVec, this->m_dimVarVec).setIdentity()*this->m_regTerm);
     }
 
+    std::cout << "\n\n\nAFTER EM ALGORITHM\n" << std::endl;
+    std::cout << "muMan= \n" << this->m_muMan << std::endl;
+    // If niter 10 and niterem 1 error same, if niter 1 and niterem 10 then absolutely high -> something happens in between? TODO check!
+    // error up to 0.3, when using exact initialized muman, then only up to 0.02 (1,1)
+    // when using exact initialized muman, up to 0.03 (10,1)
+    // when using exact initialized muman, HUGE! (10,10)
+    for(int k=0; k<this->m_k; k++) {
+        std::cout << "sigma= \n" << this->m_sigma[k] << std::endl;
+        std::cout << "prior= \n" << this->m_priors[k] << std::endl;
+    }
 }
 
 void GMM_SPD::TrainEM(){
-    this->m_maxIterEM=1;
     for(int iter=0;iter< this->m_maxIterEM; iter++){
+        std::cout<<"EM iteration #"<<iter<<" ";
         EStep();
-        std::cout<<"e step done"<<std::endl;
+        std::cout<<"e step done ";
         MStep();
+        std::cout<<"m step done"<<std::endl;
     }
     std::cout<<" The maximum number of iterations has been reached."<<std::endl;
 }
@@ -342,3 +360,34 @@ std::vector<MatrixXd> GMM_SPD::ExpMap(std::vector<MatrixXd> U, MatrixXd S) {
     return X;
 }
 
+void GMM_SPD::SigmaEigenDecomposition(std::vector<MatrixXd> *Sigma, std::vector<MatrixXd> *V, std::vector<MatrixXd> *D) {
+    for (int i = 0; i < Sigma->size(); i++) {
+        Eigen::EigenSolver<MatrixXd> es((*Sigma)[i]);
+        D->push_back(es.eigenvalues().real().asDiagonal());
+        V->push_back(es.eigenvectors().real());
+//        std::cout<<"tmp:\n";
+//        std::cout<<tmp<<std::endl;
+//        std::cout<<"D:\n";
+//        std::cout<<D<<std::endl;
+//        std::cout<<"V:\n";
+//        std::cout<<V<<std::endl;
+//        std::cout<<"\nres:\n";
+//        std::cout<<(D.diagonal());
+//        std::cout<<"\nres2:\n";
+
+    }
+}
+
+void GMM_SPD::GMR(){
+    MatrixXd xIn= Eigen::VectorXd::LinSpaced(this->m_nData, 0, this->m_nData*this->m_dt).matrix();
+    MatrixXd uHat(3,this->m_nData);
+    MatrixXd xHat(3,this->m_nData);
+    std::vector<MatrixXd> uOut; //3x5x400
+    std::vector<MatrixXd> uexpSigma; //3x3x400
+    std::vector<MatrixXd> H;
+    uHat.setZero();
+    xHat.setZero();
+
+
+
+}

@@ -19,9 +19,9 @@ using Tensor3d = Eigen::Tensor<double, 3>;
 class GMM_SPD {
 public:
     int m_k;
-    int m_n; //number of measured points on trajectory
+    int m_n, m_nData; //number of measured points on trajectory
     int m_nDemos;
-    int m_minIterEM, m_maxIterEM;
+    int m_maxIterM, m_maxIterEM;
     int m_dimOutVec; // dim of output in vector form
     int m_dimOut; //dim of output
     int m_dimVar; //dim of manifold and tangent space
@@ -56,6 +56,7 @@ public:
     std::vector<MatrixXd> LogMap(std::vector<MatrixXd> X, MatrixXd S);
     std::vector<MatrixXd> ExpmapVec(MatrixXd x, MatrixXd s);
     std::vector<MatrixXd> ExpMap(std::vector<MatrixXd> X, MatrixXd S);
+    void SigmaEigenDecomposition(std::vector<MatrixXd> *sigma, std::vector<MatrixXd> *V, std::vector<MatrixXd> *D);
 
 };
 

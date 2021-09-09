@@ -113,55 +113,6 @@ void load_data_mmat(string data_path, MatrixXd *data_m){
     }
 }
 
-void load_data_mmat2(string data_path, MatrixXd *data_m){
-    data_m->setZero();
 
-    vector<vector<double>> data = load_csv(data_path);
-//    for (int t = 0; t < 400; t++) {
-//        (*data_m)(t, 0) = data[t][0];
-//        (*data_m)(t, 1) = data[t][1];
-//        (*data_m)(t, 2) = data[t][2];
-//        (*data_m)(t, 3) = data[t][3];
-//        (*data_m)(t, 4) = data[t][4];
-//    }
-}
 
-Tensor<double, 6> tensor_outer_product(Tensor<double, 3> x, Tensor<double, 3> y){
-    Eigen::array<IndexPair<long>,0> empty_index_list = {};
-    Tensor<double, 6> prod = x.contract(y, empty_index_list);
-    return prod;
-}
-
-Tensor<double, 6> tensor_covariance(vector<Tensor<double, 3>> x){
-    try{
-        int N = x.size(); // number of trials
-        if(N==1) throw "(N==1) Only one trial provided. Need at least two.";
-        Tensor<double, 6> cov(x[0].dimension(0), x[0].dimension(1), x[0].dimension(2),x[0].dimension(0), x[0].dimension(1), x[0].dimension(2));
-        cov.setZero();
-        for(int i=0; i<N; i++){
-            cov=cov+ tensor_outer_product(x[i],x[i]);
-        }
-        cov=cov* (double) (1/(N-1));
-        return cov;
-    }
-    catch (const char* msg) {
-        cerr << msg << endl;
-    }
-}
-
-// TODO centers around mean of matrix at each time step t --> check if correct
-Tensor<double,3> tensor_center(Tensor<double, 3> x){
-    Eigen::array<int, 2> dims({1,2});
-    Tensor<double, 1> mean = x.mean(dims); //mean of each time step slice
-    Tensor<double, 3> c(x.dimension(0), x.dimension(1), x.dimension(2));
-    c.setZero();
-    for(int t=0; t< c.dimension(0);t++) {
-        for(int i=0; i<c.dimension(1);i++) {
-            for (int j = 0; j < c.dimension(2); j++) {
-                c(t,i,j) = x(t,i,j) - mean(t);
-            }
-        }
-    }
-    return c;
-}
 #endif //MA_THESIS_UTILS_H

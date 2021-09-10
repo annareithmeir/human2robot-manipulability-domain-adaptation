@@ -378,19 +378,86 @@ void GMM_SPD::SigmaEigenDecomposition(std::vector<MatrixXd> *Sigma, std::vector<
     }
 }
 
-void GMM_SPD::GMR(){
-//    MatrixXd xIn= Eigen::VectorXd::LinSpaced(this->m_nData, 0, this->m_nData*this->m_dt).matrix();
-//    MatrixXd uHat(3,this->m_nData);
-//    MatrixXd xHat(3,this->m_nData);
+std::vector<MatrixXd> GMM_SPD::ParallelTransport(std::vector<MatrixXd> S1, std::vector<MatrixXd> S2){
+    std::vector<MatrixXd> S3;
+    for(int i=0;i<S1.size();i++){
+        S3.push_back(pow((S1[i].transpose().inverse() * S2[i].transpose()).transpose()),0.5); //B/A = (A'\B')' and A\B = A.inv()*B
+    }
+    return S3;
+}
+
+void GMM_SPD::GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd){
+    MatrixXd xIn= Eigen::VectorXd::LinSpaced(this->m_nData, 0, this->m_nData*this->m_dt).matrix();
+    MatrixXd uHat(3,this->m_n);
+    MatrixXd xHat(3,this->m_n);
+    MatrixXd Ac(3,3);
+    Ac.setZero();
+    std::vector<Eigen::MatrixXd> S1;
+    std::vector<Eigen::MatrixXd> S2;
 //    std::vector<MatrixXd> uOut; //3x5x400
 //    std::vector<MatrixXd> uexpSigma; //3x3x400
-//    std::vector<MatrixXd> H;
-//    uHat.setZero();
-//    xHat.setZero();
-    for(int t=0; t<this->m_nData;t++){
+    MatrixXd H(this->m_k, this->m_n);
+    uHat.setZero();
+    xHat.setZero();
+    Eigen::MatrixXf::Index max_index;
 
+    std::vector<MatrixXd> V;
+    std::vector<MatrixXd> D;
+    SigmaEigenDecomposition(&this->m_sigma, &V, &D);
+
+    std::vector<std::vector<MatrixXd>> vMat;
+    std::vector<std::vector<MatrixXd>> pvMat;
+    std::vector<MatrixXd> pv;
+    std::vector<MatrixXd> pSigma;
+
+    for(int t=0; t<this->m_n;t++) {
+        for (int k = 0; k < this->m_k; k++) {
+            H(k,t) = this->m_priors[k] * GaussPDF(xIn.col(t)-this->m_muMan(0,k), this->m_mu(0,k), this->m_sigma[k](0,0));
+        }
+        H.col(t)=(H.col(t).array() / (H.col(t)+std::numeric_limits<double>::min()).rowwise().sum()).matrix();
+
+        // Compute conditional mean (with covariance transportation)
+        if(t==0){
+            H.col(t).maxCoeff(&max_index);
+            xHat.col(t) = this->m_muMan.block(1, max_index,3,1);
+        }
+        else{
+            xHat.col(t) = xHat.col(t-1);
+        }
+
+        // Iterative computation
+        for(int iter=0; iter<10;iter++){
+            uHat.col(t).setZero();
+            for (int k = 0; k < this->m_k; k++) {
+                S1 = Vec2Symmat(this->m_muMan.block(2,k,3,1));
+                S2 = Vec2Symmat(xHat.col(t));
+                Ac.topLeftCorner(1,1) = 1;
+                Ac.bottomRightCorner(2,2) = ParallelTransport(S1,S2);
+
+                for(int j=0;j<V.size();j++){
+                    MatrixXd tmp(3,3);
+                    tmp.setZero();
+                    tmp.topLeftCorner(1,1) = V[k](0,j);
+                    tmp.bottomRightCorner(2,2) = Vec2Symmat(V[k].block(1,j,3,1));
+                    vMat[k].push_back(tmp);
+
+                    pvMat[k].push_back(Ac * pow(D[k](j,j),0.5) * vMat[k][j] * Ac.transpose());
+
+                    MatrixXd tmp2(4,4);
+                    tmp2.setZero();
+                    tmp2.topLeftCorner(1,1) = pvMat[k][j](0,0);
+                    tmp2.bottomRightCorner(3,3) = Symmat2Vec(pvMat[k][j].block(1,1,3,3));
+                    pv[k] =tmp2;
+                }
+
+                // Parallel transported sigma
+                pSigma.push_back(pv[k]*pv[k].transpose());
+            }
+
+
+
+        }
     }
 
-
-
 }
+

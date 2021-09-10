@@ -40,7 +40,7 @@ public:
     void EStep();
     void MStep();
     void TrainEM();
-    void GMR(MatrixXd *expData, std::vector<MatrixXd> *expSigma, MatrixXd *H);
+    void GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd);
     Eigen::VectorXd GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig);
     double GaussPDF(double data, double mu, double sig);
     std::vector<double> linspace(double a, double b, std::size_t N);

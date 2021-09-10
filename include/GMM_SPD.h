@@ -44,7 +44,7 @@ public:
     void EStep();
     void MStep();
     void TrainEM();
-    void GMR();
+    void GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd);
     Eigen::VectorXd GaussPDF(Eigen::MatrixXd data, Eigen::MatrixXd mu, Eigen::MatrixXd sig);
     std::vector<int> linspace(double a, double b, std::size_t N);
     Eigen::MatrixXd SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter);
@@ -58,7 +58,7 @@ public:
     std::vector<MatrixXd> ExpmapVec(MatrixXd x, MatrixXd s);
     std::vector<MatrixXd> ExpMap(std::vector<MatrixXd> X, MatrixXd S);
     void SigmaEigenDecomposition(std::vector<MatrixXd> *sigma, std::vector<MatrixXd> *V, std::vector<MatrixXd> *D);
-
+    std::vector<MatrixXd> ParallelTransport(std::vector<MatrixXd> S1, std::vector<MatrixXd> S2);
 };
 
 

@@ -22,12 +22,12 @@ int main() {
     model.InitModel(&data);
     model.TrainEM();
 
-    MatrixXd expData(2, 2);
+    MatrixXd expData(2, 100);
     expData.setZero();
     MatrixXd H(2, 2);
     H.setZero();
     std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
-    model.GMR(&expData, &expSigma, &H);
+    model.GMR(&expData, &expSigma);
 
 //     Build GMM for Manifold
 //    string mmat_path="/home/nnrthmr/Manip_Mat.csv";

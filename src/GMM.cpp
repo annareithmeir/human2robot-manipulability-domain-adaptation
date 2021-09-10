@@ -7,7 +7,7 @@ GMM::GMM() {
     this->m_maxDiffLL=1e-4; //Likelihood increase threshold to sop algorithm
     this->m_minIterEM=5;
     this->m_maxIterEM=100;
-    this->m_dimOut=3;
+    this->m_dimOut=2;
     this->m_dimOutVec = this->m_dimOut + this->m_dimOut * (this->m_dimOut - 1) / 2;
     this->m_dimVar = 3;
     this->m_dimVarVec = this->m_dimVar - this->m_dimOut + this->m_dimOutVec;
@@ -146,41 +146,75 @@ void GMM::TrainEM(){
     std::cout<<" The maximum number of iterations has been reached."<<std::endl;
 }
 
-void GMM::GMR(MatrixXd *expData, std::vector<MatrixXd> *expSigma, MatrixXd *H){
+// Checked!
+void GMM::GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd){
+    double regTerm = 1e-8;
+    MatrixXd expData(2,this->m_n);
+    expData.setZero();
+    MatrixXd expSigma(2,2);
     MatrixXd muTmp(this->m_dimOut, this->m_k);
     MatrixXd HTmp(this->m_k, this->m_nData);
-    double regTerm = 1e-8;
-    for(int t=1; t<this->m_nData;t++){
-        double DataIn = t*this->m_dt;
+
+    for(int t=0; t<this->m_n;t++){
+        double DataIn = (t+1)*this->m_dt;
         muTmp.setZero();
         HTmp.setZero();
-        expData->setZero();
-        expSigma->clear();
+        expSigma.setZero();
 
-
-        for(int tt=0; tt<this->m_nData;tt++){
-            // Compute activation weights
-            for(int k=0;k<this->m_k;k++){
-                HTmp(k,tt) = this->m_priors[k] * GaussPDF(DataIn, this->m_mu(0,k), this->m_sigma[k](0,0));
-            }
-            HTmp.col(tt) = (HTmp.col(tt).array() / (HTmp.col(tt).array()+std::numeric_limits<double>::min()).sum()).matrix();
-
-            // Checked until here next 2 rows only mock for stopping
-
-            MatrixXd muTmp(this->m_dimOut, 3);
-            muTmp.block(2,2,2,2)= MatrixXd(1,1);
-//            //Compute conditional means
-//            for(int k=0;k<this->m_k;k++){
-//                muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0)*this->m_sigma[k].topRows(1).rightCols(2);
-//                (*expData).col(tt) = (*expData).col(tt) + HTmp(k,tt) * muTmp.col(k);
-//            }
-//            //Compute conditional covariances
-//            for(int k=0;k<this->m_k;k++){
-//                MatrixXd sigmaTmp = this->m_sigma[k].block(2,2,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
-//                (*expSigma)[tt]=(*expSigma)[tt] + HTmp(k,tt)*(sigmaTmp + muTmp.col(k)*muTmp.col(k));
-//            }
-//            (*expSigma)[tt] = (*expSigma)[tt] - (*expData)[tt]*(*expData)[tt].transpose() + (MatrixXd(this->m_dimOut, this->m_dimOut).setIdentity()*regTerm);
+        // Compute activation weights
+        for(int k=0;k<this->m_k;k++){
+            HTmp(k,t) = this->m_priors[k] * GaussPDF(DataIn, this->m_mu(0,k), this->m_sigma[k](0,0));
         }
+        HTmp.col(t) = (HTmp.col(t).array() / (HTmp.col(t).array()+std::numeric_limits<double>::min()).sum()).matrix();
 
+        //Compute conditional means
+        for(int k=0;k<this->m_k;k++){
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_mu.col(k).bottomRows(2)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k].leftCols(1).bottomRows(2)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k](0,0)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<(DataIn-this->m_mu(0,k))<<std::endl;
+            muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + (this->m_sigma[k].leftCols(1).bottomRows(2).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
+//                std::cout<<"here"<<std::endl;
+//                std::cout<<muTmp.col(k)<<std::endl;
+//                std::cout<<"here"<<std::endl;
+//                std::cout<<HTmp(k,t)<<std::endl;
+//                std::cout<<"here"<<std::endl;
+//                std::cout<<expData.col(t)<<std::endl;
+//                std::cout<<"here --->"<<std::endl;
+//                std::cout<<expData.col(t) + HTmp(k,t) * muTmp.col(k)<<std::endl;
+            expData.col(t) = expData.col(t) + HTmp(k,t) * muTmp.col(k);
+//                std::cout<<"expData.col(t)"<<std::endl;
+//                std::cout<<expData.col(t)<<std::endl;
+        }
+        //Compute conditional covariances
+        for(int k=0;k<this->m_k;k++){
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k].block(1,1,2,2)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k].bottomRows(2).leftCols(1)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k](0,0)<<std::endl;
+//                std::cout<<"here0"<<std::endl;
+//                std::cout<<this->m_sigma[k].topRows(1).rightCols(2)<<std::endl;
+            MatrixXd sigmaTmp = this->m_sigma[k].block(1,1,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
+//                std::cout<<"----"<<std::endl;
+//                std::cout<<sigmaTmp<<std::endl;
+//                std::cout<<"here2"<<std::endl;
+//                std::cout<<sigmaTmp + muTmp.col(k)*muTmp.col(k).transpose()<<std::endl;
+//                std::cout<<"here2"<<std::endl;
+//                std::cout<<HTmp(k,t)<<std::endl;
+//                std::cout<<"here2"<<std::endl;
+//                std::cout<<expSigma[t]<<std::endl;
+//                std::cout<<"here2"<<std::endl;
+
+                expSigma = (expSigma + HTmp(k,t)*(sigmaTmp + muTmp.col(k)*muTmp.col(k).transpose()));
+        }
+        expSigma = expSigma - expData.col(t)*expData.col(t).transpose() + (MatrixXd(this->m_dimOut, this->m_dimOut).setIdentity()*regTerm);
+        (*xd).col(t)=expData.col(t);
+        (*sigmaXd).push_back(expSigma);
     }
 }

@@ -14,7 +14,9 @@
 using Eigen::MatrixXd;
 using Eigen::MatrixXcd;
 using Eigen::VectorXd;
-using Tensor3d = Eigen::Tensor<double, 3>;
+
+using namespace Eigen;
+using namespace std;
 
 class GMM_SPD {
 public:
@@ -23,7 +25,7 @@ public:
     int m_nDemos;
     int m_maxIterM, m_maxIterEM;
     int m_dimOutVec; // dim of output in vector form
-    int m_dimOut; //dim of output
+    int m_dimOut, m_dimIn; //dim of output
     int m_dimVar; //dim of manifold and tangent space
     int m_dimVarVec; //dim of manifold and tangent space in vector form
     int m_dimCovOut; //dim of output covariance
@@ -31,37 +33,41 @@ public:
     float m_regTerm; //regularization term
     float m_dt; //time step duration
     int m_kp; //controller gain
-    std::vector<double> m_priors;
-    std::vector<MatrixXd> m_sigma;
-    Eigen::MatrixXd m_mu, m_muMan;
-    std::vector<Tensor3d> m_data_m;
+    vector<double> m_priors;
+    vector<MatrixXd> m_sigma;
+    MatrixXd m_mu, m_muMan;
     MatrixXd m_data;
     MatrixXd m_L, m_gamma, m_H;
-    std::vector<MatrixXd> m_xts;
+    vector<MatrixXd> m_xts;
 
     GMM_SPD();
     void InitModel(MatrixXd *data);
+
+    MatrixXd getOutOut(MatrixXd m);
+    MatrixXd getOutIn(MatrixXd m);
+    MatrixXd getInOut(MatrixXd m);
+    MatrixXd getInIn(MatrixXd m);
+
     void EStep();
     void MStep();
     void TrainEM();
-    void GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd);
-    Eigen::VectorXd GaussPDF(Eigen::MatrixXd data, Eigen::MatrixXd mu, Eigen::MatrixXd sig);
+    void GMR(MatrixXd *xd, vector<MatrixXd> *sigmaXd);
+    VectorXd GaussPDF(MatrixXd data, MatrixXd mu, MatrixXd sig);
     double GaussPDF(double data, double mu, double sig);
-    std::vector<int> linspace(double a, double b, std::size_t N);
-    Eigen::MatrixXd SPDMean(std::vector<Eigen::MatrixXd> mat, int nIter);
-    Eigen::MatrixXd Symmat2Vec(Eigen::MatrixXd mat);
-    std::vector<Eigen::MatrixXd> Symmat2Vec(std::vector<Eigen::MatrixXd> mat);
-    std::vector<Eigen::MatrixXd> Vec2Symmat(Eigen::MatrixXd vec);
-    std::vector<Eigen::MatrixXd> Vec2Symmat(std::vector<Eigen::MatrixXd> vec);
-    void CumulativeSum(const Eigen::VectorXd& input, Eigen::VectorXd& result);
-    std::vector<MatrixXd> LogmapVec(MatrixXd x, MatrixXd s);
-    std::vector<MatrixXd> LogMap(std::vector<MatrixXd> X, MatrixXd S);
-    std::vector<MatrixXd> ExpmapVec(MatrixXd x, MatrixXd s);
-    std::vector<MatrixXd> ExpMap(std::vector<MatrixXd> X, MatrixXd S);
-    void SigmaEigenDecomposition(std::vector<MatrixXd> *sigma, std::vector<MatrixXd> *V, std::vector<MatrixXd> *D);
-    std::vector<MatrixXd> ParallelTransport(std::vector<MatrixXd> S1, std::vector<MatrixXd> S2);
+    vector<int> linspace(double a, double b, size_t N);
+    MatrixXd SPDMean(vector<MatrixXd> mat, int nIter);
+    MatrixXd Symmat2Vec(MatrixXd mat);
+    vector<MatrixXd> Symmat2Vec(vector<MatrixXd> mat);
+    vector<MatrixXd> Vec2Symmat(MatrixXd vec);
+    vector<MatrixXd> Vec2Symmat(vector<MatrixXd> vec);
+    void CumulativeSum(const VectorXd& input, VectorXd& result);
+    vector<MatrixXd> LogmapVec(MatrixXd x, MatrixXd s);
+    vector<MatrixXd> LogMap(vector<MatrixXd> X, MatrixXd S);
+    vector<MatrixXd> ExpmapVec(MatrixXd x, MatrixXd s);
+    vector<MatrixXd> ExpMap(vector<MatrixXd> X, MatrixXd S);
+    void SigmaEigenDecomposition(vector<MatrixXd> *sigma, vector<MatrixXd> *V, vector<MatrixXd> *D);
+    vector<MatrixXd> ParallelTransport(vector<MatrixXd> S1, vector<MatrixXd> S2);
     MatrixXd ParallelTransport(MatrixXd S1, MatrixXd S2);
 };
-
 
 #endif //MA_THESIS_GMM_SPD_H

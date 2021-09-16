@@ -5,6 +5,7 @@
 
 using namespace std;
 using namespace Eigen;
+
 int main() {
     // Load the demonstration data
 //string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/";
@@ -43,15 +44,6 @@ int main() {
 
     std::cout<<"GMR"<<std::endl;
     model2.GMR(&expData, &expSigma);
-
-
-
-//    Eigen::MatrixXd u(3,1);
-//    Eigen::MatrixXd s(3,1);
-//    u<<6.42476713410204,-0.355139982816209,-2.78592768882965;
-//    s<<146.096605076556,44.2213672844795,-71.9140893269118;
-//    std::vector<MatrixXd> result = model2.ExpmapVec(u,s);
-//    std::cout<<result[0]<<std::endl;
 
     return 0;
 }

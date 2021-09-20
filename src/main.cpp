@@ -7,6 +7,19 @@
 using namespace std;
 using namespace Eigen;
 
+// Checked!
+MatrixXd LogMap(MatrixXd X, MatrixXd S) {
+    MatrixXd U;
+    MatrixXd tmp = (S.inverse()) * X; //A\B in MATLAB is a^-1 * B
+    EigenSolver<MatrixXd> es(tmp);
+    MatrixXd D = es.eigenvalues().real().asDiagonal();
+    MatrixXd V = es.eigenvectors().real();
+    MatrixXd tmp2 = D.diagonal().array().log().matrix().asDiagonal().toDenseMatrix();
+    U = S * V * tmp2 * V.inverse();
+    return U;
+}
+
+
 int main() {
     // Load the demonstration data
 //    string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/";
@@ -36,7 +49,7 @@ int main() {
 //    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
 //    MatrixXd data(400, 4);
 //    load_data_mmat(mmat_path, &data);
-//    GMM_SPD model2 = GMM_SPD();
+    GMM_SPD model2 = GMM_SPD();
 //    model2.InitModel(&data);
 //    model2.TrainEM();
 //
@@ -47,11 +60,48 @@ int main() {
 //    std::cout<<"GMR"<<std::endl;
 //    model2.GMR(&expData, &expSigma);
 
-//    Franka robot = Franka();
+    Franka robot = Franka();
 //    VectorXd q_goal(7);
 //    q_goal << -pi/2.0, 0.004, 0.0, -1.57156, 0.0, 1.57075, 0.0;
 //
 //    robot.moveToQGoal(q_goal);
+
+
+MatrixXd jtfull(6,4);
+jtfull <<-2.00000000000000,	2.00000000000000,	5.46410161513775,	3.46410161513776,
+    3.46410161513776,	3.46410161513776,	1.46410161513776,	-2.00000000000000,
+    0,	0,	0,	0,
+    0,	0,	0,	0,
+    0,	0,	0,	0,
+    1,	1,	1,	1;
+
+MatrixXd med(2,2);
+med <<304.380134285343,	-188.288919971871,
+        -188.288919971871,	124.941294748085;
+
+MatrixXd mct(2,2);
+mct << 49.8564064605510,	1.07179676972449,
+        1.07179676972449,	30.1435935394490;
+
+vector<MatrixXd> t;
+t.push_back(med);
+MatrixXd mdiff = LogMap(med, mct);
+
+MatrixXd q(4,1);
+q <<1.42773648754784,
+    -0.544201169903005,
+    -1.57009527842996,
+    -1.55496683469965;
+
+MatrixXd jmt = robot.ComputeManipulabilityJacobian(jtfull);
+MatrixXd pinv = jmt.completeOrthogonalDecomposition().pseudoInverse();
+MatrixXd t1 = pinv*3*model2.Symmat2Vec(mdiff).transpose();
+cout<<"\n\n"<<q+ t1*1e-2;
+std::cout << "Tracking error: " <<(med.pow(-0.5)*mct*med.pow(-0.5)).log().norm()<< std::endl;
+
+
+
+
 
 
 return 0;

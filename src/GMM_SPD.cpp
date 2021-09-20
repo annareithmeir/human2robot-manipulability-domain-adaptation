@@ -254,19 +254,7 @@ vector<MatrixXd> GMM_SPD::LogMap(vector<MatrixXd> X, MatrixXd S) {
         EigenSolver<MatrixXd> es(tmp);
         MatrixXd D = es.eigenvalues().real().asDiagonal();
         MatrixXd V = es.eigenvectors().real();
-//        cout<<"tmp:\n";
-//        cout<<tmp<<endl;
-//        cout<<"D:\n";
-//        cout<<D<<endl;
-//        cout<<"V:\n";
-//        cout<<V<<endl;
-//        cout<<"\nres:\n";
-//        cout<<(D.diagonal());
-//        cout<<"\nres2:\n";
         MatrixXd tmp2 = D.diagonal().array().log().matrix().asDiagonal().toDenseMatrix();
-//        cout<<tmp2;
-//        cout<<"\nres3:\n";
-//        cout<<S*V*tmp2*V.inverse()<<endl;
         U.push_back(S * V * tmp2 * V.inverse());
     }
     return U;

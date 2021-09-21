@@ -1,17 +1,16 @@
 #ifndef MA_THESIS_GMM_H
 #define MA_THESIS_GMM_H
 
-#include <Eigen/Dense>
 #include <vector>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <numeric>
-#include <iostream>
 #include <cmath>
+#include <iostream>
 
 
-using Eigen::MatrixXd;
-using Eigen::VectorXd;
 using Tensor3d = Eigen::Tensor<double, 3>;
+using namespace std;
+using namespace Eigen;
 
 class GMM {
 public:
@@ -36,15 +35,14 @@ public:
     MatrixXd m_L, m_gamma, m_gamma2;
 
     GMM();
-    void InitModel(MatrixXd *data);
+    void InitModel(const MatrixXd& data);
     void EStep();
     void MStep();
     void TrainEM();
-    void GMR(MatrixXd *xd, std::vector<MatrixXd> *sigmaXd);
-    Eigen::VectorXd GaussPDF(Eigen::MatrixXd mu, Eigen::MatrixXd sig);
+    void GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd);
+    Eigen::VectorXd GaussPDF(const MatrixXd& mu, const MatrixXd& sig);
     double GaussPDF(double data, double mu, double sig);
     std::vector<double> linspace(double a, double b, std::size_t N);
-
 };
 
 

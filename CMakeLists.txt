@@ -21,7 +21,7 @@ find_package (Threads REQUIRED)
 add_definitions(-DIL_STD)
 add_definitions(-DNON_MATLAB_PARSING)
 add_definitions(-DMAX_EXT_API_CONNECTIONS=255)
-add_definitions(-DDO_NOT_USE_SHARED_MEMORY)
+#add_definitions(-DDO_NOT_USE_SHARED_MEMORY)
 
 catkin_package(
         INCLUDE_DIRS include
@@ -32,7 +32,7 @@ include_directories(
         ${catkin_INCLUDE_DIRS}
 )
 
-add_executable(ma_thesis src/main.cpp src/GMM.cpp src/GMM_SPD.cpp include/GMM.h include/GMM_SPD.h include/utils.h src/ManipulabilityControl.cpp include/ManipulabilityControl.h src/Franka.cpp include/Franka.h)
+add_executable(ma_thesis src/main.cpp src/GMM.cpp src/GMM_SPD.cpp include/GMM.h include/GMM_SPD.h include/utils.h src/Franka.cpp include/Franka.h include/SPD_Utils.h)
 target_link_libraries (ma_thesis
         Eigen3::Eigen
         pthread

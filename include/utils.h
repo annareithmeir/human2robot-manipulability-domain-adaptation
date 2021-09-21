@@ -2,18 +2,20 @@
 #define MA_THESIS_UTILS_H
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <Eigen/QR>
 #include <unsupported/Eigen/CXX11/Tensor>
 #include <fstream>
 #include <iostream>
 
 #define _USE_MATH_DEFINES
-
-using Eigen::MatrixXd;
+#define deb(x) cout << #x << " " << x << endl;
 using namespace std;
 using namespace Eigen;
 using Tensor3d = Tensor<double, 3>;
 
-vector<vector<double>> load_csv (const string path) {
+inline
+vector<vector<double>> LoadCSV (const string path) {
     ifstream indata;
     indata.open(path);
     string line;
@@ -42,8 +44,17 @@ vector<vector<double>> load_csv (const string path) {
     return values;
 }
 
-Tensor3d read_manipulabilities(string file_path){
-    vector<vector<double>> data = load_csv(file_path);
+inline
+void WriteCSV(const MatrixXd& data, const string path){
+    ofstream outdata;
+    outdata.open(path);
+    outdata << data;
+    outdata.close();
+}
+
+inline
+Tensor3d read_manipulabilities(const string file_path){
+    vector<vector<double>> data = LoadCSV(file_path);
     Tensor3d manipulabilities(data.size(), 9, 9);
     manipulabilities.setZero();
     for(int t=0; t<data.size();t++){
@@ -58,8 +69,9 @@ Tensor3d read_manipulabilities(string file_path){
 }
 
 //TODO resample spline(), maybe preprocess data by using promp-ias/utils.py interpolation
-MatrixXd read_cartesian_trajectories(string file_path){
-    vector<vector<double>> data = load_csv(file_path);
+inline
+MatrixXd read_cartesian_trajectories(const string file_path){
+    vector<vector<double>> data = LoadCSV(file_path);
     MatrixXd trajs(4,data.size());
     trajs.setZero();
     for (int t = 0; t < data.size(); t++) {
@@ -71,7 +83,8 @@ MatrixXd read_cartesian_trajectories(string file_path){
     return trajs;
 }
 
-void load_data(string data_path, int nDemos, int nData, vector<Tensor3d> *data_m, MatrixXd *data_pos){
+inline
+void load_data(const string data_path, int nDemos, int nData, vector<Tensor3d> *data_m, MatrixXd *data_pos){
     Tensor3d m;
 //    vector<Tensor3d> m_data_m;
     MatrixXd pos;
@@ -89,10 +102,11 @@ void load_data(string data_path, int nDemos, int nData, vector<Tensor3d> *data_m
     }
 }
 
-void load_data_cmat(string data_path, MatrixXd *data_pos){
+inline
+void load_data_cmat(const string data_path, MatrixXd *data_pos){
     data_pos->setZero();
 
-    vector<vector<double>> data = load_csv(data_path);
+    vector<vector<double>> data = LoadCSV(data_path);
     std::cout<<data.size()<<" "<<data[0].size()<<std::endl;
     for (int t = 0; t < 400; t++) {
         (*data_pos)(0, t) = data[0][t];
@@ -101,10 +115,11 @@ void load_data_cmat(string data_path, MatrixXd *data_pos){
     }
 }
 
-void load_data_mmat(string data_path, MatrixXd *data_m){
+inline
+void load_data_mmat(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
-    vector<vector<double>> data = load_csv(data_path);
+    vector<vector<double>> data = LoadCSV(data_path);
     for (int t = 0; t < 400; t++) {
         (*data_m)(t, 0) = data[t][0];
         (*data_m)(t, 1) = data[t][1];
@@ -113,6 +128,26 @@ void load_data_mmat(string data_path, MatrixXd *data_m){
     }
 }
 
+// Checked!
+inline
+vector<int> linspace(double a, double b, size_t N) {
+    double h = (b - a) / static_cast<double>(N - 1);
+    vector<int> xs(N);
+    vector<int>::iterator x;
+    double val;
+    for (x = xs.begin(), val = a; x != xs.end(); ++x, val += h) {
+        *x = (int) round(val);
+    }
+    return xs;
+}
 
+// Checked!
+inline
+void CumulativeSum(const VectorXd &input, VectorXd &result) {
+    result(0) = input[0];
+    for (int i = 1; i < input.size(); i++) {
+        result(i) = result(i - 1) + input(i);
+    }
+}
 
 #endif //MA_THESIS_UTILS_H

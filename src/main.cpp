@@ -6,6 +6,7 @@ using namespace std;
 using namespace Eigen;
 
 #define deb(x) cout << #x << " " << x << endl;
+#define dimensions 2
 
 int main() {
     // Load the demonstration data
@@ -18,44 +19,86 @@ int main() {
 
 
     // Build GMM for trajectories in cartesian coordinates
-    string cmat_path="/home/nnrthmr/C_Mat.csv";
-    MatrixXd data(3, 400);
-    vector<Tensor3d> data_m;
-    load_data_cmat(cmat_path, &data);
-    GMM model = GMM();
-    model.InitModel(data);
-    model.TrainEM();
-
-    MatrixXd expData(2, 100);
-    expData.setZero();
-    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
-    std::cout<<"GMR"<<std::endl;
-    model.GMR(expData, expSigma);
-
-    deb(expData);
-
-//     Build GMM for Manifold
-//    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
-//    MatrixXd data(400, 4);
-//    load_data_mmat(mmat_path, &data);
-//    GMM_SPD model2 = GMM_SPD();
-//    model2.InitModel(data);
-//    model2.TrainEM();
+//    string cmat_path="/home/nnrthmr/C_Mat.csv";
+//    //MatrixXd data(3, 400);
+//    MatrixXd data(4, 400);
+//    vector<Tensor3d> data_m;
+//    load_data_cmat(cmat_path, &data);
+//    data.row(3)=data.row(2)*0.75;
 //
-//    MatrixXd expData(2, 100);
+//    GMM model = GMM();
+//    model.InitModel(data);
+//    model.TrainEM();
+//
+//    MatrixXd expData(3, 100);
+////    MatrixXd expData(2, 100);
 //    expData.setZero();
 //    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
-//
 //    std::cout<<"GMR"<<std::endl;
-//    model2.GMR(expData, expSigma);
+//    model.GMR(expData, expSigma);
+//
+//    WriteCSV(expData, "/home/nnrthmr/CLionProjects/ma_thesis/data/expData3d.csv");
+//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma3d.csv");
+
+
+//     Build GMM for Manifold
+
+if(dimensions==2){
+    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
+    MatrixXd data(400, 4);
+    load_data_mmat(mmat_path, &data);
+
+    GMM_SPD model2 = GMM_SPD();
+    model2.InitModel(data);
+    model2.TrainEM();
+
+    MatrixXd expData(3, 100);
+    expData.setZero();
+    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+
+    std::cout<<"GMR"<<std::endl;
+    model2.GMR(expData, expSigma);
+    deb(expData);
+    deb(expSigma[0]);
+}
+else {
+    string mmat_path = "/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/EEpos_translationmanipulability_trial_1.csv";
+    MatrixXd data(21, 11);
+    MatrixXd dataVectorized(21, 7);
+    load_data_mmat2(mmat_path, &data);
+    for (int i = 0; i < data.rows(); i++) {
+        dataVectorized(i, 0) = i * 0.01;
+        MatrixXd tmp = data.block(i, 2, 1, 9);
+        tmp.resize(3, 3);
+        dataVectorized.block(i, 1, 1, 6) = Symmat2Vec(tmp);
+    }
+
+    GMM_SPD model2 = GMM_SPD();
+    model2.InitModel(dataVectorized);
+    model2.TrainEM();
+
+    MatrixXd expData(6, 21);
+    expData.setZero();
+    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+
+    std::cout<<"GMR"<<std::endl;
+    model2.GMR(expData, expSigma);
+}
+
+
+//    WriteCSV(Vec2Symmat(expData), "/home/nnrthmr/CLionProjects/ma_thesis/data/expData.csv");
+//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma.csv");
+
 //
 //    deb(expData);
-
-    Franka robot = Franka();
+//
+//    Franka robot = Franka();
 //    VectorXd q_goal(7);
 //    q_goal << -pi/2.0, 0.004, 0.0, -1.57156, 0.0, 1.57075, 0.0;
 //
-//    robot.moveToQGoal(q_goal);
+////    robot.moveToQGoal(q_goal);
+//MatrixXd J = robot.getTranslationJacobian();
+//deb(J);
 
 
 //MatrixXd jtfull(6,4);

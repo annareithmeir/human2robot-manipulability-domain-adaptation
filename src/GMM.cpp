@@ -2,15 +2,26 @@
 #include <Eigen/Dense>
 
 #define deb(x) cout << #x << " " << x << endl;
+#define debsize(x) cout << #x << " " << x.rows() <<"x"<<x.cols() << endl;
+#define dimensions 3
+
 GMM::GMM() {
     this->m_k = 5;
     this->m_n = 0;
     this->m_maxDiffLL=1e-4; //Likelihood increase threshold to sop algorithm
     this->m_minIterEM=5;
     this->m_maxIterEM=100;
-    this->m_dimOut=2;
+
+    if(dimensions==2){
+        this->m_dimOut=2;
+        this->m_dimVar = 3;
+    }
+    else{ //dimensions==3
+        this->m_dimOut=3;
+        this->m_dimVar = 4;
+    }
+
     this->m_dimOutVec = this->m_dimOut + this->m_dimOut * (this->m_dimOut - 1) / 2;
-    this->m_dimVar = 3;
     this->m_dimVarVec = this->m_dimVar - this->m_dimOut + this->m_dimOutVec;
     this->m_dimCovOut = this->m_dimVar + this->m_dimVar * (this->m_dimVar - 1) / 2;
     this->m_dt = 1e-2;
@@ -18,6 +29,10 @@ GMM::GMM() {
     this->m_kp=100;
     this->m_nDemos=4;
     this->m_regTerm = 1e-4;
+
+    deb(this->m_dimOutVec);
+    deb(this->m_dimVarVec);
+    deb(this->m_dimCovOut);
 }
 
 std::vector<double> GMM::linspace(double a, double b, std::size_t N)
@@ -38,7 +53,11 @@ void GMM::InitModel(const MatrixXd& data){
     this->m_nData = data.cols();
     this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
     this->m_data_pos = data;
-    Eigen::MatrixXd collected(3, data.cols());
+
+    Eigen::MatrixXd collected;
+    if(dimensions==2) collected= Eigen::MatrixXd (3, data.cols());
+    else collected= Eigen::MatrixXd (4, data.cols());
+
     MatrixXd centered, cov;
     int tmp;
 
@@ -51,20 +70,22 @@ void GMM::InitModel(const MatrixXd& data){
                 collected(0,tmp) = data(0, t);
                 collected(1,tmp) = data(1, t);
                 collected(2,tmp) = data(2, t);
-//                collected(3,tmp) = (*data)(3,t);
+                if(dimensions==3) collected(3,tmp) = data(3,t);
                 tmp++;
             }
         }
 
         collected = collected.leftCols(tmp);
         this->m_priors.push_back(tmp);
-        this->m_mu.block(0, i, 3, 1)= collected.rowwise().mean();
+        if(dimensions==2) this->m_mu.block(0, i, 3, 1)= collected.rowwise().mean();
+        else this->m_mu.block(0, i, 4, 1)= collected.rowwise().mean();
         centered = collected.colwise() - collected.rowwise().mean();
-        cov = (centered * centered.adjoint()) / double(collected.cols() - 1);
-//        MatrixXd cov = (centered * centered.adjoint()) / double(collected.cols() - 1)+ MatrixXd(this->m_dimVar, this->m_dimVar).setConstant(this->m_regTerm);;
+//        cov = (centered * centered.adjoint()) / double(collected.cols() - 1);
+        cov = (centered * centered.adjoint()) / double(collected.cols() - 1)+ MatrixXd(this->m_dimVar, this->m_dimVar).setConstant(this->m_regTerm);;
         this->m_sigma.push_back(cov);
     }
     double priorsSum = (double) (std::accumulate(this->m_priors.begin(), this->m_priors.end(), 0.0f));
+    deb(priorsSum);
     for(double& d : this->m_priors){
         d /= priorsSum;
     }
@@ -95,9 +116,15 @@ double GMM::GaussPDF(double data, double mu, double sig){
 
 void GMM::EStep() {
     for(int k=0; k< this->m_k; k++){
+        deb(this->m_priors[k]);
+//        deb(this->m_mu.col(k));
+//        deb(this->m_sigma[k]);
+//        deb(GaussPDF(this->m_mu.col(k), this->m_sigma[k]));
         this->m_L.row(k) = this->m_priors[k] * GaussPDF(this->m_mu.col(k), this->m_sigma[k]).transpose();
     }
     this->m_gamma = (this->m_L.array() / (this->m_L.colwise().sum().array()+std::numeric_limits<double>::min()).replicate(this->m_k, 1).array()).matrix();
+//    deb(this->m_L);
+//    deb(this->m_gamma);
 }
 
 //Checked!
@@ -144,9 +171,17 @@ void GMM::TrainEM(){
 // Checked!
 void GMM::GMR( MatrixXd& xd, std::vector<MatrixXd>& sigmaXd){
     double regTerm = 1e-8;
-    MatrixXd expData(2,this->m_n);
+    MatrixXd expData;
+
+    if(dimensions==2) expData= MatrixXd(2,this->m_n);
+    else expData= MatrixXd(3,this->m_n);
+
     expData.setZero();
-    MatrixXd expSigma(2,2);
+
+    MatrixXd expSigma;
+    if(dimensions==2) expSigma = MatrixXd(2,2);
+    else expSigma = MatrixXd(3,3);
+
     MatrixXd sigmaTmp;
     MatrixXd muTmp(this->m_dimOut, this->m_k);
     MatrixXd HTmp(this->m_k, this->m_nData);
@@ -166,12 +201,14 @@ void GMM::GMR( MatrixXd& xd, std::vector<MatrixXd>& sigmaXd){
 
         //Compute conditional means
         for(int k=0;k<this->m_k;k++){
-            muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + (this->m_sigma[k].leftCols(1).bottomRows(2).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
+            if(dimensions==2) muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + (this->m_sigma[k].leftCols(1).bottomRows(2).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
+            else muTmp.col(k) = this->m_mu.col(k).bottomRows(3) + (this->m_sigma[k].leftCols(1).bottomRows(3).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
             expData.col(t) = expData.col(t) + HTmp(k,t) * muTmp.col(k);
         }
         //Compute conditional covariances
         for(int k=0;k<this->m_k;k++){
-            sigmaTmp = this->m_sigma[k].block(1,1,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
+            if(dimensions==2) sigmaTmp = this->m_sigma[k].block(1,1,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
+            else sigmaTmp = this->m_sigma[k].block(1,1,3,3) - this->m_sigma[k].bottomRows(3).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(3);
             expSigma = (expSigma + HTmp(k,t)*(sigmaTmp + muTmp.col(k)*muTmp.col(k).transpose()));
         }
         expSigma = expSigma - expData.col(t)*expData.col(t).transpose() + (MatrixXd(this->m_dimOut, this->m_dimOut).setIdentity()*regTerm);

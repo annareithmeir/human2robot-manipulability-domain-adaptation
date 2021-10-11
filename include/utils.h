@@ -157,20 +157,18 @@ void load_data_mmat2(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
     vector<vector<double>> data = LoadCSV(data_path);
-    for (int t = 0; t < 22; t++) {
-        if(t>0){
-            (*data_m)(t-1, 0) = data[t][0];
-            (*data_m)(t-1, 1) = data[t][1];
-            (*data_m)(t-1, 2) = data[t][2];
-            (*data_m)(t-1, 3) = data[t][3];
-            (*data_m)(t-1, 4) = data[t][4];
-            (*data_m)(t-1, 5) = data[t][5];
-            (*data_m)(t-1, 6) = data[t][6];
-            (*data_m)(t-1, 7) = data[t][7];
-            (*data_m)(t-1, 8) = data[t][8];
-            (*data_m)(t-1, 9) = data[t][9];
-            (*data_m)(t-1, 10) = data[t][10];
-        }
+    for (int t = 0; t < data.size(); t++) {
+        (*data_m)(t, 0) = data[t][0];
+        (*data_m)(t, 1) = data[t][1];
+        (*data_m)(t, 2) = data[t][2];
+        (*data_m)(t, 3) = data[t][3];
+        (*data_m)(t, 4) = data[t][4];
+        (*data_m)(t, 5) = data[t][5];
+        (*data_m)(t, 6) = data[t][6];
+        (*data_m)(t, 7) = data[t][7];
+        (*data_m)(t, 8) = data[t][8];
+        (*data_m)(t, 9) = data[t][9];
+        (*data_m)(t, 10) = data[t][10];
     }
 }
 

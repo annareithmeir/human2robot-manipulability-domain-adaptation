@@ -6,7 +6,7 @@ using namespace std;
 using namespace Eigen;
 
 #define deb(x) cout << #x << " " << x << endl;
-#define dimensions 2
+#define dimensions 3
 
 int main() {
     // Load the demonstration data
@@ -62,16 +62,18 @@ if(dimensions==2){
     deb(expSigma[0]);
 }
 else {
-    string mmat_path = "/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/EEpos_translationmanipulability_trial_1.csv";
-    MatrixXd data(21, 11);
-    MatrixXd dataVectorized(21, 7);
+    string mmat_path = "/home/nnrthmr/translationManip3d.csv";
+    MatrixXd data(84, 11);
+    MatrixXd dataVectorized(84, 7);
     load_data_mmat2(mmat_path, &data);
+
     for (int i = 0; i < data.rows(); i++) {
-        dataVectorized(i, 0) = i * 0.01;
+        dataVectorized(i, 0) = (i % 21) *0.01 +0.01;
         MatrixXd tmp = data.block(i, 2, 1, 9);
         tmp.resize(3, 3);
         dataVectorized.block(i, 1, 1, 6) = Symmat2Vec(tmp);
     }
+
 
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(dataVectorized);

@@ -17,7 +17,7 @@ public:
     int m_k;
     int m_n, m_nData; //number of measured points on trajectory
     int m_nDemos;
-    int m_maxIterM, m_maxIterEM;
+    int m_maxIterM, m_maxIterEM, m_minIterEM;
     int m_dimOutVec; // dim of output in vector form
     int m_dimOut, m_dimIn; //dim of output
     int m_dimVar; //dim of manifold and tangent space

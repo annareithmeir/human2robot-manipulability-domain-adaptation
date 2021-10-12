@@ -46,6 +46,36 @@ vector<vector<double>> LoadCSV (const string path) {
 }
 
 inline
+vector<vector<double>> LoadCSVSkipFirst (const string path) {
+    ifstream indata;
+    indata.open(path);
+    string line;
+    vector<vector<double>> values;
+    uint rows = 0;
+
+    while (getline(indata, line)) {
+        if(rows<1){
+            ++rows;
+            continue;
+        }
+        vector<double> values_i;
+        stringstream lineStream(line);
+        string cell;
+        uint cols=0;
+        while (getline(lineStream, cell, ',')) {
+//            if(cols<2){
+//                cols++;
+//                continue;
+//            }
+            values_i.push_back(stod(cell));
+        }
+        values.push_back(values_i);
+        ++rows;
+    }
+    return values;
+}
+
+inline
 void WriteCSV(const MatrixXd& data, const string path){
     ofstream outdata;
     outdata.open(path);
@@ -143,8 +173,8 @@ inline
 void load_data_mmat(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
-    vector<vector<double>> data = LoadCSV(data_path);
-    for (int t = 0; t < 400; t++) {
+    vector<vector<double>> data = LoadCSVSkipFirst(data_path);
+    for (int t = 0; t < data.size(); t++) {
         (*data_m)(t, 0) = data[t][0];
         (*data_m)(t, 1) = data[t][1];
         (*data_m)(t, 2) = data[t][2];
@@ -153,22 +183,14 @@ void load_data_mmat(const string data_path, MatrixXd *data_m){
 }
 
 inline
-void load_data_mmat2(const string data_path, MatrixXd *data_m){
+void load_data_mmat_skip_first(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
-    vector<vector<double>> data = LoadCSV(data_path);
+    vector<vector<double>> data = LoadCSVSkipFirst(data_path);
     for (int t = 0; t < data.size(); t++) {
-        (*data_m)(t, 0) = data[t][0];
-        (*data_m)(t, 1) = data[t][1];
-        (*data_m)(t, 2) = data[t][2];
-        (*data_m)(t, 3) = data[t][3];
-        (*data_m)(t, 4) = data[t][4];
-        (*data_m)(t, 5) = data[t][5];
-        (*data_m)(t, 6) = data[t][6];
-        (*data_m)(t, 7) = data[t][7];
-        (*data_m)(t, 8) = data[t][8];
-        (*data_m)(t, 9) = data[t][9];
-        (*data_m)(t, 10) = data[t][10];
+        for (int c = 0; c < data[0].size(); c++) {
+            (*data_m)(t, c) = data[t][c];
+        }
     }
 }
 

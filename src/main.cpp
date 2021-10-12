@@ -19,34 +19,56 @@ int main() {
 
 
     // Build GMM for trajectories in cartesian coordinates
-//    string cmat_path="/home/nnrthmr/C_Mat.csv";
-//    //MatrixXd data(3, 400);
-//    MatrixXd data(4, 400);
-//    vector<Tensor3d> data_m;
-//    load_data_cmat(cmat_path, &data);
-//    data.row(3)=data.row(2)*0.75;
-//
-//    GMM model = GMM();
-//    model.InitModel(data);
-//    model.TrainEM();
-//
-//    MatrixXd expData(3, 100);
-////    MatrixXd expData(2, 100);
-//    expData.setZero();
-//    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
-//    std::cout<<"GMR"<<std::endl;
-//    model.GMR(expData, expSigma);
-//
-//    WriteCSV(expData, "/home/nnrthmr/CLionProjects/ma_thesis/data/expData3d.csv");
-//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma3d.csv");
+
+    if(dimensions==2){
+        string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/C_Mat.csv";
+        //MatrixXd data(3, 400);
+        MatrixXd data(4, 400);
+        vector<Tensor3d> data_m;
+        load_data_cmat(cmat_path, &data);
+        data.row(3)=data.row(2)*0.75;
+
+        GMM model = GMM();
+        model.InitModel(data);
+        model.TrainEM();
+
+        MatrixXd expData(3, 100);
+//    MatrixXd expData(2, 100);
+        expData.setZero();
+        std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+        std::cout<<"GMR"<<std::endl;
+        model.GMR(expData, expSigma);
+
+        WriteCSV(expData, "/home/nnrthmr/CLionProjects/ma_thesis/data/expData3d.csv");
+        WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma3d.csv");
+    }
+    else{
+        string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv";
+        MatrixXd data(80, 4);
+        load_data_mmat(cmat_path, &data);
+        deb(data);
+
+        GMM model = GMM();
+        model.InitModel(data.transpose());
+        model.TrainEM();
+
+        MatrixXd expData(3, 20);
+        expData.setZero();
+        std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+        std::cout<<"GMR"<<std::endl;
+        model.GMR(expData, expSigma);
+
+        WriteCSV(expData, "/home/nnrthmr/CLionProjects/ma_thesis/data/expData3d.csv");
+        WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma3d.csv");
+    }
+
 
 
 //     Build GMM for Manifold
-
 if(dimensions==2){
-    string mmat_path="/home/nnrthmr/Manip_Mat.csv";
+    string mmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/Manip_Mat.csv";
     MatrixXd data(400, 4);
-    load_data_mmat(mmat_path, &data);
+    load_data_mmat_skip_first(mmat_path, &data);
 
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(data);
@@ -58,41 +80,41 @@ if(dimensions==2){
 
     std::cout<<"GMR"<<std::endl;
     model2.GMR(expData, expSigma);
-    deb(expData);
-    deb(expSigma[0]);
 }
 else {
-    string mmat_path = "/home/nnrthmr/translationManip3d.csv";
-    MatrixXd data(84, 11);
-    MatrixXd dataVectorized(84, 7);
-    load_data_mmat2(mmat_path, &data);
+    string mmat_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/translationManip3d.csv";
+    MatrixXd data(80, 10);
+    MatrixXd dataVectorized(80, 7);
+    load_data_mmat_skip_first(mmat_path, &data);
+    deb(data);
 
     for (int i = 0; i < data.rows(); i++) {
-        dataVectorized(i, 0) = (i % 21) *0.01 +0.01;
-        MatrixXd tmp = data.block(i, 2, 1, 9);
+        dataVectorized(i, 0) = data(i,0);
+        MatrixXd tmp = data.block(i, 1, 1, 9);
         tmp.resize(3, 3);
         dataVectorized.block(i, 1, 1, 6) = Symmat2Vec(tmp);
     }
+
+    deb(dataVectorized);
 
 
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(dataVectorized);
     model2.TrainEM();
 
-    MatrixXd expData(6, 21);
+    MatrixXd expData(6, 20);
     expData.setZero();
     std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
 
     std::cout<<"GMR"<<std::endl;
     model2.GMR(expData, expSigma);
+
+    WriteCSV(Vec2Symmat(expData), "/home/nnrthmr/CLionProjects/ma_thesis/data/expDataSPD3d.csv");
 }
 
 
-//    WriteCSV(Vec2Symmat(expData), "/home/nnrthmr/CLionProjects/ma_thesis/data/expData.csv");
-//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma.csv");
 
-//
-//    deb(expData);
+//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/expSigma.csv");
 //
 //    Franka robot = Franka();
 //    VectorXd q_goal(7);

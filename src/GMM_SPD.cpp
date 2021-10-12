@@ -7,7 +7,8 @@ GMM_SPD::GMM_SPD() {
     this->m_k = 5;
     this->m_n = -1;
     this->m_maxDiffLL = 1e-4; //Likelihood increase threshold to stop algorithm
-    this->m_maxIterEM = 1;
+    this->m_minIterEM=10;
+    this->m_maxIterEM = 10;
     this->m_maxIterM = 10;
 
     if(dimensions==2){
@@ -106,12 +107,8 @@ void GMM_SPD::InitModel(const MatrixXd& data) {
 
         // MuMan checked!
         this->m_muMan.col(i) = collectedMatrixFull.colwise().mean();
-        deb(this->m_muMan);
-        deb(data);
-        deb(collectedMatrix);
         if(dimensions==2) this->m_muMan.block(1,i,3,1) = Symmat2Vec(SPDMean(Vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
         else this->m_muMan.block(1,i,6,1) = Symmat2Vec(SPDMean(Vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
-        deb(this->m_muMan);
 
         vector<MatrixXd> dataTangent;
         // DataTangent checked!
@@ -119,7 +116,7 @@ void GMM_SPD::InitModel(const MatrixXd& data) {
                                                  this->m_muMan.col(i).bottomRows(3)); // cut off t data
         else dataTangent = LogmapVec(collectedMatrix.transpose(),
                                                                    this->m_muMan.col(i).bottomRows(6)); // cut off t data
-        deb(dataTangent.size());
+
         MatrixXd dataTangentMatrix;
         if(dimensions==2) dataTangentMatrix=MatrixXd(4, dataTangent.size());
         else dataTangentMatrix=MatrixXd(7, dataTangent.size());
@@ -250,12 +247,20 @@ void GMM_SPD::MStep() {
 }
 
 void GMM_SPD::TrainEM() {
+    std::vector<float> LL;
     for (int iter = 0; iter < this->m_maxIterEM; iter++) {
         cout << "EM iteration #" << iter << " ";
         EStep();
         cout << "e step done ";
         MStep();
         cout << "m step done" << endl;
+        LL.push_back(this->m_L.colwise().sum().array().log().sum() / this->m_data.cols()); //daviates by 0.005 from MATLAB code
+        cout<<LL[iter] - LL[iter - 1]<<endl;
+
+        if(iter>=this->m_minIterEM && (LL[iter] - LL[iter - 1] < this->m_maxDiffLL || iter == this->m_maxIterEM - 1)){
+            std::cout<< "Converged after "<<std::to_string(iter) <<" iterations. "<<std::endl;
+            return;
+        }
     }
     cout << " The maximum number of iterations has been reached." << endl;
 }
@@ -393,19 +398,16 @@ void GMM_SPD::GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd) {
                 uHat.col(t) = uHat.col(t) + uoutTmp.col(k) * H(k, t);
             }
             xHat.col(t) = ExpmapVec(uHat.col(t), xHat.col(t))[0].transpose();
-            cout << "Iteration done." << endl;
         }
         uOut.push_back(uoutTmp);
         expSigmaT.setZero();
         for (int k = 0; k < this->m_k; k++) {
             SigmaOutTmp = getOutOut(pSigma[k]) -
-                          (getOutIn(pSigma[k]) / pSigma[k](0, 0)) * getOutIn(pSigma[k]).transpose(); // TODO error
+                          (getOutIn(pSigma[k]) / pSigma[k](0, 0)) * getOutIn(pSigma[k]).transpose();
 
             expSigmaT = expSigmaT + H(k, t) * (SigmaOutTmp + uOut[t].col(k) * uOut[t].col(k).transpose());
         }
         xd.col(t)=xHat.col(t);
         sigmaXd.push_back(expSigmaT - uHat.col(t) * uHat.col(t).transpose());
-        deb(xd);
-        deb(sigmaXd[t]);
     }
 }

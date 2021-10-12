@@ -59,58 +59,86 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
 
 
 
+###########################
+### plot demonstrations ###
 
-#filename_mu = sys.argv[1] # DxK, K Gaussians
-#filename_sigma = sys.argv[2] #DxDxK
+n_demos=4
+n_points=20
+scaling_factor=0.01
+plot_every_nth = 3
+
+colors=['green', 'blue', 'orange', 'red', 'purple']
+
+fig = plt.figure()
+plt.subplot(1, 1, 1)
+ax = plt.axes(projection='3d')
+plt.title('Demonstrations and GMR results')
+
+data_path = "../data/demos/trajectories.csv"
+data = pd.read_csv(data_path, sep=",")
+xdata= np.array(data['EE_x'])[:n_demos*n_points]
+ydata= np.array(data['EE_y'])[:n_demos*n_points]
+zdata= np.array(data['EE_z'])[:n_demos*n_points]
+ax.scatter3D(xdata, ydata, zdata, c='grey', alpha=0.4)
+ax.scatter3D(0,0,0, c='red', marker='x', s=100)
+
+### plot demonstration manipulabilities ###
+
+filename_manip = "../data/demos/translationManip3d.csv"
+manip_tmp = genfromtxt(filename_manip, delimiter=',')
+manip_tmp=manip_tmp[1:,:]
+manip=list()
+
+for i in np.arange(0, manip_tmp.shape[0]):
+    manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
+
+manip=manip[:n_demos*n_points]
+
+for i in np.arange(0,len(manip),plot_every_nth):
+    m_i = manip[i]
+    X2,Y2,Z2 = get_cov_ellipsoid(m_i, [xdata[i],ydata[i],zdata[i]], 1)
+    ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
+
+
+### plot GMR results ###
 
 filename_mu = "../data/expData3d.csv"
 filename_sigma= "../data/expDataSPD3d.csv"
-#filename_sigma= "../data/expSigma3d.csv"
-#filename_sigma= "/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/EEpos_translationmanipulability_trial_0.csv"
 
 mu_tmp = genfromtxt(filename_mu, delimiter=',')
 sigma_tmp = genfromtxt(filename_sigma, delimiter=',')
-
-#df=pd.read_csv(filename_sigma, sep=",")
-#df = df.drop(df.columns[[0]], axis=1)
-#sigma_tmp=np.array(df)
-sigma_tmp = 0.1*sigma_tmp
-
-print(mu_tmp.shape)
-print(sigma_tmp.shape)
+sigma_tmp = scaling_factor*sigma_tmp
 
 mu=list()
 sigma=list()
 
-for i in np.arange(0, mu_tmp.shape[1],3):
+for i in np.arange(n_points):
     mu.append(mu_tmp[:,i])
     sigma.append(sigma_tmp[i,:].reshape(3,3))
 
-nstates = len(mu)
-print('nstates: ', nstates)
+for i in np.arange(n_points):
+    mu_i = mu[i]
+    ax.scatter(mu_i[0],mu_i[1],mu_i[2], color='blue')
 
-splot = plt.subplot(1, 1, 1)
-ax = plt.axes(projection='3d')
-
-# plot current
-for i in np.arange(nstates):
+for i in np.arange(0,n_points,plot_every_nth):
     mu_i = mu[i]
     sigma_i=sigma[i]
-    X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, mu_i, 3)
-    ax.plot_wireframe(X2,Y2,Z2, color='b', alpha=0.1)
+    X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, mu_i, 1)
+    ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
 
 
-plt.xlim(-1., 1.)
-plt.ylim(-1., 1.)
-plt.xlabel('m11')
-plt.ylabel('m22')
-#plt.xticks(())
-#plt.yticks(())
+import matplotlib.patches as mpatches
 
+red_patch = mpatches.Patch(color='red', label='Robot base location')
+blue_patch = mpatches.Patch(color='blue', label='Learned')
+grey_patch = mpatches.Patch(color='grey', label='Demonstrated')
+
+plt.legend(handles=[red_patch, blue_patch, grey_patch])
+plt.xlim(-0.5, 0.5)
+plt.ylim(-1, 1)
+ax.set_zlim(0., 0.5)
 plt.show()
 
-if(len(sys.argv)==4):
-    plt.save(sys.argv[3])
 
 
 

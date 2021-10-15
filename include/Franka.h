@@ -19,6 +19,7 @@ class Franka {
 //    DQ_SerialManipulator m_robot;
 public:
     Franka();
+    int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
     void ManipulabilityTrackingMainTask(const MatrixXd& goal);
     void ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
@@ -27,10 +28,16 @@ public:
     MatrixXd ComputeManipulabilityJacobian(const MatrixXd& J);
     MatrixXd getManipulabilityFromVI();
     MatrixXd getTranslationJacobian();
+    MatrixXd getTranslationJacobian(MatrixXd q);
+    MatrixXd getPoseJacobian(MatrixXd q);
     MatrixXd getJacobian();
+    void setJoints(VectorXd q);
     MatrixXd getManipulabilityMajorAxis(const MatrixXd& m);
     MatrixXd getManipulabilityLength(const MatrixXd& m);
     void StopSimulation();
+    VectorXd getCurrentJointPositions();
+    DQ getCurrentPositionDQ(MatrixXd q);
+    VectorXd getCurrentPosition(MatrixXd q);
     std::vector<MatrixXd> ComputeTensorMatrixProduct(const vector<MatrixXd>& T, const MatrixXd& U, int mode);
 };
 

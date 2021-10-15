@@ -29,10 +29,10 @@ GMM::GMM() {
     this->m_kp=100;
     this->m_nDemos=4;
     this->m_regTerm = 1e-4;
-
-    deb(this->m_dimOutVec);
-    deb(this->m_dimVarVec);
-    deb(this->m_dimCovOut);
+//
+//    deb(this->m_dimOutVec);
+//    deb(this->m_dimVarVec);
+//    deb(this->m_dimCovOut);
 }
 
 std::vector<double> GMM::linspace(double a, double b, std::size_t N)
@@ -85,7 +85,7 @@ void GMM::InitModel(const MatrixXd& data){
         this->m_sigma.push_back(cov);
     }
     double priorsSum = (double) (std::accumulate(this->m_priors.begin(), this->m_priors.end(), 0.0f));
-    deb(priorsSum);
+
     for(double& d : this->m_priors){
         d /= priorsSum;
     }
@@ -116,7 +116,7 @@ double GMM::GaussPDF(double data, double mu, double sig){
 
 void GMM::EStep() {
     for(int k=0; k< this->m_k; k++){
-        deb(this->m_priors[k]);
+//        deb(this->m_priors[k]);
 //        deb(this->m_mu.col(k));
 //        deb(this->m_sigma[k]);
 //        deb(GaussPDF(this->m_mu.col(k), this->m_sigma[k]));
@@ -215,4 +215,51 @@ void GMM::GMR( MatrixXd& xd, std::vector<MatrixXd>& sigmaXd){
         xd.col(t)=expData.col(t);
         sigmaXd.push_back(expSigma);
     }
+}
+
+void GMM::GMR( MatrixXd& xd, std::vector<MatrixXd>& sigmaXd, int t){
+    double regTerm = 1e-8;
+    MatrixXd expData;
+
+    if(dimensions==2) expData= MatrixXd(2,this->m_n);
+    else expData= MatrixXd(3,this->m_n);
+
+    expData.setZero();
+
+    MatrixXd expSigma;
+    if(dimensions==2) expSigma = MatrixXd(2,2);
+    else expSigma = MatrixXd(3,3);
+
+    MatrixXd sigmaTmp;
+    MatrixXd muTmp(this->m_dimOut, this->m_k);
+    MatrixXd HTmp(this->m_k, this->m_nData);
+    double DataIn;
+
+    DataIn = (t+1)*this->m_dt;
+    muTmp.setZero();
+    HTmp.setZero();
+    expSigma.setZero();
+
+    // Compute activation weights
+    for(int k=0;k<this->m_k;k++){
+        HTmp(k,t) = this->m_priors[k] * GaussPDF(DataIn, this->m_mu(0,k), this->m_sigma[k](0,0));
+    }
+    HTmp.col(t) = (HTmp.col(t).array() / (HTmp.col(t).array()+std::numeric_limits<double>::min()).sum()).matrix();
+
+    //Compute conditional means
+    for(int k=0;k<this->m_k;k++){
+        if(dimensions==2) muTmp.col(k) = this->m_mu.col(k).bottomRows(2) + (this->m_sigma[k].leftCols(1).bottomRows(2).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
+        else muTmp.col(k) = this->m_mu.col(k).bottomRows(3) + (this->m_sigma[k].leftCols(1).bottomRows(3).array() / this->m_sigma[k](0,0)*(DataIn-this->m_mu(0,k))).matrix();
+        expData.col(t) = expData.col(t) + HTmp(k,t) * muTmp.col(k);
+    }
+    //Compute conditional covariances
+    for(int k=0;k<this->m_k;k++){
+        if(dimensions==2) sigmaTmp = this->m_sigma[k].block(1,1,2,2) - this->m_sigma[k].bottomRows(2).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(2);
+        else sigmaTmp = this->m_sigma[k].block(1,1,3,3) - this->m_sigma[k].bottomRows(3).leftCols(1) / this->m_sigma[k](0,0) * this->m_sigma[k].topRows(1).rightCols(3);
+        expSigma = (expSigma + HTmp(k,t)*(sigmaTmp + muTmp.col(k)*muTmp.col(k).transpose()));
+    }
+    expSigma = expSigma - expData.col(t)*expData.col(t).transpose() + (MatrixXd(this->m_dimOut, this->m_dimOut).setIdentity()*regTerm);
+    xd.col(t)=expData.col(t);
+    sigmaXd.push_back(expSigma);
+
 }

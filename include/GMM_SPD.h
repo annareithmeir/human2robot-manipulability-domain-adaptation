@@ -27,6 +27,7 @@ public:
     float m_regTerm; //regularization term
     float m_dt; //time step duration
     int m_kp; //controller gain
+    int m_km; //manipulability gain
     vector<double> m_priors;
     vector<MatrixXd> m_sigma;
     MatrixXd m_mu, m_muMan;
@@ -46,6 +47,7 @@ public:
     void MStep();
     void TrainEM();
     void GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd);
+    void GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd, int t);
     VectorXd GaussPDF(const MatrixXd& data, const MatrixXd& mu, const MatrixXd& sig);
     double GaussPDF(double data, double mu, double sig);
     void SigmaEigenDecomposition(const vector<MatrixXd>& sigma, vector<MatrixXd>& V, vector<MatrixXd>& D);

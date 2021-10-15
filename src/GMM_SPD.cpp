@@ -7,8 +7,8 @@ GMM_SPD::GMM_SPD() {
     this->m_k = 5;
     this->m_n = -1;
     this->m_maxDiffLL = 1e-4; //Likelihood increase threshold to stop algorithm
-    this->m_minIterEM=10;
-    this->m_maxIterEM = 10;
+    this->m_minIterEM=1;
+    this->m_maxIterEM = 1;
     this->m_maxIterM = 10;
 
     if(dimensions==2){
@@ -36,6 +36,7 @@ GMM_SPD::GMM_SPD() {
     this->m_dt = 1e-2;
     this->m_regTerm = 1e-4;
     this->m_kp = 100;
+    this->m_km=10;
     this->m_nDemos = 4;
 }
 
@@ -273,16 +274,16 @@ void GMM_SPD::SigmaEigenDecomposition(const vector<MatrixXd>& Sigma, vector<Matr
     }
 }
 
-void GMM_SPD::GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd) {
+void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
     MatrixXd xIn = VectorXd::LinSpaced(this->m_n, this->m_dt,
                                        this->m_n * this->m_dt).matrix().transpose(); // 1x100
 
 
-    MatrixXd expSigmaT,uHat,xHat,Ac, uoutTmp, vMatTmp, pvKTmp;
+    MatrixXd expSigmaT,uHat,Ac, uoutTmp, vMatTmp, pvKTmp;
     if(dimensions==2){
         expSigmaT=MatrixXd(3, 3);
         uHat=MatrixXd(3, this->m_n);
-        xHat=MatrixXd(3, this->m_n);
+//        xHat=MatrixXd(3, this->m_n);
         Ac=MatrixXd(3, 3);
         uoutTmp=MatrixXd(3, this->m_k);
         vMatTmp=MatrixXd(3, 3);
@@ -292,7 +293,7 @@ void GMM_SPD::GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd) {
     else{
         expSigmaT=MatrixXd(6, 6);
         uHat=MatrixXd(6, this->m_n);
-        xHat=MatrixXd(6, this->m_n);
+//        xHat=MatrixXd(6, this->m_n);
         Ac=MatrixXd(6, 6);
         uoutTmp=MatrixXd(6, this->m_k);
         vMatTmp=MatrixXd(6, 6);
@@ -407,7 +408,144 @@ void GMM_SPD::GMR(MatrixXd& xd, vector<MatrixXd>& sigmaXd) {
 
             expSigmaT = expSigmaT + H(k, t) * (SigmaOutTmp + uOut[t].col(k) * uOut[t].col(k).transpose());
         }
-        xd.col(t)=xHat.col(t);
+//        xd.col(t)=xHat.col(t);
         sigmaXd.push_back(expSigmaT - uHat.col(t) * uHat.col(t).transpose());
     }
+}
+
+void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
+    MatrixXd xIn = VectorXd::LinSpaced(this->m_n, this->m_dt,
+                                       this->m_n * this->m_dt).matrix().transpose(); // 1x100
+
+
+    MatrixXd expSigmaT,uHat,Ac, uoutTmp, vMatTmp, pvKTmp;
+    if(dimensions==2){
+        expSigmaT=MatrixXd(3, 3);
+        uHat=MatrixXd(3, this->m_n);
+//        xHat=MatrixXd(3, this->m_n);
+        Ac=MatrixXd(3, 3);
+        uoutTmp=MatrixXd(3, this->m_k);
+        vMatTmp=MatrixXd(3, 3);
+        pvKTmp=MatrixXd(4, 4);
+
+    }
+    else{
+        expSigmaT=MatrixXd(6, 6);
+        uHat=MatrixXd(6, this->m_n);
+//        xHat=MatrixXd(6, this->m_n);
+        Ac=MatrixXd(6, 6);
+        uoutTmp=MatrixXd(6, this->m_k);
+        vMatTmp=MatrixXd(6, 6);
+        pvKTmp=MatrixXd(7, 7);
+    }
+
+    vector<MatrixXd> S1, S2, uOut, expSigma, pvMatTmp, V, D, pvMatK, vMatK, pv, pSigma; //uout: 3x5x400, expsigma:3x3x400
+    MatrixXd H(this->m_k, this->m_n);
+
+    H.setZero();
+    uHat.setZero();
+    xHat.setZero();
+    Ac.setZero();
+    MatrixXf::Index max_index;
+    MatrixXd SigmaOutTmp;
+
+    SigmaEigenDecomposition(this->m_sigma, V, D);
+    vector<vector<MatrixXd>> vMat, pvMat;
+
+        for (int k = 0; k < this->m_k; k++) {
+            H(k, t) = this->m_priors[k] *
+                      GaussPDF(xIn(0, t) - this->m_muMan(0, k), this->m_mu(0, k), this->m_sigma[k](0, 0));
+        }
+        H.col(t) = (H.col(t).array() / (H.col(t).array() + numeric_limits<double>::min()).colwise().sum()(0,
+                                                                                                          0)).matrix(); // sum only one value here
+
+        // Compute conditional mean (with covariance transportation)
+        if (t == 0) {
+            H.col(t).maxCoeff(&max_index);
+            if(dimensions==2) xHat.col(t) = this->m_muMan.block(1, max_index, 3, 1);
+            else xHat.col(t) = this->m_muMan.block(1, max_index, 6, 1);
+        } else {
+            xHat.col(t) = xHat.col(t - 1);
+        }
+
+        // Iterative computation
+        for (int iter = 0; iter < 10; iter++) {
+            uHat.col(t).setZero();
+            uoutTmp.setZero();
+
+            pv.clear();
+            pvMat.clear();
+            vMat.clear();
+            pSigma.clear();
+
+            for (int k = 0; k < this->m_k; k++) {
+                if(dimensions==2){
+                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 3, 1));
+                    S2 = Vec2Symmat(xHat.col(t));
+                    Ac(0, 0) = 1;
+                    Ac.bottomRightCorner(2, 2) = ParallelTransport(S1[0], S2[0]);
+                }
+                else{
+                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 6, 1));
+                    S2 = Vec2Symmat(xHat.col(t));
+                    Ac(0, 0) = 1;
+                    Ac.bottomRightCorner(3, 3) = ParallelTransport(S1[0], S2[0]);
+                }
+
+                pvMatK.clear();
+                vMatK.clear();
+                pvKTmp.setZero();
+                for (int j = 0; j < V[0].cols(); j++) {
+                    if(dimensions==2){
+                        vMatTmp.setZero();
+                        vMatTmp(0, 0) = V[k](0, j);
+                        vMatTmp.bottomRightCorner(2, 2) = Vec2Symmat(
+                                V[k].block(1, j, 3, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatK.push_back(vMatTmp);
+
+                        pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
+                        pvKTmp(0, j) = pvMatK[j](0, 0);
+                        pvKTmp.col(j).bottomRows(3) = Symmat2Vec(pvMatK[j].block(1, 1, 2, 2)).transpose();
+                    }
+                    else{
+                        vMatTmp.setZero();
+                        vMatTmp(0, 0) = V[k](0, j);
+                        vMatTmp.bottomRightCorner(3, 3) = Vec2Symmat(
+                                V[k].block(1, j, 6, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatK.push_back(vMatTmp);
+
+                        pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
+                        pvKTmp(0, j) = pvMatK[j](0, 0);
+                        pvKTmp.col(j).bottomRows(6) = Symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
+                    }
+                }
+
+                pvMat.push_back(pvMatK);
+                vMat.push_back(vMatK);
+                pv.push_back(pvKTmp);
+
+                // Parallel transported sigma
+                pSigma.push_back(pv[k] * pv[k].transpose());
+
+                // Gaussian conditioning on tangent space
+                if(dimensions==2) uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 3, 1), xHat.col(t))[0].transpose() +
+                                                   (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
+                                                    (xIn(0, t) - this->m_muMan(0, k))).matrix();
+                else uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 6, 1), xHat.col(t))[0].transpose() +
+                                      (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
+                                       (xIn(0, t) - this->m_muMan(0, k))).matrix();
+                uHat.col(t) = uHat.col(t) + uoutTmp.col(k) * H(k, t);
+            }
+            xHat.col(t) = ExpmapVec(uHat.col(t), xHat.col(t))[0].transpose();
+        }
+        uOut.push_back(uoutTmp);
+        expSigmaT.setZero();
+        for (int k = 0; k < this->m_k; k++) {
+            SigmaOutTmp = getOutOut(pSigma[k]) -
+                          (getOutIn(pSigma[k]) / pSigma[k](0, 0)) * getOutIn(pSigma[k]).transpose();
+
+            expSigmaT = expSigmaT + H(k, t) * (SigmaOutTmp + uOut[t].col(k) * uOut[t].col(k).transpose());
+        }
+//        xd.col(t)=xHat.col(t);
+        sigmaXd.push_back(expSigmaT - uHat.col(t) * uHat.col(t).transpose());
 }

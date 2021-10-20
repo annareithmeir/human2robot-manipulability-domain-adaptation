@@ -39,5 +39,5 @@ target_link_libraries (ma_thesis
         dqrobotics
         dqrobotics-interface-vrep)
 
-#add_executable(tests tests/tests.cpp)
-#target_link_libraries(tests PRIVATE Catch2::Catch2WithMain)
+#add_executable(functionaltests tests/tests.cpp)
+#target_link_libraries(functionaltests PRIVATE Catch2::Catch2WithMain)

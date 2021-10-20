@@ -188,28 +188,16 @@ void learnAndConrol(){
     Franka robot = Franka();
     MatrixXd xd(3, 20);
     MatrixXd xHat(6, 20);
-//    learn3d(xd, xHat);
+    learn3d(xd, xHat);
     std::cout<<"Control ..."<<std::endl;
 
     Vector3d dx;
     dx <<0,0,0;
 
-    MatrixXd J(8,7);
-    J << -0.169153,    0.202907,   -0.302615,   -0.272979,   -0.309053,   -0.272979,   -0.169153,
-    -0.272979,    0.22377,   -0.221061,   -0.169153,    -0.21446,   -0.169153,    0.272979,
-    0.343647,   0.0855325  ,  0.234798 ,  -0.169635  ,  0.226257 ,  -0.169635 ,  -0.343647,
-    -0.169635 ,  -0.389153,   -0.233293  ,  0.343647  , -0.239375 ,   0.343647 ,  -0.169635,
-    0.132464 , -0.0268859  ,  0.122107 , -0.0365597  ,  0.122897  , -0.148939  ,  0.132382,
-    -0.127105 ,   0.063706  ,  -0.15963  , 0.0159824 ,  -0.159114  , 0.0902094 ,   0.127055,
-    -0.114691  ,  -0.11153 ,  -0.130204,  -0.0114358 ,  -0.129892  , -0.111446 ,    0.11464,
-    -0.15989 ,-0.00189957   ,-0.138175  ,-0.0268195  , -0.138891  , -0.128921,   -0.159787;
-    deb(J);
-    robot.ComputeJointDerivative(J);
-
-//    for(int i=0;i<1;i++){
-//        robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, Vec2Symmat(xHat.col(i))[0]);
+    for(int i=0;i<xHat.cols();i++){
+        robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, Vec2Symmat(xHat.col(i))[0]);
 //        robot.ManipulabilityTrackingMainTask(Vec2Symmat(xHat.col(i))[0]);
-//    }
+    }
 }
 
 int main() {

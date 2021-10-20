@@ -153,7 +153,7 @@ void Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
     int niter=65;
     float dt=1e-2;
     DQ x;
-    MatrixXd J, M, Mredtmp, Mred, Jred, qt, JmT, MDiff, pinv, dqt1;
+    MatrixXd J, M, Jred, qt, JmT, MDiff, pinv, dqt1;
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
 
     for(int i=0;i<niter; i++){
@@ -164,7 +164,7 @@ void Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
             M = J*J.transpose();
 
             JmT = ComputeManipulabilityJacobian(J); // Checked!
-            MDiff = LogMap(MDesired, Mred); // Checked!
+            MDiff = LogMap(MDesired, M); // Checked!
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
 
@@ -176,48 +176,50 @@ void Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
         }
         else{
             qt  = m_vi.get_joint_positions(m_jointNames);
-            Jred = this->getTranslationJacobian();
+            Jred = this->getTranslationJacobian().bottomRows(3);
+//            deb(Jred);
             J = this->getJacobian();
-            M = J*J.transpose();
-            Mredtmp=Jred*Jred.transpose();
-            Mred=Mredtmp.block(1,1,3,3);
+//            deb(J);
+//            deb(MDesired);
+            M=Jred*Jred.transpose();
+//            deb(M);
 
             JmT = ComputeManipulabilityJacobian(J); // Checked!
-//            deb(MDesired);
-//            deb(Mred);
-            MDiff = LogMap(MDesired, Mred); // Checked!
+//            deb(JmT);
+            MDiff = LogMap(MDesired, M); // Checked!
 //            deb(MDiff);
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
 //            deb(pinv);
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
-            deb(dqt1.transpose());
+//            deb(dqt1.transpose());
 
             m_vi.set_joint_positions(m_jointNames,qt + dqt1*dt); // Checked!
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-            std::cout << "Tracking error: " <<(MDesired.pow(-0.5)*Mred*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
-            std::cout << "====================================="<< std::endl;
+            std::cout << "Tracking error: " <<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
+//            std::cout << "====================================="<< std::endl;
         }
     }
+    std::cout << "====================================="<< std::endl;
 //    WriteCSV(M, "/home/nnrthmr/CLionProjects/ma_thesis/data/M.csv");
 }
 
 void Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired) {
     float dt=1e-2;
-    int niter=50;
-    int kp=3; //gain for position control
-    int km=1; // gain for manip in null space
+    int niter=65;
+    int kp=2; //gain for position control
+    int km=0; // gain for manip in null space
     int nDoF = 4; //robot dofs
 
     DQ x;
-    MatrixXd J, M, qt, JmT, DxR, pinv, dqt1, MDiff, pinv2, mnsCommand, dqns, Jred, Mred, Mredtmp, xPos;
+    MatrixXd J, M, qt, JmT, DxR, pinv, dqt1, MDiff, pinv2, mnsCommand, dqns, Jred, xPos;
     if(dimensions==2) xPos = MatrixXd(2,1);
     else xPos=MatrixXd(3,1);
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
 
-    deb(XDesired);
-    deb(MDesired);
-    deb(DXDesired);
+//    deb(XDesired);
+//    deb(MDesired);
+//    deb(DXDesired);
 
     for(int i=0;i<niter; i++) {
         if(dimensions==2){
@@ -245,8 +247,8 @@ void Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const
             m_vi.set_joint_positions(m_jointNames,qt + (dqt1+dqns)*dt);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-            std::cout << "Position tracking error: " <<(XDesired-xPos).norm()<< std::endl;
-            std::cout << "Manipulability tracking error: " <<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
+            std::cout << "Position/Manipulability tracking error: " <<(XDesired-xPos).norm()<<"   "<<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl;
+//            std::cout << "Manipulability tracking error: " <<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
             std::cout << "====================================="<< std::endl;
         }
         else{
@@ -258,12 +260,12 @@ void Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const
             M = J * J.transpose();
             Jred = this->getTranslationJacobian().bottomRows(3);
             J = this->getJacobian();
-            M = J*J.transpose();
-            Mred=Jred*Jred.transpose();
-            deb(MDesired);
-            deb(Mred);
-            deb(J);
-            deb(Jred);
+//            M = J*J.transpose();
+            M=Jred*Jred.transpose();
+//            deb(MDesired);
+//            deb(M);
+//            deb(J);
+//            deb(Jred);
 
             JmT = ComputeManipulabilityJacobian(J); // Checked!
 
@@ -273,7 +275,7 @@ void Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const
             dqt1 = pinv*DxR;
 
             // Compute null space joint velocities
-            MDiff = LogMap(MDesired, Mred); // Checked!
+            MDiff = LogMap(MDesired, M); // Checked!
             pinv2 = JmT.completeOrthogonalDecomposition().pseudoInverse();
             mnsCommand = pinv2 * Symmat2Vec(MDiff).transpose();
             dqns = (MatrixXd::Identity(this->m_dof, this->m_dof) - pinv*Jred)*km*mnsCommand; // Redundancy resolution
@@ -281,12 +283,12 @@ void Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const
             m_vi.set_joint_positions(m_jointNames,qt + (dqt1+dqns)*dt);
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-            std::cout << "Position tracking error: " <<(XDesired-xPos).norm()<< std::endl;
-            std::cout << "Manipulability tracking error: " <<(MDesired.pow(-0.5)*Mred*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
-            std::cout << "====================================="<< std::endl;
+            std::cout << "Position/Manipulability tracking error: " <<(XDesired-xPos).norm()<<"   "<<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl;
+//            std::cout << "Manipulability tracking error: " <<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
+//            std::cout << "====================================="<< std::endl;
         }
     }
-
+    std::cout << "====================================="<< std::endl;
 //    string s= "/home/nnrthmr/CLionProjects/ma_thesis/data/M_Secondary.csv";
 //    WriteCSV(M, s);
 }
@@ -409,7 +411,7 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
        }
    }
    else{
-       //Compute joint derivative jacobian
+       //Compute joint derivative jacobian --> Checked!
        for(int i=0;i<J.cols();i++){
            for(int j=0;j<J.cols();j++) {
                if(j<i){
@@ -420,7 +422,7 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
                    tmp2=J.block(3,i,3,1);
                    JGradVec[j].block(3,i,3,1) = tmp1.cross(tmp2);
                }
-               if(j>i){
+               else if(j>i){
                    tmp1 =J.block(0,j,3,1);
                    tmp2=J.block(3,i,3,1);
                    JGradVec[j].block(0,i,3,1) = -(tmp1.cross(tmp2));
@@ -428,14 +430,11 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
                else{
                    tmp1=J.block(3,i,3,1);
                    tmp2 = J.block(0,i,3,1);
-                   deb(tmp1);
-                   deb(tmp2);
                    JGradVec[j].block(0,i,3,1) = tmp1.cross(tmp2);
                }
            }
        }
    }
-    for(int i=0;i<JGradVec.size();i++) deb(JGradVec[i]);
     return JGradVec;
 }
 
@@ -464,10 +463,12 @@ MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     MatrixXd JmRed;
     if(dimensions==2) JmRed=MatrixXd(3, Jm.size());
     else JmRed=MatrixXd(6, Jm.size());
+//    else JmRed=MatrixXd(36, Jm.size());
     JmRed.setZero();
     for(int i=0;i<Jm.size();i++) {
         if (dimensions==2) JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 2, 2))).transpose(); //TaskVar 1:2 in MATLAB
-        else JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:2 in MATLAB
+//        else JmRed.col(i) = (Symmat2Vec(Jm[i])).transpose(); //TaskVar 1:8 in MATLAB
+        else JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:3 in MATLAB
     }
     return JmRed;
 }

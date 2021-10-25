@@ -21,8 +21,8 @@ public:
     Franka();
     int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
-    void ManipulabilityTrackingMainTask(const MatrixXd& goal);
-    void ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
+    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal);
+    MatrixXd ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
     DQ_SerialManipulator getKinematicsDQ();
     vector<MatrixXd> ComputeJointDerivative(const MatrixXd& J);
     MatrixXd ComputeManipulabilityJacobian(const MatrixXd& J);
@@ -38,6 +38,7 @@ public:
     VectorXd getCurrentJointPositions();
     DQ getCurrentPositionDQ(MatrixXd q);
     VectorXd getCurrentPosition(MatrixXd q);
+    VectorXd getCurrentPosition();
     std::vector<MatrixXd> ComputeTensorMatrixProduct(const vector<MatrixXd>& T, const MatrixXd& U, int mode);
 };
 

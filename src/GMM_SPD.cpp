@@ -4,11 +4,11 @@
 #define dimensions 3
 
 GMM_SPD::GMM_SPD() {
-    this->m_k = 5;
+    this->m_k = 15;
     this->m_n = -1;
     this->m_maxDiffLL = 1e-4; //Likelihood increase threshold to stop algorithm
     this->m_minIterEM=1;
-    this->m_maxIterEM = 1;
+    this->m_maxIterEM = 10;
     this->m_maxIterM = 10;
 
     if(dimensions==2){
@@ -37,7 +37,7 @@ GMM_SPD::GMM_SPD() {
     this->m_regTerm = 1e-4;
     this->m_kp = 100;
     this->m_km=10;
-    this->m_nDemos = 4;
+    this->m_nDemos = 4;  //4
 }
 
 MatrixXd GMM_SPD::getInOut(const MatrixXd& m) {
@@ -171,7 +171,8 @@ double GMM_SPD::GaussPDF(double data, double mu, double sig) {
 // Checked -> small numerical errors
 void GMM_SPD::EStep() {
     for (int k = 0; k < this->m_k; k++) {
-        MatrixXd tmp(1, this->m_n * m_nDemos);
+        MatrixXd tmp(1, this->m_data.rows());
+//        MatrixXd tmp(1, this->m_n * m_nDemos);
         tmp.setConstant(this->m_muMan(0, k));
         MatrixXd xts(this->m_dimVarVec, this->m_data.rows());
         xts.setZero();
@@ -312,6 +313,8 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
 
     SigmaEigenDecomposition(this->m_sigma, V, D);
     vector<vector<MatrixXd>> vMat, pvMat;
+
+    cout<< "GMR ..."<<endl;
 
     for (int t = 0; t < this->m_n; t++) {
         for (int k = 0; k < this->m_k; k++) {

@@ -137,6 +137,37 @@ MatrixXd read_cartesian_trajectories(const string file_path){
     return trajs;
 }
 
+/**
+ *  First 12 values are the joint values
+ *  values 13-15 are the wrist position
+ *  values 16-18 are the wrist orientation in xyz
+ *  values 19-54 are the wrist position jacobian (first row, then second row, then third row)
+ *  values 55-90 are the wrist orientation jacobian (in the same format as above)
+ */
+inline
+void readTxtFile(std::string fileName, MatrixXd *positions, MatrixXd *positionJacobians)
+{
+    MatrixXd data(8219, 90);
+    data.setZero();
+    std::ifstream in(fileName.c_str());
+    if(!in)
+    {
+        std::cerr << "Cannot open the File : "<<fileName<<std::endl;
+    }
+    float item = 0.0;
+    in >> item;
+    in >> item; // first row ignore
+    for (int row = 0; row < 8219; row++)
+        for (int col = 0; col < 90; col++)
+        {
+            in >> item;
+            data(row, col) = item;
+        }
+    (*positions) = data.block(0,12,8219,3);
+    (*positionJacobians) = data.block(0,18,8219,36);
+    in.close();
+}
+
 inline
 void load_data(const string data_path, int nDemos, int nData, vector<Tensor3d> *data_m, MatrixXd *data_pos){
     Tensor3d m;

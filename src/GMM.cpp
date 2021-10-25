@@ -6,7 +6,7 @@
 #define dimensions 3
 
 GMM::GMM() {
-    this->m_k = 5;
+    this->m_k = 15; // number of Gaussians in model
     this->m_n = 0;
     this->m_maxDiffLL=1e-4; //Likelihood increase threshold to sop algorithm
     this->m_minIterEM=5;
@@ -54,9 +54,11 @@ void GMM::InitModel(const MatrixXd& data){
     this->m_mu= MatrixXd(this->m_dimVar, this->m_k);
     this->m_data_pos = data;
 
-    Eigen::MatrixXd collected;
-    if(dimensions==2) collected= Eigen::MatrixXd (3, data.cols());
-    else collected= Eigen::MatrixXd (4, data.cols());
+//    Eigen::MatrixXd collected;
+//    if(dimensions==2) collected= Eigen::MatrixXd (3, data.cols());
+//    else collected= Eigen::MatrixXd (4, data.cols());
+//    deb(collected.cols());
+
 
     MatrixXd centered, cov;
     int tmp;
@@ -64,6 +66,9 @@ void GMM::InitModel(const MatrixXd& data){
     std::vector<double> timing = linspace(data(0, 0), data(0, data.cols() - 1), this->m_k + 1);
     for(int i=0; i<this->m_k;i++){
         tmp=0;
+        Eigen::MatrixXd collected;
+        if(dimensions==2) collected= Eigen::MatrixXd (3, data.cols());
+        else collected= Eigen::MatrixXd (4, data.cols());
         collected.setZero();
         for(int t=0; t < data.cols(); t++) {
             if(data(0, t) >= timing[i] & data(0, t) < timing[i + 1]) {

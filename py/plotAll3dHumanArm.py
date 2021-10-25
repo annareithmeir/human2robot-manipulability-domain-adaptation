@@ -60,7 +60,7 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
 ###########################
 ### plot demonstrations ###
 
-n_demos=2
+n_demos=1
 #n_points=20
 n_points=400
 scaling_factor=1e-6
@@ -76,14 +76,16 @@ plt.title('Demonstrations and GMR results')
 #data_path = "/home/nnrthmr/Desktop/master-thesis/promps-code/tum_tuda_project/recorded_data/Session_25_06_2021/run1.csv"
 #data_path = "../data/demos/trajectories.csv"
 data_path = "../data/demos/human_arm/dummyTrajectories.csv"
-data = pd.read_csv(data_path, sep=",")
+data = pd.read_csv(data_path, sep=",", names=['s','EE_x','EE_y','EE_z'])
+#data = pd.read_csv(data_path, sep=",")
+print(data)
 xdata= np.array(data['EE_x'])[:n_demos*n_points]
 ydata= np.array(data['EE_y'])[:n_demos*n_points]
 zdata= np.array(data['EE_z'])[:n_demos*n_points]
 #xdata= np.array(data['panda_left_EE_x'])
 #ydata= np.array(data['panda_left_EE_y'])
 #zdata= np.array(data['panda_left_EE_z'])
-ax.scatter3D(xdata, ydata, zdata, c='grey', alpha=0.4)
+ax.scatter3D(xdata, ydata, zdata, c='grey', alpha=0.2)
 ax.scatter3D(0,0,0, c='red', marker='x', s=100)
 
 
@@ -97,7 +99,6 @@ manip_tmp=manip_tmp[1:,:]
 manip=list()
 
 for i in np.arange(0, manip_tmp.shape[0]):
-    #manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
     manip.append(scaling_factor*manip_tmp[i,:].reshape(3,3))
 
 manip=manip[:n_demos*n_points]
@@ -113,23 +114,24 @@ for i in np.arange(0,len(manip),plot_every_nth):
 #filename_mu = "../data/expData3d.csv"
 #filename_sigma= "../data/expDataSPD3d.csv"
 filename_mu = "../data/results/human_arm/xd.csv"
+filename_sigma= "../data/results/human_arm/xhat.csv"
 
 mu_tmp = genfromtxt(filename_mu, delimiter=',')
-#sigma_tmp = genfromtxt(filename_sigma, delimiter=',')
-#sigma_tmp = scaling_factor*sigma_tmp
+sigma_tmp = genfromtxt(filename_sigma, delimiter=',')
+sigma_tmp = scaling_factor*sigma_tmp
 
 mu=list()
-#sigma=list()
+sigma=list()
 
 for i in np.arange(n_points):
     mu.append(mu_tmp[:,i])
-    #sigma.append(sigma_tmp[i,:].reshape(3,3))
+    sigma.append(sigma_tmp[i,:].reshape(3,3))
 
 for i in np.arange(n_points):
     mu_i = mu[i]
-    ax.scatter(mu_i[0],mu_i[1],mu_i[2], color='blue')
+    ax.scatter(mu_i[0],mu_i[1],mu_i[2], color='blue', alpha=0.2)
 
-'''
+
 for i in np.arange(0,n_points,plot_every_nth):
     mu_i = mu[i]
     sigma_i=sigma[i]
@@ -142,7 +144,7 @@ for i in np.arange(0,n_points,plot_every_nth):
 ###############################
 ### plot cone in SPD space  ###
 
-'''
+
 
 import matplotlib.patches as mpatches
 
@@ -151,12 +153,13 @@ blue_patch = mpatches.Patch(color='blue', label='Learned')
 grey_patch = mpatches.Patch(color='grey', label='Demonstrated')
 
 plt.legend(handles=[red_patch, blue_patch, grey_patch])
-#plt.xlim(-0.5, 0.5)
-#plt.ylim(-1, 1)
 ax.set_zlim(-0.275, -0.305)
 plt.xlim(0.31, 0.318)
 plt.ylim(0.2225, 0.24)
-#ax.set_zlim(0., 1)
+
+#ax.set_zlim(-0.27, -0.28)
+#plt.xlim(0.316, 0.318)
+#plt.ylim(0.234, 0.24)
 plt.show()
 
 

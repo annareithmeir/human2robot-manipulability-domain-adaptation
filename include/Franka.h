@@ -19,6 +19,8 @@ class Franka {
 //    DQ_SerialManipulator m_robot;
 public:
     Franka();
+    void startSimulation();
+    void stopSimulation();
     int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
     MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal);

@@ -55,17 +55,23 @@ fig = plt.figure()
 ax = plt.axes(projection='3d')
 plt.title('Demonstrations')
 
-'''
-for i in np.arange(5):
-	data_path = "../data/demos/EEpos_data_trial_"+str(i)+".csv"
-	data = pd.read_csv(data_path, sep=",")
 
-	xdata= np.array(data['EE_x'])
-	ydata= np.array(data['EE_y'])
-	zdata= np.array(data['EE_z'])
+for i in np.arange(4):
+    #data_path = "../data/demos/EEpos_data_trial_"+str(i)+".csv"
+    data_path = "/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/sphere/EEpos_data_sphere_trial_"+str(i)+".csv"
+    data = pd.read_csv(data_path, sep=",")
 
-	ax.scatter3D(xdata, ydata, zdata, c=colors[i])
-'''
+    xdata= np.array(data['EE_x'])
+    ydata= np.array(data['EE_y'])
+    zdata= np.array(data['EE_z'])
+
+    ax.scatter3D(xdata, ydata, zdata, c=colors[i])
+
+ax.set_zlim(0, 1)
+plt.xlim(-1 ,1)
+plt.ylim(-1, 1)
+plt.show()
+
 
 
 ###############################################
@@ -77,7 +83,7 @@ for i in np.arange(5):
     values 16-18 are the wrist orientation in xyz
     values 19-54 are the wrist position jacobian (first row, then second row, then third row)
     values 55-90 are the wrist orientation jacobian (in the same format as above)
-'''
+
 data_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/humanArmMotionOutput.txt"
 data = pd.read_csv(data_path, sep=" ", skiprows=1, header=None)
 
@@ -99,3 +105,4 @@ for i in np.arange(0,len(manip),150):
 ax.scatter3D(xdata, ydata, zdata, c=colors[0])
 
 plt.show()
+'''

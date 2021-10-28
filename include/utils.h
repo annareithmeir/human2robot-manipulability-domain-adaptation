@@ -204,12 +204,15 @@ inline
 void load_data_mmat(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
-    vector<vector<double>> data = LoadCSVSkipFirst(data_path);
+    vector<vector<double>> data = LoadCSV(data_path);
     for (int t = 0; t < data.size(); t++) {
-        (*data_m)(t, 0) = data[t][0];
-        (*data_m)(t, 1) = data[t][1];
-        (*data_m)(t, 2) = data[t][2];
-        (*data_m)(t, 3) = data[t][3];
+//        (*data_m)(t, 0) = data[t][0];
+//        (*data_m)(t, 1) = data[t][1];
+//        (*data_m)(t, 2) = data[t][2];
+//        (*data_m)(t, 3) = data[t][3];
+        for (int c = 0; c < data[0].size(); c++) {
+            (*data_m)(t, c) = data[t][c];
+        }
     }
 }
 

@@ -59,7 +59,7 @@ void learn3d(MatrixXd &xd, MatrixXd &xHat){
     std::cout<<"Loading demonstrations ..."<<std::endl;
     string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv";
     MatrixXd data(80, 4);
-    load_data_mmat(cmat_path, &data);
+    load_data_mmat_skip_first(cmat_path, &data);
 
     string mmat_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/translationManip3d.csv";
     MatrixXd data2(80, 10);
@@ -97,8 +97,8 @@ void learn3d(MatrixXd &xd, MatrixXd &xHat){
     //Write model2.muMan, model2.sigma, xhat to files
 //    WriteCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
 //    WriteCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
-//    WriteCSV(Vec2Symmat(xHat), "/home/nnrthmr/CLionProjects/ma_thesis/data/xhat.csv");
-//    WriteCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/xd.csv");
+    WriteCSV(Vec2Symmat(xHat), "/home/nnrthmr/CLionProjects/ma_thesis/data/xhat.csv");
+    WriteCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/xd.csv");
 //    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/modelSigma.csv");
 }
 
@@ -206,7 +206,7 @@ void transfer3d(Franka robotStudent){
     // Build GMM for trajectories in cartesian coordinates
     string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv";
     MatrixXd data(80, 4);
-    load_data_mmat(cmat_path, &data);
+    load_data_mmat_skip_first(cmat_path, &data);
 
     GMM model = GMM();
     model.InitModel(data.transpose());
@@ -299,8 +299,6 @@ void learnAndConrol(){
 
     VectorXd dx(3);
     VectorXd x0(3);
-//    x0.setZero();
-//    x0 << 0.133928, 0.385645, 0.996033;
     x0 = robot.getCurrentPosition();
     dx = xd.col(0) - x0;
     deb(x0);
@@ -329,6 +327,93 @@ void learnAndConrol(){
 //    WriteCSV(saveData, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/test.csv");
 }
 
+
+/**
+ * This function learns from the simulated 3d data from VREP and then controls the robot in VREP to follow
+ * according to the learned data.
+ */
+void control(){
+    Franka robot = Franka();
+    MatrixXd xdTmp(80,4);
+    MatrixXd xd(3, 20);
+    MatrixXd xHat(20,9);
+    load_data_mmat_skip_first("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv", &xdTmp);
+    xd=xdTmp.rightCols(3).topRows(20).transpose();
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/xhat.csv", &xHat);
+
+    VectorXd dx(3);
+    VectorXd x0(3);
+    x0 = robot.getCurrentPosition();
+    dx = xd.col(0) - x0;
+
+    MatrixXd Mcurr;
+    MatrixXd manips(xd.cols(), 9);
+    MatrixXd errMatrix(xd.cols(),1);
+    errMatrix.setZero();
+    robot.startSimulation();
+
+//    for(int i=0;i<1;i++){
+    for(int i=0;i<xd.cols();i++){
+        if(i>0) dx = xd.col(i) - xd.col(i-1);
+        MatrixXd MDesired = xHat.row(i);
+        MDesired.resize(3,3);
+        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
+//        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
+        errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
+        Mcurr.resize(1,9);
+        manips.row(i) = Mcurr;
+    }
+    deb("done");
+    robot.stopSimulation();
+
+    WriteCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/errorManipulabilities.csv");
+    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/xhat.csv");
+}
+/**
+ *  Control only manipulabilities of given human arm movement
+ */
+void controlManipulabilitiesHumanArm(){
+    Franka robot = Franka();
+    MatrixXd xdTmp(1600,4);
+    MatrixXd xhatTmp(1600,9);
+    MatrixXd xd(3, 400);
+    MatrixXd xHat(400,9);
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv", &xdTmp);
+    xd=xdTmp.rightCols(3).topRows(400).transpose();
+    xd=xd*10;
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv", &xhatTmp);
+    xHat = xhatTmp.topRows(400); // TODO try scaling by 10, upper bound for gain
+    xHat=xHat*10;
+
+    VectorXd dx(3);
+    VectorXd x0(3);
+    x0 = robot.getCurrentPosition();
+    dx = xd.col(0) - x0;
+
+    MatrixXd Mcurr;
+    MatrixXd manips(xd.cols(), 9);
+    MatrixXd errMatrix(xd.cols(),1);
+    errMatrix.setZero();
+    robot.startSimulation();
+
+//    for(int i=0;i<1;i++){
+    for(int i=0;i<xd.cols();i++){
+        if(i>0) dx = xd.col(i) - xd.col(i-1);
+        MatrixXd MDesired = xHat.row(i);
+        MDesired.resize(3,3);
+//        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
+        errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
+        Mcurr.resize(1,9);
+        manips.row(i) = Mcurr;
+    }
+    deb("done");
+    robot.stopSimulation();
+    for(int i=0;i<manips.rows();i++) manips.row(i)=manips.row(i)/10;
+    WriteCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/human_arm/errorManipulabilities.csv");
+    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/human_arm/xhat.csv");
+}
+
 int main() {
     // Load the demonstration data
 //    string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/";
@@ -338,9 +423,19 @@ int main() {
 
 //    std::cout.precision(20);
 
-//if(dimensions==2) learn2d();
-//else learn3d();
+/**
+ * Only perform the learning part and save the learned data in xHat and xd
+ */
+//MatrixXd xd(3, 20);
+//MatrixXd xHat(6, 20);
+//learn3d(xd, xHat);
 
+/**
+ * Only perform the control part and use the learned data in xHat and xd
+ */
+//control();
+
+controlManipulabilitiesHumanArm();
 //Franka robotStudent = Franka();
 //if(dimensions==3)  transfer3d(robotStudent);
 
@@ -359,9 +454,10 @@ int main() {
  */
 //MatrixXd xd(3, 8219);
 //MatrixXd xHat(6, 8219);
-MatrixXd xd(3, 400);
-MatrixXd xHat(6, 400);
-learn3dHumanMotion(xd, xHat);
+
+//MatrixXd xd(3, 400);
+//MatrixXd xHat(6, 400);
+//learn3dHumanMotion(xd, xHat);
 
 
 /**
@@ -369,7 +465,6 @@ learn3dHumanMotion(xd, xHat);
  */
 //    Franka robot = Franka();
 //    VectorXd q_goal(7);
-//    q_goal << 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 //    q_goal << -pi/2.0, 0.004, 0.0, -1.57156, 0.0, 1.57075, 0.0;
 //    robot.moveToQGoal(q_goal);
 

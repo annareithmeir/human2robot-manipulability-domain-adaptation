@@ -6,6 +6,7 @@ import numpy as np
 from scipy import linalg
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.patches as mpatches
 import pandas as pd
 
 colors=['green', 'blue', 'orange', 'red', 'purple']
@@ -73,6 +74,8 @@ plt.subplot(1, 2, 1)
 ax = plt.axes(projection='3d')
 plt.title('Demonstrations and GMR results')
 
+
+'''
 #data_path = "/home/nnrthmr/Desktop/master-thesis/promps-code/tum_tuda_project/recorded_data/Session_25_06_2021/run1.csv"
 #data_path = "../data/demos/trajectories.csv"
 data_path = "../data/demos/human_arm/dummyTrajectories.csv"
@@ -141,12 +144,32 @@ for i in np.arange(0,n_points,plot_every_nth):
 
 
 
-###############################
-### plot cone in SPD space  ###
+'''
+
+###### rotated dummy data human arm #######
 
 
+data_path = "../data/demos/human_arm/rotationDummyDemo/data_centered.csv"
+data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
+print(data)
 
-import matplotlib.patches as mpatches
+xdata= np.array(data['EE_x'])[:n_demos*n_points]
+ydata= np.array(data['EE_y'])[:n_demos*n_points]
+zdata= np.array(data['EE_z'])[:n_demos*n_points]
+ax.plot(xdata, ydata, zdata, c='grey', alpha=0.5)
+
+for i in np.arange(2,5):
+    data_path = "../data/demos/human_arm/rotationDummyDemo/data"+str(i)+"_centered.csv"
+    data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
+    print(data)
+
+    xdata= np.array(data['EE_x'])[:n_demos*n_points]
+    ydata= np.array(data['EE_y'])[:n_demos*n_points]
+    zdata= np.array(data['EE_z'])[:n_demos*n_points]
+    ax.plot(xdata, ydata, zdata, c=colors[i], alpha=0.5)
+
+
+########
 
 red_patch = mpatches.Patch(color='red', label='Robot base location')
 blue_patch = mpatches.Patch(color='blue', label='Learned')
@@ -157,9 +180,7 @@ ax.set_zlim(-0.275, -0.305)
 plt.xlim(0.31, 0.318)
 plt.ylim(0.2225, 0.24)
 
-#ax.set_zlim(-0.27, -0.28)
-#plt.xlim(0.316, 0.318)
-#plt.ylim(0.234, 0.24)
+
 plt.show()
 
 

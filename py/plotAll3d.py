@@ -74,8 +74,11 @@ ax = plt.axes(projection='3d')
 plt.title('Demonstrations and GMR results')
 
 #data_path = "/home/nnrthmr/Desktop/master-thesis/promps-code/tum_tuda_project/recorded_data/Session_25_06_2021/run1.csv"
-data_path = "../data/demos/trajectories.csv"
 #data_path = "../data/demos/dummyTrajectories.csv"
+
+data_path = "../data/demos/trajectories.csv"
+
+
 data = pd.read_csv(data_path, sep=",")
 xdata= np.array(data['EE_x'])[:n_demos*n_points]
 ydata= np.array(data['EE_y'])[:n_demos*n_points]
@@ -87,7 +90,7 @@ ax.scatter3D(xdata, ydata, zdata, c='grey', alpha=0.4)
 ax.scatter3D(0,0,0, c='red', marker='x', s=100)
 
 
-
+'''
 ### plot demonstration manipulabilities ###
 
 #filename_manip = "../data/demos/tum_tuda/translationManip3d.csv"
@@ -135,7 +138,7 @@ for i in np.arange(0,n_points,plot_every_nth):
     X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, mu_i, 1)
     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
 
-
+'''
 
 import matplotlib.patches as mpatches
 

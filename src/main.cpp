@@ -433,9 +433,13 @@ int main() {
 /**
  * Only perform the control part and use the learned data in xHat and xd
  */
-//control();
+control();
+//controlManipulabilitiesHumanArm();
 
-controlManipulabilitiesHumanArm();
+
+/**
+ * Transfer to another robot -> not fully implemented and tested yet
+ */
 //Franka robotStudent = Franka();
 //if(dimensions==3)  transfer3d(robotStudent);
 

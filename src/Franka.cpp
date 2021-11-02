@@ -102,6 +102,15 @@ MatrixXd Franka::getTranslationJacobian() {
     return Jt;
 }
 
+MatrixXd Franka::getRotationJacobian() {
+    DQ_SerialManipulator m_robot = this->getKinematicsDQ();
+    MatrixXd q  = m_vi.get_joint_positions(m_jointNames);
+    DQ x       = m_robot.fkm(q);
+    MatrixXd J = m_robot.pose_jacobian(q);
+    MatrixXd Jt = m_robot.rotation_jacobian(J);
+    return Jt;
+}
+
 MatrixXd Franka::getTranslationJacobian(MatrixXd q) {
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
     DQ x       = m_robot.fkm(q);
@@ -167,14 +176,18 @@ MatrixXd Franka::getManipulabilityMajorAxis(const MatrixXd& m) {
 
 // Checked for 2d!
 MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
-    float km = 0.003; // 3
+    float km0 = 0.1; // 3
+    float km = km0;
 //    float km = 0.0005; // 3
-    int niter=200;
+    int niter=500;
     float dt=1e-2;
     float err=1000;
     DQ x;
     MatrixXd J, M, JFull, qt, JmT, MDiff, pinv, dqt1;
+    MatrixXd Jgeo(6,7);
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
+
+    vector<MatrixXd> mLoop;
 
 //    while(err>0.05){
     for(int i=0;i<niter; i++){
@@ -186,7 +199,6 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
 
             JmT = ComputeManipulabilityJacobian(JFull); // Checked!
             MDiff = LogMap(MDesired, M); // Checked!
-            deb(MDiff);
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
 
@@ -204,22 +216,27 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
             JFull = this->getJacobian();
             M=J*J.transpose();
 
-//            JmT = ComputeManipulabilityJacobian(J); // Checked!
-            JmT = ComputeManipulabilityJacobian(JFull); // Checked!
+            Jgeo = buildGeometricJacobian(JFull, qt);
+
+            JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
+//            JmT = ComputeManipulabilityJacobian(JFull); // Checked!
             MDiff = LogMap(MDesired, M); // Checked!
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-//            dqt1 = km*Symmat2Vec(MDiff).transpose(); //Checked!
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
 
             m_vi.set_joint_positions(m_jointNames,qt + dqt1*dt); // Checked!
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
             err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
+            mLoop.push_back(M);
 
-            std::cout << "Tracking error: " <<err<< std::endl; //norm returns Frobenius norm if Matrices
+            km = km0* err;
+
+            std::cout << "Tracking error: " <<err << "  new gain: " <<km<< std::endl; //norm returns Frobenius norm if Matrices
         }
     }
     std::cout << "====================================="<< std::endl;
+    WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/loopManipulabilities.csv");
     return M;
 }
 
@@ -278,6 +295,7 @@ MatrixXd Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, c
             JFull = this->getJacobian();
             J = this->getTranslationJacobian().bottomRows(3);
             M=J*J.transpose();
+
 
             JmT = ComputeManipulabilityJacobian(JFull); // Checked!
 
@@ -415,7 +433,6 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
                    tmp1=J.col(i).bottomRows(3);
                    tmp2 = J.col(i).topRows(3);
                    JGradVec[j].block(0,i,3,1) = tmp1.cross(tmp2);
-                   deb(JGradVec[j]);
                }
            }
 
@@ -450,6 +467,112 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
 }
 
 // Checked!
+//vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to calculate this for Jred or DQ Jfull?
+//    std::vector<MatrixXd> JGradVec;
+//    MatrixXd tmp(J.rows(), J.cols());
+//    for(int i=0;i<J.cols();i++){
+//        tmp.setZero();
+//        JGradVec.push_back(tmp);
+//    }
+//
+//    MatrixXd JGrad(J.rows(),J.cols());
+//    JGrad.setZero();
+//    Vector3d tmp1;
+//    Vector3d tmp2;
+//
+//    if(dimensions==2){
+//        //Compute joint derivative jacobian
+//        for(int i=0;i<J.cols();i++){
+//            for(int j=0;j<J.cols();j++) {
+//                if(j<i){
+//                    tmp1= J.col(j).bottomRows(3);
+//                    tmp2=J.col(i).topRows(3);
+//                    JGradVec[j].block(0,i,3,1) = tmp1.cross(tmp2);
+//                    tmp1=J.col(j).bottomRows(3);
+//                    tmp2=J.col(i).bottomRows(3);
+//                    JGradVec[j].block(3,i,3,1) = tmp1.cross(tmp2);
+//                }
+//                if(j>i){
+//                    tmp1 =J.col(j).topRows(3);
+//                    tmp2=J.col(i).bottomRows(3);
+//                    JGradVec[j].block(0,i,3,1) = -(tmp1.cross(tmp2));
+//                }
+//                else{
+//                    tmp1=J.col(i).bottomRows(3);
+//                    tmp2 = J.col(i).topRows(3);
+//                    JGradVec[j].block(0,i,3,1) = tmp1.cross(tmp2);
+//                    deb(JGradVec[j]);
+//                }
+//            }
+//
+//        }
+//    }
+//    else{
+//        //Compute joint derivative jacobian --> Checked!
+//        for(int i=0;i<J.cols();i++){
+//            for(int j=0;j<J.cols();j++) {
+////                if(j<i){
+////                    tmp1= J.block(3,j,3,1);
+//                    tmp2=J.block(0,i,3,1);
+//                    JGradVec[j].block(0,i,3,1) = tmp2.cross(tmp2);
+////                    tmp1=J.block(3,j,3,1);
+////                    tmp2=J.block(3,i,3,1);
+////                    JGradVec[j].block(3,i,3,1) = tmp1.cross(tmp2);
+////                }
+////                else if(j>i){
+////                    tmp1 =J.block(0,j,3,1);
+////                    tmp2=J.block(3,i,3,1);
+////                    JGradVec[j].block(0,i,3,1).setZero();
+////                }
+////                else{
+////                    tmp1=J.block(3,i,3,1);
+////                    tmp2 = J.block(0,i,3,1);
+////                    JGradVec[j].block(0,i,3,1) = tmp2.cross(tmp2);
+////                }
+//            }
+//        }
+//    }
+//    return JGradVec;
+//}
+
+/// // Checked!
+//MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
+//    MatrixXd W = MatrixXd::Identity(J.cols(), J.cols());
+//    std::vector<MatrixXd> JGradVec;
+//    JGradVec = ComputeJointDerivative(J);
+//
+//    std::vector<MatrixXd> Jm;
+//    MatrixXd tmp, tmp3;
+//    MatrixXd U= J*(W*W.transpose());
+//    vector<MatrixXd> tmp1= ComputeTensorMatrixProduct(JGradVec, U, 2);
+//
+//    for(int i=0;i<JGradVec.size();i++) {
+//        tmp = JGradVec[i].transpose();
+//        JGradVec[i] = tmp;
+//    }
+//
+//    vector<MatrixXd> tmp2 = ComputeTensorMatrixProduct(JGradVec, U, 1);
+//    for(int i=0;i<tmp1.size();i++) {
+//        tmp3 = tmp1[i] + tmp2[i];
+//        Jm.push_back(tmp3);
+//    }
+//
+//    MatrixXd JmRed;
+//    if(dimensions==2) JmRed=MatrixXd(3, Jm.size());
+//    else JmRed=MatrixXd(6, Jm.size());
+////    else JmRed=MatrixXd(36, Jm.size());
+//    JmRed.setZero();
+//    for(int i=0;i<Jm.size();i++) {
+//        if (dimensions==2) JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 2, 2))).transpose(); //TaskVar 1:2 in MATLAB
+////        else JmRed.col(i) = (Symmat2Vec(Jm[i])).transpose(); //TaskVar 1:8 in MATLAB
+//        else JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:3 in MATLAB
+//    }
+//    return JmRed;
+//}
+//
+//
+
+// Checked!
 MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     MatrixXd W = MatrixXd::Identity(J.cols(), J.cols());
     std::vector<MatrixXd> JGradVec;
@@ -474,12 +597,47 @@ MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     MatrixXd JmRed;
     if(dimensions==2) JmRed=MatrixXd(3, Jm.size());
     else JmRed=MatrixXd(6, Jm.size());
-//    else JmRed=MatrixXd(36, Jm.size());
     JmRed.setZero();
     for(int i=0;i<Jm.size();i++) {
         if (dimensions==2) JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 2, 2))).transpose(); //TaskVar 1:2 in MATLAB
-//        else JmRed.col(i) = (Symmat2Vec(Jm[i])).transpose(); //TaskVar 1:8 in MATLAB
         else JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:3 in MATLAB
     }
     return JmRed;
+}
+
+// CHekched but slight differences to matlab code //TODO
+MatrixXd Franka::buildGeometricJacobian(MatrixXd J, MatrixXd qt){
+    MatrixXd J6(6, J.cols());
+    J6.setZero();
+
+    DQ_SerialManipulator m_robot = this->getKinematicsDQ();
+    DQ x = m_robot.fkm(qt);
+
+    MatrixXd tmp(3,4);
+    MatrixXd tmp2(6, J.cols());
+    MatrixXd tmp3(4,4);
+    MatrixXd J8(8, J.cols());
+    tmp.setZero();
+    tmp2.setZero();
+    tmp3.setZero();
+    J8.setZero();
+    tmp << 0,1,0,0,
+           0,0,1,0,
+           0,0,0,1;
+
+    tmp3 <<  1,0,0,0,
+             0,-1,0,0,
+             0,0,-1,0,
+             0,0,0,-1;
+
+    J8.topRows(4) = 2*haminus4(x.P().conj())*J.topRows(4);
+    J8.bottomRows(4) = 2*(hamiplus4(x.D())*tmp3*J.topRows(4) + haminus4(x.P().conj())* J.bottomRows(4));
+    tmp2.topRows(3) = tmp*J8.topRows(4);
+    tmp2.bottomRows(3) = tmp*J8.bottomRows(4);
+
+    J6.topRows(3)= tmp2.topRows(3);
+    J6.bottomRows(3)= 2* tmp2.bottomRows(3);
+//    J6.bottomRows(3).setZero();
+//    J6.bottomRows(1).setOnes();
+    return J6;
 }

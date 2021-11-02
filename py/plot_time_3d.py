@@ -58,6 +58,9 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
     return X,Y,Z
 
 
+one_loop = True
+
+
 ###########################
 ### plot demonstrations ###
 
@@ -72,57 +75,90 @@ colors=['green', 'blue', 'orange', 'red', 'purple']
 fig = plt.figure()
 plt.subplot(1, 2, 1)
 ax = plt.axes(projection='3d')
-plt.title('Demonstrations and Control results')
+#plt.title('Demonstrations and Control results)
+plt.title('Control loop - Km=2, n_iter=500, final_err=0.382')
 
+if one_loop:
+
+    ##############################################
+    #   vrep simple data first control loop      #
+    ##############################################
+    filename_err= ""
+    filename_demos = "../data/demos/translationManip3d.csv"
+    filename_controlled= "../data/tracking/loopManipulabilities.csv"
+
+    n_points = 500
+    plot_every_nth = 25
+    n_demos = 1
+
+
+'''
+##############################################
+#   vrep simple data                         #
+##############################################
+filename_err= "../data/tracking/errorManipulabilities.csv"
+filename_demos = "../data/demos/translationManip3d.csv"
+filename_controlled= "../data/tracking/xhat.csv"
+
+
+##############################################
+#   human arm data                           #
+##############################################
+filename_demos = "../data/demos/humanArm/dummyManipulabilities.csv"
+filename_controlled= "../data/results/human_arm/xhat.csv
+'''
 
 ### plot demonstration manipulabilities ###
-filename_manip = "../data/demos/translationManip3d.csv"
-#filename_manip = "../data/demos/humanArm/dummyManipulabilities.csv"
-manip_tmp = genfromtxt(filename_manip, delimiter=',')
-manip_tmp=manip_tmp[1:,:]
-manip=list()
+demo_tmp = genfromtxt(filename_demos, delimiter=',')
+demo_tmp=demo_tmp[1:,:]
+demo=list()
 
-for i in np.arange(0, manip_tmp.shape[0]):
-    manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
+if one_loop:
+    for i in np.arange(0, 500):
+        demo.append(scaling_factor*demo_tmp[0,1:].reshape(3,3))
+else:
+    for i in np.arange(0, demo_tmp.shape[0]):
+        demo.append(scaling_factor*demo_tmp[i,1:].reshape(3,3))
 
-manip=manip[:n_demos*n_points]
 
-for i in np.arange(0,len(manip),plot_every_nth):
-    m_i = manip[i]
-    X2,Y2,Z2 = get_cov_ellipsoid(m_i, [1*i,0,0], 1)
+demo=demo[:n_demos*n_points]
+
+cnt=0
+for i in np.arange(0,len(demo),plot_every_nth):
+    m_i = demo[i]
+    X2,Y2,Z2 = get_cov_ellipsoid(m_i, [1*cnt,0,0], 1)
     ax.plot_wireframe(X2,Y2,Z2, color='gold', alpha=0.05)
+    cnt+=1
 
 
 ### plot controlled manipulabilities ###
-filename_sigma= "../data/tracking/xhat.csv"
-#filename_sigma= "../data/results/human_arm/xhat.csv"
-sigma_tmp = genfromtxt(filename_sigma, delimiter=',')
-sigma_tmp = scaling_factor*sigma_tmp
+controlled_tmp = genfromtxt(filename_controlled, delimiter=',')
+controlled_tmp = scaling_factor*controlled_tmp
 
-sigma=list()
+controlled=list()
 for i in np.arange(n_points):
-    sigma.append(sigma_tmp[i,:].reshape(3,3))
+    controlled.append(controlled_tmp[i,:].reshape(3,3))
 
+cnt=0
 for i in np.arange(0,n_points,plot_every_nth):
-    sigma_i=sigma[i]
-    X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, [1*i,0,0], 1)
+    controlled_i=controlled[i]
+    X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [1*cnt,0,0], 1)
     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
+    cnt+=1
 
 
 
 ### plot error ###
-filename_err= "../data/tracking/errorManipulabilities.csv"
-err_tmp = genfromtxt(filename_err, delimiter=',')
+if(filename_err!=""):
+    err_tmp = genfromtxt(filename_err, delimiter=',')
 
-err=list()
-for i in np.arange(n_points):
-    err.append(err_tmp[i])
+    err=list()
+    for i in np.arange(n_points):
+        err.append(err_tmp[i])
 
-#err=np.arange(-0.5, -0.5+0.01*int(n_points/plot_every_nth), 0.01)
-
-x=np.arange(int(n_points/plot_every_nth))
-y=np.ones(int(n_points/plot_every_nth))
-ax.plot(x,y,np.array(err)-np.mean(err), color='red', alpha=0.5)
+    x=np.arange(int(n_points/plot_every_nth))
+    y=np.ones(int(n_points/plot_every_nth))
+    ax.plot(x,y,np.array(err)-np.mean(err), color='red', alpha=0.5)
 
 blue_patch = mpatches.Patch(color='blue', label='Controlled')
 grey_patch = mpatches.Patch(color='gold', label='Demonstrated')

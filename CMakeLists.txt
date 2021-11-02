@@ -32,6 +32,7 @@ include_directories(
 #        ${catkin_INCLUDE_DIRS}
 )
 
+#set(Catch2_DIR /home/nnrthmr/Catch2/CMake)
 add_executable(ma_thesis src/main.cpp src/GMM.cpp src/GMM_SPD.cpp include/GMM.h include/GMM_SPD.h include/utils.h src/Franka.cpp include/Franka.h include/SPD_Utils.h)
 target_link_libraries (ma_thesis
         Eigen3::Eigen
@@ -39,5 +40,12 @@ target_link_libraries (ma_thesis
         dqrobotics
         dqrobotics-interface-vrep)
 
-#add_executable(functionaltests tests/tests.cpp)
+
+#find_package(Catch2 REQUIRED)
+add_executable(tests tests/catch2.hpp tests/tests.cpp src/Franka.cpp include/Franka.h)
+target_link_libraries (tests
+        Eigen3::Eigen
+        pthread
+        dqrobotics
+        dqrobotics-interface-vrep)
 #target_link_libraries(functionaltests PRIVATE Catch2::Catch2WithMain)

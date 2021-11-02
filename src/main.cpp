@@ -350,15 +350,16 @@ void control(){
     MatrixXd manips(xd.cols(), 9);
     MatrixXd errMatrix(xd.cols(),1);
     errMatrix.setZero();
+
     robot.startSimulation();
 
-//    for(int i=0;i<1;i++){
-    for(int i=0;i<xd.cols();i++){
+    for(int i=0;i<1;i++){
+//    for(int i=0;i<xd.cols();i++){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
-        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-//        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
+//        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;

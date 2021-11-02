@@ -30,9 +30,11 @@ public:
     MatrixXd ComputeManipulabilityJacobian(const MatrixXd& J);
     MatrixXd getManipulabilityFromVI();
     MatrixXd getTranslationJacobian();
+    MatrixXd getRotationJacobian();
     MatrixXd getTranslationJacobian(MatrixXd q);
     MatrixXd getPoseJacobian(MatrixXd q);
     MatrixXd getJacobian();
+    MatrixXd buildGeometricJacobian(MatrixXd J, MatrixXd qt);
     void setJoints(VectorXd q);
     MatrixXd getManipulabilityMajorAxis(const MatrixXd& m);
     MatrixXd getManipulabilityLength(const MatrixXd& m);

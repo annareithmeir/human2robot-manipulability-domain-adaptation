@@ -12,10 +12,16 @@ import pandas as pd
 from get_cov_ellipsoid import get_cov_ellipsoid
 
 
+
+
+experiment_name="cut_userchoice"
+proband=4
+
+
 plot_trajectories_all = False
 plot_manipulabilities_selected = False
-plot_GMM = True
-plot_time_traj = False
+plot_GMM = 1
+plot_time_traj = 0
 plot_time_loop = False
 
 ###########################
@@ -55,7 +61,7 @@ if plot_trajectories_all:
                 ax.plot(xdata, ydata, zdata, c=colors[i], alpha=0.5)
 
     fig.tight_layout()
-    plt.show()
+    #plt.show()
 
 
 ####  manipulabilities  #### # only from one selected file
@@ -64,8 +70,6 @@ if plot_trajectories_all:
 if plot_manipulabilities_selected:
     fig = plt.figure(2, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
-    experiment_name="drill_optimal"
-    proband = 2
     scaling_factor=1e-3
     plot_every_nth = 120
 
@@ -100,7 +104,7 @@ if plot_manipulabilities_selected:
         ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
 
     fig.tight_layout()
-    plt.show()
+    #plt.show()
 
 
 ### GMM results ###
@@ -108,8 +112,6 @@ if plot_manipulabilities_selected:
 if plot_GMM:
     fig = plt.figure(3, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
-    experiment_name="cut_random"
-    proband=3
     plot_every_nth=500
     scaling_factor=1e-4
 
@@ -175,18 +177,16 @@ if plot_GMM:
         ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
     
     fig.tight_layout()
-    plt.show()
+    #plt.show()
 
 ### Evolution of manipulabilities throughout trajectories
     
 if plot_time_traj:
     fig = plt.figure(4, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
-    experiment_name="cut_random"
-    proband=3
-    n_demos=2
-    scaling_factor=1e-1
-    plot_every_nth = 1000
+    n_demos=1
+    scaling_factor=1e-2
+    plot_every_nth = 500
 
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
@@ -214,7 +214,7 @@ if plot_time_traj:
             for i in np.arange(0,len(demo),plot_every_nth):
                 m_i = demo[i]
                 X2,Y2,Z2 = get_cov_ellipsoid(m_i, [cnt,0,0], 1)
-                ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
+                ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
                 cnt+=1
 
     plot_time_learned = True
@@ -250,12 +250,21 @@ if plot_time_traj:
         cnt=0
         for i in np.arange(0,n_points,plot_every_nth):
             controlled_i=controlled[i]
-            X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [1*cnt,0,0], 1)
+            X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [4*cnt,0,0], 1)
             ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
             cnt+=1
 
     fig.tight_layout()
-    plt.show()
+
+    # scale=np.diag([10, 1, 1, 1.0])
+    # scale=scale*(1.0/scale.max())
+    # scale[3,3]=1.0
+
+    # def short_proj():
+    #   return np.dot(Axes3D.get_proj(ax), scale)
+
+    # ax.get_proj=short_proj
+    #plt.show()
 
 
 ### Evolution of manipulabilities throughout one single control loop
@@ -263,8 +272,6 @@ if plot_time_traj:
 if plot_time_loop:
     fig = plt.figure(5, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
-    experiment_name="cut_random"
-    proband=3
     n_demos=2
     scaling_factor=1e-1
     plot_every_nth = 1000
@@ -354,7 +361,8 @@ if plot_time_loop:
     ax.set_zlim(-1, 1)
 
     fig.tight_layout()
-    plt.show()
+
+plt.show()
     
 
 

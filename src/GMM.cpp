@@ -63,29 +63,29 @@ void GMM::InitModel(const MatrixXd& data, int demos){
     MatrixXd centered, cov;
     int tmp;
 
-    std::vector<double> timing = linspace(data(0, 0), data(0, data.cols() - 1), this->m_k + 1);
+    const vector<double> timing = linspace(data(0, 0), data(0, data.cols() - 1), this->m_k + 1);
+    Eigen::MatrixXd collectedAll;
+    if(dimensions==2) collectedAll= Eigen::MatrixXd (3, data.cols());
+    else collectedAll= Eigen::MatrixXd (4, data.cols());
+
     for(int i=0; i<this->m_k;i++){
         tmp=0;
-        Eigen::MatrixXd collected;
-        if(dimensions==2) collected= Eigen::MatrixXd (3, data.cols());
-        else collected= Eigen::MatrixXd (4, data.cols());
-        collected.setZero();
+        collectedAll.setZero();
         for(int t=0; t < data.cols(); t++) {
             if(data(0, t) >= timing[i] & data(0, t) < timing[i + 1]) {
-                collected(0,tmp) = data(0, t);
-                collected(1,tmp) = data(1, t);
-                collected(2,tmp) = data(2, t);
-                if(dimensions==3) collected(3,tmp) = data(3,t);
+                collectedAll(0,tmp) = data(0, t);
+                collectedAll(1,tmp) = data(1, t);
+                collectedAll(2,tmp) = data(2, t);
+                if(dimensions==3) collectedAll(3,tmp) = data(3,t);
                 tmp++;
             }
         }
 
-        collected = collected.leftCols(tmp);
+        MatrixXd collected = collectedAll.leftCols(tmp);
         this->m_priors.push_back(tmp);
         if(dimensions==2) this->m_mu.block(0, i, 3, 1)= collected.rowwise().mean();
         else this->m_mu.block(0, i, 4, 1)= collected.rowwise().mean();
         centered = collected.colwise() - collected.rowwise().mean();
-//        cov = (centered * centered.adjoint()) / double(collected.cols() - 1);
         cov = (centered * centered.adjoint()) / double(collected.cols() - 1)+ MatrixXd(this->m_dimVar, this->m_dimVar).setConstant(this->m_regTerm);;
         this->m_sigma.push_back(cov);
     }

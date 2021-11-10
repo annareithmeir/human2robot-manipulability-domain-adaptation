@@ -207,7 +207,7 @@ void learn3dHumanMotion(MatrixXd &xd, MatrixXd &xHat){
  * @param xd trajectory is written here
  * @param xHat manipulabilities are written here
  */
-void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, int nPoints, int nDemos, int totalPoints, string exp, string proband){
+void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const int nDemos, const int totalPoints, const string exp, const string proband){
     //Load data and build manipulabilities
     std::cout<<"Loading demonstrations ..."<<std::endl;
 
@@ -233,7 +233,7 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, int nPoints, int nDemos, 
     deb(nDemos)
     deb(totalPoints)
 
-    MatrixXd data(totalPoints,4); //25 * 1200 drill_optimal
+    MatrixXd data(totalPoints,4);
     MatrixXd m(totalPoints,10);
     MatrixXd dataVectorized(totalPoints, 7);
 
@@ -248,14 +248,12 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, int nPoints, int nDemos, 
     deb(mPath)
     load_data_mmat_skip_first(tPath, &data);
     load_data_mmat_skip_first(mPath, &m);
-    deb(data.topRows(3))
-    deb(m.topRows(3))
 
     MatrixXd tmp;
     dataVectorized.leftCols(1) = data.leftCols(1);
 
     for (int i = 0; i < m.rows(); i++) {
-        MatrixXd tmp = m.row(i).rightCols(9);
+        tmp = m.row(i).rightCols(9);
         tmp.resize(3,3);
         dataVectorized.row(i).rightCols(6) = Symmat2Vec(tmp);
     }
@@ -584,7 +582,7 @@ int main() {
  */
 
 string exp="cut_userchoice";
-string proband="5";
+string proband="4";
 
 string infoPath;
 if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";

@@ -281,8 +281,12 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     deb(xd);
     deb(dataVectorized.transpose());
     deb(xHat);
-
     deb(model2.m_muMan)
+
+    MatrixXd errors = GetDiffVector(Vec2Symmat(xHat), m, nPoints); //demo0
+    deb(errors)
+    WriteCSV(errors.colwise().mean().transpose(),"/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhatErrors.csv");
+    deb(errors.mean())
 
 
 

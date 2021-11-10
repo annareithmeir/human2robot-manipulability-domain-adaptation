@@ -193,5 +193,24 @@ MatrixXd SPDMean(const vector<MatrixXd>& mat, int nIter) {
     return M;
 }
 
+inline
+MatrixXd GetDiffVector(const vector<MatrixXd>& xHat, const MatrixXd& m, const int nPoints){
+    int nDemos = m.rows()/nPoints;
+    MatrixXd diffs(nDemos,nPoints);
+    MatrixXd MDesired, M;
+    for(int j=0;j<nDemos;j++){
+        for(int i=0;i<nPoints;i++) {
+            MDesired = m.row(j*nPoints+i).rightCols(9);
+            MDesired.resize(3, 3);
+            deb(MDesired)
+
+            M = xHat[i];
+            deb(M)
+            diffs(j,i) = ((MDesired.pow(-0.5) * M * MDesired.pow(-0.5)).log().norm());
+        }
+    }
+    return diffs;
+}
+
 
 #endif //MA_THESIS_SPD_UTILS_H

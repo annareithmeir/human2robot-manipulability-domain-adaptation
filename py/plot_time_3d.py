@@ -8,54 +8,11 @@ from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patches as mpatches
 import pandas as pd
+import get_cov_ellipsoid
+
 
 colors=['green', 'blue', 'orange', 'red', 'purple']
 
-def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
-    """
-    Return the 3d points representing the covariance matrix
-    cov centred at mu and scaled by the factor nstd.
-    Plot on your favourite 3d axis. 
-    Example 1:  ax.plot_wireframe(X,Y,Z,alpha=0.1)
-    Example 2:  ax.plot_surface(X,Y,Z,alpha=0.1)
-    """
-    assert cov.shape==(3,3)
-
-    # Find and sort eigenvalues to correspond to the covariance matrix
-    eigvals, eigvecs = np.linalg.eigh(cov)
-    idx = np.sum(cov,axis=0).argsort()
-    eigvals_temp = eigvals[idx]
-    idx = eigvals_temp.argsort()
-    eigvals = eigvals[idx]
-    eigvecs = eigvecs[:,idx]
-
-    # Set of all spherical angles to draw our ellipsoid
-    n_points = 100
-    theta = np.linspace(0, 2*np.pi, n_points)
-    phi = np.linspace(0, np.pi, n_points)
-
-    # Width, height and depth of ellipsoid
-    rx, ry, rz = nstd * np.sqrt(eigvals)
-
-    # Get the xyz points for plotting
-    # Cartesian coordinates that correspond to the spherical angles:
-    X = rx * np.outer(np.cos(theta), np.sin(phi))
-    Y = ry * np.outer(np.sin(theta), np.sin(phi))
-    Z = rz * np.outer(np.ones_like(theta), np.cos(phi))
-
-    # Rotate ellipsoid for off axis alignment
-    old_shape = X.shape
-    # Flatten to vectorise rotation
-    X,Y,Z = X.flatten(), Y.flatten(), Z.flatten()
-    X,Y,Z = np.matmul(eigvecs, np.array([X,Y,Z]))
-    X,Y,Z = X.reshape(old_shape), Y.reshape(old_shape), Z.reshape(old_shape)
-   
-    # Add in offsets for the mean
-    X = X + mu[0]
-    Y = Y + mu[1]
-    Z = Z + mu[2]
-    
-    return X,Y,Z
 
 
 one_loop = True
@@ -70,13 +27,17 @@ n_points=20
 scaling_factor=1e-1
 plot_every_nth = 1
 
+REACH_UP=False # copied manip from reaching up task
+if REACH_UP:
+    tmp = np.array([0.112386331709752,	-0.292084314237333,	0.085136827901769,	-0.292084314237333,	0.892749865686052,	0.007596007158765,	0.085136827901769,	0.007596007158765,	0.698160049993724])
+
 colors=['green', 'blue', 'orange', 'red', 'purple']
 
 fig = plt.figure()
 plt.subplot(1, 2, 1)
 ax = plt.axes(projection='3d')
 #plt.title('Demonstrations and Control results)
-plt.title('Control loop - Km=2, n_iter=500, final_err=0.382')
+plt.title('Control loop - Km=adaptive, n_iter=3000, final_err=0.97')
 
 if one_loop:
 
@@ -87,8 +48,8 @@ if one_loop:
     filename_demos = "../data/demos/translationManip3d.csv"
     filename_controlled= "../data/tracking/loopManipulabilities.csv"
 
-    n_points = 500
-    plot_every_nth = 25
+    n_points = 3000
+    plot_every_nth = 100
     n_demos = 1
 
 
@@ -114,8 +75,11 @@ demo_tmp=demo_tmp[1:,:]
 demo=list()
 
 if one_loop:
-    for i in np.arange(0, 500):
-        demo.append(scaling_factor*demo_tmp[0,1:].reshape(3,3))
+    for i in np.arange(0, n_points):
+        if REACH_UP:
+            demo.append(scaling_factor*tmp.reshape(3,3))
+        else:
+            demo.append(scaling_factor*demo_tmp[0,1:].reshape(3,3))
 else:
     for i in np.arange(0, demo_tmp.shape[0]):
         demo.append(scaling_factor*demo_tmp[i,1:].reshape(3,3))

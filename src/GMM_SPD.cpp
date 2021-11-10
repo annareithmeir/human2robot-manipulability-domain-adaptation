@@ -8,7 +8,7 @@ GMM_SPD::GMM_SPD() {
     this->m_n = -1;
     this->m_maxDiffLL = 1e-4; //Likelihood increase threshold to stop algorithm
     this->m_minIterEM=1;
-    this->m_maxIterEM = 1;
+    this->m_maxIterEM = 10;
     this->m_maxIterM = 10;
 
     if(dimensions==2){
@@ -37,7 +37,6 @@ GMM_SPD::GMM_SPD() {
     this->m_regTerm = 1e-4;
     this->m_kp = 100;
     this->m_km=10;
-    this->m_nDemos = 4;  //4
 }
 
 MatrixXd GMM_SPD::getInOut(const MatrixXd& m) {
@@ -57,7 +56,8 @@ MatrixXd GMM_SPD::getOutOut(const MatrixXd& m) {
 }
 
 //Checked!
-void GMM_SPD::InitModel(const MatrixXd& data) {
+void GMM_SPD::InitModel(const MatrixXd& data, int demos) {
+    this->m_nDemos = demos;  //4
     this->m_n = data.rows() / this->m_nDemos; //nbData
     this->m_nData = data.rows(); //nb
     if(dimensions==2) this->m_muMan = MatrixXd(4, this->m_k);
@@ -473,6 +473,8 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
 
         // Iterative computation
         for (int iter = 0; iter < 10; iter++) {
+            deb('In SPD_GMR iter')
+            deb(iter)
             uHat.col(t).setZero();
             uoutTmp.setZero();
 

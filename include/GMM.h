@@ -35,7 +35,7 @@ public:
     MatrixXd m_L, m_gamma, m_gamma2;
 
     GMM();
-    void InitModel(const MatrixXd& data);
+    void InitModel(const MatrixXd& data, int demos);
     void EStep();
     void MStep();
     void TrainEM();

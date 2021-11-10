@@ -175,11 +175,11 @@ MatrixXd Franka::getManipulabilityMajorAxis(const MatrixXd& m) {
 }
 
 // Checked for 2d!
-MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
-    float km0 = 0.1; // 3
+MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector<MatrixXd> &mLoop) {
+    float km0 = 0.35; // 3
     float km = km0;
 //    float km = 0.0005; // 3
-    int niter=500;
+    int niter=6000;
     float dt=1e-2;
     float err=1000;
     DQ x;
@@ -187,7 +187,7 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
     MatrixXd Jgeo(6,7);
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
 
-    vector<MatrixXd> mLoop;
+//    vector<MatrixXd> mLoop;
 
 //    while(err>0.05){
     for(int i=0;i<niter; i++){
@@ -219,8 +219,8 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
             Jgeo = buildGeometricJacobian(JFull, qt);
 
             JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
-//            JmT = ComputeManipulabilityJacobian(JFull); // Checked!
-            MDiff = LogMap(MDesired, M); // Checked!
+//            MDiff = LogMap(M, MDesired); // Checked!
+            MDiff = LogMap(MDesired, M); // Checked! Like in MATLAB
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
 
@@ -236,7 +236,7 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired) {
         }
     }
     std::cout << "====================================="<< std::endl;
-    WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/loopManipulabilities.csv");
+//    WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/loopManipulabilities.csv");
     return M;
 }
 
@@ -605,7 +605,7 @@ MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     return JmRed;
 }
 
-// CHekched but slight differences to matlab code //TODO
+// Checked
 MatrixXd Franka::buildGeometricJacobian(MatrixXd J, MatrixXd qt){
     MatrixXd J6(6, J.cols());
     J6.setZero();
@@ -640,4 +640,19 @@ MatrixXd Franka::buildGeometricJacobian(MatrixXd J, MatrixXd qt){
 //    J6.bottomRows(3).setZero();
 //    J6.bottomRows(1).setOnes();
     return J6;
+}
+
+MatrixXd Franka::GetJointConstraints() {
+    // https://frankaemika.github.io/docs/control_parameters.html
+    MatrixXd cons(2,7);
+    cons << 2.8973,	1.7628,	2.8973 ,-0.0698, 2.8973, 3.7525, 2.8973, //min rad
+           -2.8973,-1.7628 ,-2.8973 ,-3.0718,-2.8973 ,-0.0175 ,-2.8973; // max rad
+    return cons;
+}
+
+MatrixXd Franka::GetVelocityConstraints() {
+    // https://frankaemika.github.io/docs/control_parameters.html
+    MatrixXd cons(1,7);
+    cons << 2.1750 ,2.1750 ,2.1750, 2.1750,2.6100 ,2.6100, 2.6100; //rad/s
+    return cons;
 }

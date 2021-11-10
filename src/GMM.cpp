@@ -27,7 +27,6 @@ GMM::GMM() {
     this->m_dt = 1e-2;
     this->m_regTerm = 1e-4;
     this->m_kp=100;
-    this->m_nDemos=4;
     this->m_regTerm = 1e-4;
 //
 //    deb(this->m_dimOutVec);
@@ -48,7 +47,8 @@ std::vector<double> GMM::linspace(double a, double b, std::size_t N)
 }
 
 //Checked!
-void GMM::InitModel(const MatrixXd& data){
+void GMM::InitModel(const MatrixXd& data, int demos){
+    this->m_nDemos=demos;
     this->m_n = data.cols() / this->m_nDemos;
     this->m_nData = data.cols();
     this->m_mu= MatrixXd(this->m_dimVar, this->m_k);

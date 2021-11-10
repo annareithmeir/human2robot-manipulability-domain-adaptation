@@ -1,6 +1,9 @@
 #include <Franka.h>
 #include <GMM.h>
 #include <GMM_SPD.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 using namespace std;
 using namespace Eigen;
@@ -19,7 +22,7 @@ void learn2d(){
     data.row(3)=data.row(2)*0.75;
 
     GMM model = GMM();
-    model.InitModel(data);
+    model.InitModel(data, 4);
     model.TrainEM();
 
     MatrixXd expData(3, 100);
@@ -37,7 +40,7 @@ void learn2d(){
     load_data_mmat_skip_first(mmat_path, &data2);
 
     GMM_SPD model2 = GMM_SPD();
-    model2.InitModel(data2);
+    model2.InitModel(data2, 4);
     model2.TrainEM();
 
     MatrixXd expData2(3, 100);
@@ -75,7 +78,7 @@ void learn3d(MatrixXd &xd, MatrixXd &xHat){
 
     std::cout<<"GMM  for trajectories ..."<<std::endl;
     GMM model = GMM();
-    model.InitModel(data.transpose());
+    model.InitModel(data.transpose(), 4);
     model.TrainEM();
 
 //    MatrixXd xd(3, 20);
@@ -85,7 +88,7 @@ void learn3d(MatrixXd &xd, MatrixXd &xHat){
 
     std::cout<<"GMM for manipulabilities ..."<<std::endl;
     GMM_SPD model2 = GMM_SPD();
-    model2.InitModel(dataVectorized);
+    model2.InitModel(dataVectorized, 4);
     model2.TrainEM();
 
 //    MatrixXd xHat(6, 20);
@@ -163,7 +166,7 @@ void learn3dHumanMotion(MatrixXd &xd, MatrixXd &xHat){
     // Build GMM for trajectories in cartesian coordinates
     std::cout<<"GMM  for trajectories ..."<<std::endl;
     GMM model = GMM();
-    model.InitModel(data.transpose());
+    model.InitModel(data.transpose(), 4);
     model.TrainEM();
 
 //    MatrixXd xd(3, 20);
@@ -173,7 +176,7 @@ void learn3dHumanMotion(MatrixXd &xd, MatrixXd &xHat){
 
     std::cout<<"GMM for manipulabilities ..."<<std::endl;
     GMM_SPD model2 = GMM_SPD();
-    model2.InitModel(dataVectorized);
+    model2.InitModel(dataVectorized, 4);
     model2.TrainEM();
 
 //    MatrixXd xHat(6, 20);
@@ -199,7 +202,101 @@ void learn3dHumanMotion(MatrixXd &xd, MatrixXd &xHat){
 //    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/modelSigma.csv");
 }
 
-void transfer2d(Franka robotStudent){
+/**
+ * This function learns from the experiments modeled with RHuMAn model (provided by Luis)
+ * @param xd trajectory is written here
+ * @param xHat manipulabilities are written here
+ */
+void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, int nPoints, int nDemos, int totalPoints, string exp, string proband){
+    //Load data and build manipulabilities
+    std::cout<<"Loading demonstrations ..."<<std::endl;
+
+    deb(exp)
+    deb(proband)
+
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+
+    deb(nPoints)
+    deb(nDemos)
+    deb(totalPoints)
+
+    MatrixXd data(totalPoints,4); //25 * 1200 drill_optimal
+    MatrixXd m(totalPoints,10);
+    MatrixXd dataVectorized(totalPoints, 7);
+
+    string tPath,mPath;
+    if (proband=="") tPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/all_t.csv";
+    else tPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/all_t.csv";
+
+    if (proband=="") mPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/all_m.csv";
+    else mPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/all_m.csv";
+
+    deb(tPath)
+    deb(mPath)
+    load_data_mmat_skip_first(tPath, &data);
+    load_data_mmat_skip_first(mPath, &m);
+    deb(data.topRows(3))
+    deb(m.topRows(3))
+
+    MatrixXd tmp;
+    dataVectorized.leftCols(1) = data.leftCols(1);
+
+    for (int i = 0; i < m.rows(); i++) {
+        MatrixXd tmp = m.row(i).rightCols(9);
+        tmp.resize(3,3);
+        dataVectorized.row(i).rightCols(6) = Symmat2Vec(tmp);
+    }
+
+    // Build GMM for trajectories in cartesian coordinates
+    std::cout<<"GMM  for trajectories ..."<<std::endl;
+    GMM model = GMM();
+    model.InitModel(data.transpose(), nDemos);
+    model.TrainEM();
+
+    xd.setZero();
+    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+    model.GMR(xd, expSigma);
+
+    std::cout<<"GMM for manipulabilities ..."<<std::endl;
+    GMM_SPD model2 = GMM_SPD();
+    model2.InitModel(dataVectorized, nDemos);
+    model2.TrainEM();
+
+    xHat.setZero();
+    std::vector<MatrixXd> expSigma2; //m_dimOut x m_dimOut x m_nData
+
+    model2.GMR(xHat, expSigma2);
+    deb(data.transpose());
+    deb(xd);
+    deb(dataVectorized.transpose());
+    deb(xHat);
+
+    deb(model2.m_muMan)
+
+
+
+    //Write model2.muMan, model2.sigma, xhat to files
+//    WriteCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
+//    WriteCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
+    WriteCSV(Vec2Symmat(xHat), "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhat.csv");
+    WriteCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xd.csv");
+//    WriteCSV(data/10, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv");
+//    vector<MatrixXd> manips = Vec2Symmat(dataVectorized.rightCols(6).transpose());
+//    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv");
+//    WriteCSV(expSigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/modelSigma.csv");
 }
 
 void transfer3d(Franka robotStudent){
@@ -209,7 +306,7 @@ void transfer3d(Franka robotStudent){
     load_data_mmat_skip_first(cmat_path, &data);
 
     GMM model = GMM();
-    model.InitModel(data.transpose());
+    model.InitModel(data.transpose(), 4);
     model.TrainEM();
 
     MatrixXd xd(3, 20);
@@ -230,7 +327,7 @@ void transfer3d(Franka robotStudent){
     }
 
     GMM_SPD model2 = GMM_SPD();
-    model2.InitModel(dataVectorized);
+    model2.InitModel(dataVectorized, 4);
     model2.TrainEM();
 
     MatrixXd xHat(6, 20);
@@ -346,6 +443,7 @@ void control(){
     x0 = robot.getCurrentPosition();
     dx = xd.col(0) - x0;
 
+    vector<MatrixXd> mLoop;
     MatrixXd Mcurr;
     MatrixXd manips(xd.cols(), 9);
     MatrixXd errMatrix(xd.cols(),1);
@@ -356,10 +454,12 @@ void control(){
     for(int i=0;i<1;i++){
 //    for(int i=0;i<xd.cols();i++){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
+//        MatrixXd MDesired(1,9);
+//        MDesired << 0.112386331709752,	-0.292084314237333,	0.085136827901769,	-0.292084314237333,	0.892749865686052,	0.007596007158765,	0.085136827901769,	0.007596007158765,	0.698160049993724;
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -397,22 +497,70 @@ void controlManipulabilitiesHumanArm(){
     errMatrix.setZero();
     robot.startSimulation();
 
+    vector<MatrixXd> mLoop;
+
 //    for(int i=0;i<1;i++){
     for(int i=0;i<xd.cols();i++){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
+        WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/loopManipulabilities.csv");
     }
     deb("done");
     robot.stopSimulation();
     for(int i=0;i<manips.rows();i++) manips.row(i)=manips.row(i)/10;
     WriteCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/human_arm/errorManipulabilities.csv");
     WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/human_arm/xhat.csv");
+}
+
+/**
+ *  Control only manipulabilities of given human arm movement
+ */
+void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, int nDemos, int totalPoints){
+    Franka robot = Franka();
+    MatrixXd xdTmp(nPoints,4);
+    MatrixXd xhatTmp(nPoints,9);
+    MatrixXd xd(3, nPoints);
+    MatrixXd xHat(nPoints,9);
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xd.csv", &xdTmp);
+    xd=xdTmp.rightCols(3).transpose();
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhat.csv", &xhatTmp);
+    xHat = xhatTmp;
+
+    vector<MatrixXd> mLoop;
+
+    VectorXd dx(3);
+    VectorXd x0(3);
+    x0 = robot.getCurrentPosition();
+    dx = xd.col(0) - x0;
+
+    MatrixXd Mcurr;
+    MatrixXd manips(xd.cols(), 9);
+    MatrixXd errMatrix(xd.cols(),1);
+    errMatrix.setZero();
+    robot.startSimulation();
+
+    for(int i=0;i<1;i++){
+//    for(int i=0;i<xd.cols();i++){
+        if(i>0) dx = xd.col(i) - xd.col(i-1);
+        MatrixXd MDesired = xHat.row(i);
+        MDesired.resize(3,3);
+//        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
+        errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
+        Mcurr.resize(1,9);
+        manips.row(i) = Mcurr;
+        WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/loopManipulabilities.csv");
+    }
+    deb("done");
+    robot.stopSimulation();
+    WriteCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/errorManipulabilities.csv");
+    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/xhat.csv");
 }
 
 int main() {
@@ -432,9 +580,29 @@ int main() {
 //learn3d(xd, xHat);
 
 /**
+ * Perform learning part on Luis experiment data, RHuMAn model data
+ */
+
+string exp="cut_userchoice";
+string proband="5";
+
+string infoPath;
+if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";
+else infoPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/info.txt";
+
+ifstream infile(infoPath);
+int nPoints, nDemos, totalPoints;
+infile >> nPoints >> nDemos >> totalPoints;
+assert(nPoints*nDemos==totalPoints);
+
+MatrixXd xd(3,nPoints);
+MatrixXd xHat(6,nPoints);
+learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
+
+/**
  * Only perform the control part and use the learned data in xHat and xd
  */
-control();
+//control();
 //controlManipulabilitiesHumanArm();
 
 

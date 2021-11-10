@@ -23,9 +23,11 @@ public:
     void stopSimulation();
     int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
-    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal);
+    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal, vector<MatrixXd> &mLoop);
     MatrixXd ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
     DQ_SerialManipulator getKinematicsDQ();
+    MatrixXd GetVelocityConstraints();
+    MatrixXd GetJointConstraints();
     vector<MatrixXd> ComputeJointDerivative(const MatrixXd& J);
     MatrixXd ComputeManipulabilityJacobian(const MatrixXd& J);
     MatrixXd getManipulabilityFromVI();
@@ -44,6 +46,7 @@ public:
     VectorXd getCurrentPosition(MatrixXd q);
     VectorXd getCurrentPosition();
     std::vector<MatrixXd> ComputeTensorMatrixProduct(const vector<MatrixXd>& T, const MatrixXd& U, int mode);
+
 };
 
 

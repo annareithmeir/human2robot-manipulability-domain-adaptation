@@ -36,7 +36,7 @@ public:
     vector<MatrixXd> m_xts;
 
     GMM_SPD();
-    void InitModel(const MatrixXd& data);
+    void InitModel(const MatrixXd& data, int demos);
 
     MatrixXd getOutOut(const MatrixXd& m);
     MatrixXd getOutIn(const MatrixXd& m);

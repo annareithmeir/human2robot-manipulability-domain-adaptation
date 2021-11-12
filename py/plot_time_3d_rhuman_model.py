@@ -43,7 +43,7 @@ if one_loop:
     filename_controlled= "../data/tracking/loopManipulabilities.csv"
 
     n_points = 3000
-    plot_every_nth = 100
+    plot_every_nth = 1000
     n_demos = 1
 
 

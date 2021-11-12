@@ -1,6 +1,7 @@
 
 #include <utils.h>
 #include <Franka.h>
+#include <Mapping_utils.h>
 
 using namespace std;
 #define CATCH_CONFIG_MAIN
@@ -10,6 +11,31 @@ using namespace std;
 TEST_CASE("simpleTest", ""){
     int a=2;
     REQUIRE(a==2);
+}
+
+TEST_CASE("Ellipsoid principal axes"){
+    MatrixXd A(3,3);
+    A << 1,0,0,0,1,0,0,0,1;
+    MatrixXd a1=getPrincipalAxes(A);
+    MatrixXd a2=getLengthsOfPrincipalAxes(A);
+
+    REQUIRE(a1==A);
+    REQUIRE(a2.minCoeff()==1);
+    REQUIRE(a2.maxCoeff()==1);
+
+}
+
+TEST_CASE("Ellipsoid axes ratio"){
+    MatrixXd T(3,3);
+    T << 1,0,0,0,1,0,0,0,1;
+    MatrixXd S(3,3);
+    S << 3,0,0,0,2,0,0,0,0.5;
+    MatrixXd a1=getRatiosOfAxesLengths(T,S);
+    MatrixXd resultDesired(1,3);
+    resultDesired << 3,2,0.5;
+
+    REQUIRE(a1==resultDesired);
+
 }
 
 TEST_CASE("buildGeometricJacobian", ""){

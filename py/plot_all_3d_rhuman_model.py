@@ -20,9 +20,53 @@ proband=4
 
 plot_trajectories_all = False
 plot_manipulabilities_selected = False
-plot_GMM = 1
+plot_GMM = 0
 plot_time_traj = 0
-plot_time_loop = False
+plot_time_loop = 1
+plot_test = 0
+
+
+###########################
+### quick stuff -> to be deleted
+###########################
+
+if plot_test:
+    fig = plt.figure(1, figsize=plt.figaspect(0.3))
+    ax = plt.axes(projection='3d')
+    # m1=[2.63016 ,  -0.219984  ,  0.382568 ,  -0.219984 ,    2.30143 ,-0.00739593 ,   0.382568, -0.00739593 ,    1.97404]
+    # m1=np.array(m1).reshape((3,3))
+    # #m1=m1/7
+
+    # m2=[0.659026871310233,   -0.100185149847763 , -0.008977581725339 , -0.100185149847763 , 0.083681960482954,   0.06312776466198  ,  -0.008977581725339 , 0.06312776466198  ,  0.523378741796217]
+    # m2=np.array(m2).reshape((3,3))
+
+    # X2,Y2,Z2 = get_cov_ellipsoid(m1, [0,0,0], 1)
+    # ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1, label="learned from RhuMAn data")
+
+    # X2,Y2,Z2 = get_cov_ellipsoid(m2, [0,0,0], 1)
+    # ax.plot_wireframe(X2,Y2,Z2, color='red', alpha=0.1, label="from simulation")
+    # plt.legend()
+
+
+    data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/sphere/EEpos_data_sphere_trial_0.csv"
+    data = pd.read_csv(data_path, sep=",")
+    print(data)
+
+    xdata= np.array(data['EE_x'])
+    ydata= np.array(data['EE_y'])
+    zdata= np.array(data['EE_z'])
+    ax.plot(xdata, ydata, zdata, c="red", alpha=0.5)
+
+    data_path="/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/cut_userchoice/5/xd.csv"
+    data = pd.read_csv(data_path, sep=",", header=None)
+    data=np.array(data)
+    print(data)
+
+    xdata= data[0,:]
+    ydata= data[1,:]
+    zdata= data[2,:]
+    ax.plot(xdata, ydata, zdata, c="blue", alpha=0.5)
+
 
 ###########################
 ### plot demonstrations ### # 3x4 grid of all trials demonstrated by all probands
@@ -184,9 +228,11 @@ if plot_GMM:
 if plot_time_traj:
     fig = plt.figure(4, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
+    ax = plt.axes(projection='3d')
+    plt.title('Manipulabilities over time')
     n_demos=1
     scaling_factor=1e-2
-    plot_every_nth = 500
+    plot_every_nth = 5
 
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
@@ -194,10 +240,8 @@ if plot_time_traj:
     print(experiment_name, ' ', proband,' nPoints =', nPoints)
     nPoints=int(nPoints)
 
-    plot_time_demos = True
+    plot_time_demos = False
     if plot_time_demos:
-        ax = plt.axes(projection='3d')
-        plt.title('Manipulabilities over time')
         files_m = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+str(proband)+"*_m.csv"))
         
         for f in np.arange(n_demos):
@@ -226,7 +270,7 @@ if plot_time_traj:
         demo=list()
 
 
-        for i in np.arange(0, nPoints):
+        for i in np.arange(0, len(demo_tmp)):
             demo.append(scaling_factor*demo_tmp[i,:].reshape(3,3))
 
 
@@ -237,112 +281,26 @@ if plot_time_traj:
             ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
             cnt+=1
 
-    plot_time_controlled = False
+    plot_time_controlled = True
     if plot_time_controlled:
-        filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/xhat.csv"
+        filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/controlledManipulabilities.csv"
         controlled_tmp = genfromtxt(filename_controlled, delimiter=',')
         controlled_tmp = scaling_factor*controlled_tmp
 
         controlled=list()
-        for i in np.arange(n_points):
+        for i in np.arange(controlled_tmp):
             controlled.append(controlled_tmp[i,:].reshape(3,3))
 
         cnt=0
-        for i in np.arange(0,n_points,plot_every_nth):
+        for i in np.arange(0,controlled,plot_every_nth):
             controlled_i=controlled[i]
-            X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [4*cnt,0,0], 1)
-            ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
+            X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [cnt,0,0], 1)
+            ax.plot_wireframe(X2,Y2,Z2, color='red', alpha=0.1)
             cnt+=1
 
     fig.tight_layout()
 
-    # scale=np.diag([10, 1, 1, 1.0])
-    # scale=scale*(1.0/scale.max())
-    # scale[3,3]=1.0
-
-    # def short_proj():
-    #   return np.dot(Axes3D.get_proj(ax), scale)
-
-    # ax.get_proj=short_proj
-    #plt.show()
-
-
-### Evolution of manipulabilities throughout one single control loop
-    
-if plot_time_loop:
-    fig = plt.figure(5, figsize=plt.figaspect(0.3))
-    plt.suptitle('Demonstrations rhuman experiments')
-    n_demos=2
-    scaling_factor=1e-1
-    plot_every_nth = 1000
-
-    with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
-        info = f.readline()
-    nPoints= int(info.strip().split(' ')[0])
-    print(experiment_name, ' ', proband,' nPoints =', nPoints)
-    nPoints=int(nPoints)
-
-    # plot_time_demos = True
-    # if plot_time_demos:
-    #     ax = plt.axes(projection='3d')
-    #     plt.title('Manipulabilities over time')
-    #     files_m = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+str(proband)+"*_m.csv"))
-        
-    #     for f in np.arange(n_demos):
-    #         demo_tmp = genfromtxt(files_m[f], delimiter=',')
-    #         demo_tmp=demo_tmp[:,:]
-    #         demo=list()
-
-
-    #         for i in np.arange(0, nPoints):
-    #             demo.append(scaling_factor*demo_tmp[i,1:].reshape(3,3))
-
-
-    #         cnt=0
-    #         for i in np.arange(0,len(demo),plot_every_nth):
-    #             m_i = demo[i]
-    #             X2,Y2,Z2 = get_cov_ellipsoid(m_i, [cnt,0,0], 1)
-    #             ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
-    #             cnt+=1
-
-    plot_time_learned = True
-    if plot_time_learned:
-        file_m = "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+experiment_name+"/"+str(proband)+"/xhat.csv"
-        
-        demo_tmp = genfromtxt(file_m, delimiter=',')
-        demo_tmp=demo_tmp[:,:]
-        demo=list()
-
-        for i in np.arange(0, nPoints):
-            demo.append(scaling_factor*demo_tmp[0,:].reshape(3,3))
-
-        cnt=0
-        for i in np.arange(0,len(demo),plot_every_nth):
-            m_i = demo[i]
-            X2,Y2,Z2 = get_cov_ellipsoid(m_i, [cnt,0,0], 1)
-            ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
-            cnt+=1
-
-    plot_time_controlled = True
-    if plot_time_controlled:
-        filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/loopManipulabilities.csv"
-        controlled_tmp = genfromtxt(filename_controlled, delimiter=',')
-        controlled_tmp = scaling_factor*controlled_tmp
-
-        controlled=list()
-        for i in np.arange(n_points):
-            controlled.append(controlled_tmp[i,:].reshape(3,3))
-
-        cnt=0
-        for i in np.arange(0,n_points,plot_every_nth):
-            controlled_i=controlled[i]
-            X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [1*cnt,0,0], 1)
-            ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
-            cnt+=1
-
-
-
-    scale=np.diag([1, 1, 1, 1.0])
+    scale=np.diag([10, 1, 1, 1.0])
     scale=scale*(1.0/scale.max())
     scale[3,3]=1.0
 
@@ -350,15 +308,81 @@ if plot_time_loop:
       return np.dot(Axes3D.get_proj(ax), scale)
 
     ax.get_proj=short_proj
+    #plt.show()
 
-    blue_patch = mpatches.Patch(color='blue', label='Controlled')
-    grey_patch = mpatches.Patch(color='orange', label='Demonstrated')
-    red_patch = mpatches.Patch(color='red', label='Error')
 
-    plt.legend(handles=[ blue_patch, grey_patch, red_patch])
-    plt.xlim(-0.5, demo_tmp.shape[0]/plot_every_nth)
-    plt.ylim(-1, 1)
-    ax.set_zlim(-1, 1)
+### Evolution of manipulabilities throughout one single control loop
+    
+if plot_time_loop:
+    fig = plt.figure(5, figsize=(8,5))
+    plt.suptitle('Demonstrations rhuman experiments')
+    ax = plt.axes(projection='3d')
+    
+    scaling_factor=1e-1
+    plot_every_nth = 1000
+    with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
+        info = f.readline()
+    nPoints= int(info.strip().split(' ')[0])
+    print(experiment_name, ' ', proband,' nPoints =', nPoints)
+    nPoints=int(nPoints)
+
+
+    filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/loopManipulabilities.csv"
+    controlled_tmp = genfromtxt(filename_controlled, delimiter=',')
+    controlled_tmp = scaling_factor*controlled_tmp
+
+    controlled=list()
+    for i in np.arange(len(controlled_tmp)):
+        controlled.append(controlled_tmp[i,:].reshape(3,3))
+
+    cnt=0
+    for i in np.arange(0,len(controlled),plot_every_nth):
+        controlled_i=controlled[i]
+        X2,Y2,Z2 = get_cov_ellipsoid(controlled_i, [2*cnt,0,0], 1)
+        ax.plot_wireframe(X2,Y2,Z2, color='red', alpha=0.1)
+        cnt+=1
+
+
+    file_m = "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+experiment_name+"/"+str(proband)+"/xhat.csv"
+    demo_tmp = genfromtxt(file_m, delimiter=',')
+    demo_tmp=demo_tmp[:,:]
+    demo=list()
+
+    unit_sphere=np.array([1,0,0,0,1,0,0,0,1]).reshape((3,3))
+    unit_sphere=unit_sphere/3
+
+    for i in np.arange(0, len(controlled)):
+        demo.append(scaling_factor*demo_tmp[0,:].reshape(3,3))
+
+    cnt=0
+    for i in np.arange(0,len(demo),plot_every_nth):
+        #m_i = demo[i]
+        m_i=unit_sphere
+        X2,Y2,Z2 = get_cov_ellipsoid(m_i, [2*cnt,0,0], 1)
+        ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
+        cnt+=1
+
+
+
+    
+    scale=np.diag([5, 1, 1, 1.0])
+    scale=scale*(1.0/scale.max())
+    scale[3,3]=1.0
+    def short_proj():
+      return np.dot(Axes3D.get_proj(ax), scale)
+    ax.get_proj=short_proj
+    ax.set_box_aspect(aspect = (1,1,1))
+    
+
+    blue_patch = mpatches.Patch(color='blue', label='demo')
+    #grey_patch = mpatches.Patch(color='orange', label='Demonstrated')
+    red_patch = mpatches.Patch(color='red', label='controlled')
+
+    plt.legend(handles=[ blue_patch, red_patch])
+    #plt.xlim(-0.5, demo_tmp.shape[0]/plot_every_nth)
+    #plt.xlim(-2,2)
+    #plt.ylim(-2,2)
+    #ax.set_zlim(-2,2)
 
     fig.tight_layout()
 

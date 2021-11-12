@@ -23,7 +23,7 @@ public:
     void stopSimulation();
     int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
-    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal, vector<MatrixXd> &mLoop);
+    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& goal, vector<MatrixXd> &mLoop, vector<double> &eLoop);
     MatrixXd ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
     DQ_SerialManipulator getKinematicsDQ();
     MatrixXd GetVelocityConstraints();

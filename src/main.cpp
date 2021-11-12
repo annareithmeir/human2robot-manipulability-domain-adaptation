@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <Mapping_utils.h>
 
 using namespace std;
 using namespace Eigen;
@@ -284,11 +285,8 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     deb(model2.m_muMan)
 
     MatrixXd errors = GetDiffVector(Vec2Symmat(xHat), m, nPoints); //demo0
-    deb(errors)
     WriteCSV(errors.colwise().mean().transpose(),"/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhatErrors.csv");
     deb(errors.mean())
-
-
 
     //Write model2.muMan, model2.sigma, xhat to files
 //    WriteCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
@@ -446,6 +444,7 @@ void control(){
     dx = xd.col(0) - x0;
 
     vector<MatrixXd> mLoop;
+    vector<double> eLoop;
     MatrixXd Mcurr;
     MatrixXd manips(xd.cols(), 9);
     MatrixXd errMatrix(xd.cols(),1);
@@ -461,7 +460,7 @@ void control(){
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -485,7 +484,7 @@ void controlManipulabilitiesHumanArm(){
     xd=xdTmp.rightCols(3).topRows(400).transpose();
     xd=xd*10;
     load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv", &xhatTmp);
-    xHat = xhatTmp.topRows(400); // TODO try scaling by 10, upper bound for gain
+    xHat = xhatTmp.topRows(400);
     xHat=xHat*10;
 
     VectorXd dx(3);
@@ -500,14 +499,15 @@ void controlManipulabilitiesHumanArm(){
     robot.startSimulation();
 
     vector<MatrixXd> mLoop;
+    vector<double> eLoop;
 
-//    for(int i=0;i<1;i++){
-    for(int i=0;i<xd.cols();i++){
+    for(int i=0;i<1;i++){
+//    for(int i=0;i<xd.cols();i++){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -529,12 +529,28 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
     MatrixXd xhatTmp(nPoints,9);
     MatrixXd xd(3, nPoints);
     MatrixXd xHat(nPoints,9);
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xd.csv", &xdTmp);
-    xd=xdTmp.rightCols(3).transpose();
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhat.csv", &xhatTmp);
-    xHat = xhatTmp;
+    deb(exp)
+    deb(proband)
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xd.csv", &xd);
+    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhat.csv", &xHat);
+
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
 
     vector<MatrixXd> mLoop;
+    vector<double> eLoop;
 
     VectorXd dx(3);
     VectorXd x0(3);
@@ -544,25 +560,37 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
     MatrixXd Mcurr;
     MatrixXd manips(xd.cols(), 9);
     MatrixXd errMatrix(xd.cols(),1);
+//    MatrixXd manips(100, 9);
+//    MatrixXd errMatrix(100,1);
     errMatrix.setZero();
     robot.startSimulation();
 
     for(int i=0;i<1;i++){
+//    for(int i=0;i<100;i++){
 //    for(int i=0;i<xd.cols();i++){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
+        MDesired.setIdentity();
+        MDesired=MDesired/3;
+//        MDesired=MDesired/5;
 //        Mcurr = robot.ManipulabilityTrackingSecondaryTask(xd.col(i), dx, MDesired);
-        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop);
+        Mcurr=robot.ManipulabilityTrackingMainTask(MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
+
+        MatrixXd eLoopMat(1, eLoop.size());
+        for(int i=0;i<eLoop.size();i++){
+            eLoopMat(0,i)=eLoop[i];
+        }
         WriteCSV(mLoop, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/loopManipulabilities.csv");
+        WriteCSV(eLoopMat, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/loopErrors.csv");
     }
     deb("done");
     robot.stopSimulation();
     WriteCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/errorManipulabilities.csv");
-    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/xhat.csv");
+    WriteCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband+"/controlledManipulabilities.csv");
 }
 
 int main() {
@@ -597,15 +625,17 @@ int nPoints, nDemos, totalPoints;
 infile >> nPoints >> nDemos >> totalPoints;
 assert(nPoints*nDemos==totalPoints);
 
-MatrixXd xd(3,nPoints);
-MatrixXd xHat(6,nPoints);
-learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
+//MatrixXd xd(3,nPoints);
+//MatrixXd xHat(6,nPoints);
+//learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
+controlManipulabilitiesRHumanArm(exp, proband, nPoints, nDemos, totalPoints);
 
 /**
  * Only perform the control part and use the learned data in xHat and xd
  */
 //control();
 //controlManipulabilitiesHumanArm();
+
 
 
 /**
@@ -672,6 +702,17 @@ learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
 //xd <<0.3,0.3;
 //
 //robot.ManipulabilityTrackingSecondaryTask(x, xd, med);
+
+/**
+ * Mapping functions test
+ */
+
+//MatrixXd A(3,3);
+//A << 1,0,0,0,1,0,0,0,1;
+//
+//deb(getPrincipalAxes(A))
+//deb(getLengthsOfPrincipalAxes(A))
+
 
 return 0;
 }

@@ -8,7 +8,7 @@ from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patches as mpatches
 import pandas as pd
-import get_cov_ellipsoid
+from get_cov_ellipsoid import get_cov_ellipsoid
 
 
 colors=['green', 'blue', 'orange', 'red', 'purple']
@@ -48,7 +48,7 @@ if one_loop:
     filename_demos = "../data/demos/translationManip3d.csv"
     filename_controlled= "../data/tracking/loopManipulabilities.csv"
 
-    n_points = 3000
+    n_points = 1000
     plot_every_nth = 100
     n_demos = 1
 
@@ -66,9 +66,9 @@ filename_controlled= "../data/tracking/xhat.csv"
 #   human arm data                           #
 ##############################################
 filename_demos = "../data/demos/humanArm/dummyManipulabilities.csv"
-filename_controlled= "../data/results/human_arm/xhat.csv
-'''
+filename_controlled= "../data/results/human_arm/xhat.csv"
 
+'''
 ### plot demonstration manipulabilities ###
 demo_tmp = genfromtxt(filename_demos, delimiter=',')
 demo_tmp=demo_tmp[1:,:]

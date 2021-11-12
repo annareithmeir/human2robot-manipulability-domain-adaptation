@@ -175,11 +175,11 @@ MatrixXd Franka::getManipulabilityMajorAxis(const MatrixXd& m) {
 }
 
 // Checked for 2d!
-MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector<MatrixXd> &mLoop) {
-    float km0 = 0.35; // 3
+MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
+    float km0 = 0.4; // 3
     float km = km0;
-//    float km = 0.0005; // 3
-    int niter=6000;
+
+    int niter=3000;
     float dt=1e-2;
     float err=1000;
     DQ x;
@@ -194,6 +194,7 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector
         if(dimensions==2){
             qt  = m_vi.get_joint_positions(m_jointNames);
             J = this->getTranslationJacobian();
+            deb(J)
             JFull = this->getJacobian();
             M = JFull*JFull.transpose();
 
@@ -214,12 +215,15 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector
             qt  = m_vi.get_joint_positions(m_jointNames);
             J = this->getTranslationJacobian().bottomRows(3);
             JFull = this->getJacobian();
-            M=J*J.transpose();
+//            M=JFull*JFull.transpose();
 
             Jgeo = buildGeometricJacobian(JFull, qt);
-
+            M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
+//            M=J*J.transpose();
             JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
-//            MDiff = LogMap(M, MDesired); // Checked!
+            JmT.bottomRows(3).setZero();
+//            deb(JmT)
+
             MDiff = LogMap(MDesired, M); // Checked! Like in MATLAB
             pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
             dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
@@ -229,6 +233,7 @@ MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector
 
             err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
             mLoop.push_back(M);
+            eLoop.push_back(err);
 
             km = km0* err;
 
@@ -637,6 +642,7 @@ MatrixXd Franka::buildGeometricJacobian(MatrixXd J, MatrixXd qt){
 
     J6.topRows(3)= tmp2.topRows(3);
     J6.bottomRows(3)= 2* tmp2.bottomRows(3);
+//    J6.topRows(3) = this->getTranslationJacobian().bottomRows(3);
 //    J6.bottomRows(3).setZero();
 //    J6.bottomRows(1).setOnes();
     return J6;

@@ -33,7 +33,7 @@ include_directories(
 )
 
 #set(Catch2_DIR /home/nnrthmr/Catch2/CMake)
-add_executable(ma_thesis src/main.cpp src/GMM.cpp src/GMM_SPD.cpp include/GMM.h include/GMM_SPD.h include/utils.h src/Franka.cpp include/Franka.h include/SPD_Utils.h)
+add_executable(ma_thesis src/main.cpp src/GMM.cpp src/GMM_SPD.cpp include/GMM.h include/GMM_SPD.h include/utils.h include/Mapping_utils.h src/Franka.cpp include/Franka.h include/SPD_Utils.h include/Mapping_utils.h)
 target_link_libraries (ma_thesis
         Eigen3::Eigen
         pthread

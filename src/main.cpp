@@ -28,8 +28,8 @@ void learn2d(){
 
     MatrixXd expData(3, 100);
     expData.setZero();
-    std::vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
-    std::cout<<"GMR"<<std::endl;
+    vector<MatrixXd> expSigma; //m_dimOut x m_dimOut x m_nData
+    cout<<"GMR"<<std::endl;
     model.GMR(expData, expSigma);
 
     WriteCSV(expData, "/home/nnrthmr/CLionProjects/ma_thesis/data/expData3d.csv");
@@ -613,22 +613,22 @@ int main() {
  * Perform learning part on Luis experiment data, RHuMAn model data
  */
 
-string exp="cut_userchoice";
-string proband="4";
-
-string infoPath;
-if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";
-else infoPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/info.txt";
-
-ifstream infile(infoPath);
-int nPoints, nDemos, totalPoints;
-infile >> nPoints >> nDemos >> totalPoints;
-assert(nPoints*nDemos==totalPoints);
+//string exp="cut_userchoice";
+//string proband="4";
+//
+//string infoPath;
+//if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";
+//else infoPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/info.txt";
+//
+//ifstream infile(infoPath);
+//int nPoints, nDemos, totalPoints;
+//infile >> nPoints >> nDemos >> totalPoints;
+//assert(nPoints*nDemos==totalPoints);
 
 //MatrixXd xd(3,nPoints);
 //MatrixXd xHat(6,nPoints);
 //learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
-controlManipulabilitiesRHumanArm(exp, proband, nPoints, nDemos, totalPoints);
+//controlManipulabilitiesRHumanArm(exp, proband, nPoints, nDemos, totalPoints);
 
 /**
  * Only perform the control part and use the learned data in xHat and xd
@@ -712,6 +712,17 @@ controlManipulabilitiesRHumanArm(exp, proband, nPoints, nDemos, totalPoints);
 //
 //deb(getPrincipalAxes(A))
 //deb(getLengthsOfPrincipalAxes(A))
+
+/**
+ * Calibration process
+ */
+Franka robot = Franka();
+int n=10;
+MatrixXd pos(3,n);
+MatrixXd scales(1,n);
+robot.CalibrationProcess(pos, scales);
+WriteCSV(scales, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScales.csv");
+WriteCSV(pos, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv");
 
 
 return 0;

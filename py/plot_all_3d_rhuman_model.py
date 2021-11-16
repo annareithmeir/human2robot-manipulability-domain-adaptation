@@ -317,9 +317,10 @@ if plot_time_loop:
     fig = plt.figure(5, figsize=(8,5))
     plt.suptitle('Demonstrations rhuman experiments')
     ax = plt.axes(projection='3d')
+    ax_z_scale=12
     
     scaling_factor=1e-1
-    plot_every_nth = 1000
+    plot_every_nth = 500
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
     nPoints= int(info.strip().split(' ')[0])
@@ -356,20 +357,38 @@ if plot_time_loop:
 
     cnt=0
     for i in np.arange(0,len(demo),plot_every_nth):
-        #m_i = demo[i]
+        m_i = demo[i]
         m_i=unit_sphere
         X2,Y2,Z2 = get_cov_ellipsoid(m_i, [2*cnt,0,0], 1)
         ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
         cnt+=1
 
 
+    ### plot error ###
+    plot_error=False
+    if(plot_error):
+        filename_err="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/loopErrors.csv"
+        err_tmp = genfromtxt(filename_err, delimiter=',')
+
+
+        err=list()
+        for i in np.arange(0,len(controlled),plot_every_nth):
+            err.append(err_tmp[i])
+
+
+        x=np.linspace(0, ax_z_scale, num=int(len(controlled)/plot_every_nth))
+        y=np.ones(int(len(controlled)/plot_every_nth))
+        ax.plot(x,y,np.array(err)-np.mean(err), color='red', alpha=0.5)
+
 
     
-    scale=np.diag([5, 1, 1, 1.0])
+    scale=np.diag([ax_z_scale, 1, 1, 1.0])
     scale=scale*(1.0/scale.max())
     scale[3,3]=1.0
     def short_proj():
       return np.dot(Axes3D.get_proj(ax), scale)
+
+
     ax.get_proj=short_proj
     ax.set_box_aspect(aspect = (1,1,1))
     

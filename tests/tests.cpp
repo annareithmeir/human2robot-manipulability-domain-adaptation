@@ -38,6 +38,41 @@ TEST_CASE("Ellipsoid axes ratio"){
 
 }
 
+TEST_CASE("Matrix-Vector multiplication"){
+    MatrixXd m(3,3);
+    MatrixXd result(3,3);
+    MatrixXd v(1,3);
+    m.setIdentity();
+    v << 1,2,3;
+    result << 1,0,0,0,2,0,0,0,3;
+
+    MatrixXd m3=(m* v.transpose()).asDiagonal();
+
+    REQUIRE(m3==result);
+}
+
+TEST_CASE("Franka random generator"){
+    Franka franka;
+    MatrixXd m = franka.GetJointConstraints();
+    MatrixXd m2 = franka.GetRandomJointConfig(1);
+    
+    REQUIRE(m2.rows()==1);
+    REQUIRE(m.col(0).minCoeff() <= m2(0,0));
+    REQUIRE(m2(0,0) <= m.col(0).maxCoeff());
+    REQUIRE(m.col(1).minCoeff() <= m2(0,1));
+    REQUIRE(m2(0,1) <= m.col(1).maxCoeff());
+    REQUIRE(m.col(2).minCoeff() <= m2(0,2));
+    REQUIRE(m2(0,2) <= m.col(2).maxCoeff());
+    REQUIRE(m.col(3).minCoeff() <= m2(0,3));
+    REQUIRE(m2(0,3) <= m.col(3).maxCoeff());
+    REQUIRE(m.col(4).minCoeff() <= m2(0,4));
+    REQUIRE(m2(0,4) <= m.col(4).maxCoeff());
+    REQUIRE(m.col(5).minCoeff() <= m2(0,5));
+    REQUIRE(m2(0,5) <= m.col(5).maxCoeff());
+    REQUIRE(m.col(6).minCoeff() <= m2(0,6));
+    REQUIRE(m2(0,6) <= m.col(6).maxCoeff());
+}
+
 TEST_CASE("buildGeometricJacobian", ""){
     MatrixXd m(8,7);
     // Jacobian of initial position of franka_kinematic scene

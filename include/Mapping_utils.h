@@ -7,13 +7,29 @@
 using namespace std;
 using namespace Eigen;
 
-
+inline
 MatrixXd getPrincipalAxes(MatrixXd ellipsoid){ // colwise
     EigenSolver<MatrixXd> es(ellipsoid);
     MatrixXd eigs= es.eigenvectors().real();
     return eigs;
 }
 
+inline
+MatrixXd getEigenValues(MatrixXd ellipsoid){ // colwise
+    EigenSolver<MatrixXd> es(ellipsoid);
+    MatrixXd eigs= es.eigenvalues().real();
+    return eigs;
+}
+
+inline
+MatrixXd getSingularValues(MatrixXd ellipsoid){ // colwise
+    JacobiSVD<MatrixXd> svd(ellipsoid, ComputeThinU | ComputeThinV);
+    MatrixXd sings = svd.singularValues().real();
+    return sings;
+}
+
+
+inline
 MatrixXd getLengthsOfPrincipalAxes(MatrixXd ellipsoid){
     EigenSolver<MatrixXd> es(ellipsoid);
     MatrixXd eigvals= es.eigenvalues().real();
@@ -21,6 +37,7 @@ MatrixXd getLengthsOfPrincipalAxes(MatrixXd ellipsoid){
     return eigvals;
 }
 
+inline
 MatrixXd getRatiosOfAxesLengths(MatrixXd ellipsoidTeacher, MatrixXd ellipsoidStudent){ //
     MatrixXd lengthTeacher = getLengthsOfPrincipalAxes(ellipsoidTeacher);
     MatrixXd lengthStudent = getLengthsOfPrincipalAxes(ellipsoidStudent);

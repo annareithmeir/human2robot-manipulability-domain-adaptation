@@ -83,8 +83,13 @@ void WriteCSV(const MatrixXd& data, const string path){
     outdata.close();
 }
 
+/**
+ * Writes data to csv file, rowwise. Matrices are rolled out into one row per matrix.
+ * @param data
+ * @param path
+ */
 inline
-void WriteCSV(const std::vector<MatrixXd>& data, const string path){
+void WriteCSV(const vector<MatrixXd>& data, const string path){
     ofstream outdata;
     MatrixXd tmp(data.size(), data[0].cols()*data[0].rows());
     tmp.setZero();
@@ -94,7 +99,7 @@ void WriteCSV(const std::vector<MatrixXd>& data, const string path){
 
     for(int i=0;i<data.size();i++){
         for(int j=0; j< data[0].rows();j++){
-            for(int k=0; k< data[0].rows();k++){
+            for(int k=0; k< data[0].cols();k++){
                 tmp2(0,(j*data[i].cols()+k)) = data[i](j,k);
             }
         }

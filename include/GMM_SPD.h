@@ -6,7 +6,7 @@
 #include <Eigen/Eigenvalues>
 #include <numeric>
 #include <cmath>
-#include "SPD_Utils.h"
+#include "utils.h"
 
 using namespace Eigen;
 using namespace std;

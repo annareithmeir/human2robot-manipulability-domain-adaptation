@@ -7,7 +7,6 @@
 #include <dqrobotics/utils/DQ_Constants.h>
 #include <dqrobotics/robot_modeling/DQ_SerialManipulatorDH.h>
 #include <random>
-#include "SPD_Utils.h"
 #include "Mapping_utils.h"
 
 using namespace Eigen;

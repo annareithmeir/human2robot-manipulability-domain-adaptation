@@ -2,9 +2,7 @@
 #include <GMM.h>
 #include <GMM_SPD.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <sys/stat.h>
-#include <Mapping_utils.h>
 
 using namespace std;
 using namespace Eigen;

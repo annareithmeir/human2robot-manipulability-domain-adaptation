@@ -586,11 +586,11 @@ MatrixXd Franka::GetRandomJointConfig(int n){
  * @param eLoop vector of errors throughout loop
  */
 void Franka::UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd> &finalM, vector<MatrixXd> &finalPos, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
-    float km0 = 0.025;
+    float km0 = 0.03;
     float km = km0;
     uint8_t scaledFlag =0;
 
-    int niter=10;
+    int niter=1000;
     float dt=1e-2;
     float err=1000;
     MatrixXd J, M, JFull, JmT, MDiff, pinv, dqt1;
@@ -611,7 +611,7 @@ void Franka::UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd
         M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
         if(i==0) cout<<M<<endl;
         JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
-        JmT.bottomRows(3).setZero();
+//        JmT.bottomRows(3).setZero();
 
         MDiff = LogMap(MDesired, M); // Checked! Like in MATLAB
         pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
@@ -621,8 +621,12 @@ void Franka::UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd
 
         err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
 
-        if(err<1.3 && scaledFlag==0) {
-            MDesired=MDesired* getSingularValues(M).mean();
+        if(err<1.5 && scaledFlag==0) {
+            // singular values
+            MDesired=MDesired* getSingularValues(M).minCoeff(); // TODO min makes sense?
+
+            //eig values like page 1 in paper
+            MDesired = MDesired * getLengthOfPrincipalAxis(M);
             scaledFlag=1;
         }
 
@@ -642,12 +646,19 @@ void Franka::UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd
     cout<<getSingularValues(M)<<endl;
 }
 
+/**
+ * Calibration process to calculate the scale distribution when controling for unit sphere.
+ * @param positions 3xnum matrix, colwise positions of calibration process
+ * @param scales 1xnum scales from process
+ */
 void Franka::CalibrationProcess(MatrixXd &positions, MatrixXd &scales){
     assert(positions.cols() == scales.cols());
     assert(positions.rows()==3);
     assert(scales.rows()==1);
 
     int num = positions.cols();
+    cout<< "Calibration process based on "<<num<<" random configurations of the robot."<<endl;
+
     vector<double> eLoop;
     vector<MatrixXd> mLoop, finalM, finalPos;
 
@@ -660,15 +671,13 @@ void Franka::CalibrationProcess(MatrixXd &positions, MatrixXd &scales){
         UnitShpereTrackingMainTask(randomJoints.row(i),  finalM, finalPos, mLoop, eLoop);
     }
     assert(finalM.size()==num);
+    assert(finalPos.size()==num);
 
 
     for(int i=0; i< num;++i){
-        scales(0,i)=getSingularValues(finalM[i]).mean();
+        scales(0,i)=getSingularValues(finalM[i]).minCoeff(); //TODO makes sense?
         positions.col(i) = finalPos[i];
     }
-
-//    WriteCSV(finalM, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalM.csv");
-//    WriteCSV(finalPos, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv");
 }
 
 MatrixXd Franka::GetVelocityConstraints() {

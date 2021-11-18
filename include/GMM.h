@@ -2,13 +2,11 @@
 #define MA_THESIS_GMM_H
 
 #include <vector>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <numeric>
 #include <cmath>
 #include <iostream>
+#include <Eigen/Dense>
 
-
-using Tensor3d = Eigen::Tensor<double, 3>;
 using namespace std;
 using namespace Eigen;
 
@@ -30,7 +28,6 @@ public:
     std::vector<double> m_priors;
     std::vector<MatrixXd> m_sigma;
     Eigen::MatrixXd m_mu;
-    std::vector<Tensor3d> m_data_m;
     MatrixXd m_data_pos;
     MatrixXd m_L, m_gamma, m_gamma2;
 

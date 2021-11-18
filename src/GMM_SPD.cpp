@@ -473,7 +473,7 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
 
         // Iterative computation
         for (int iter = 0; iter < 10; iter++) {
-            deb('In SPD_GMR iter')
+            deb("In SPD_GMR iter")
             deb(iter)
             uHat.col(t).setZero();
             uoutTmp.setZero();

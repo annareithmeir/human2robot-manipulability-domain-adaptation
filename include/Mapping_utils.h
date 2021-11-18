@@ -3,9 +3,57 @@
 
 #include "utils.h"
 #include <Eigen/Eigenvalues>
+#include "MatlabEngine.hpp"
+#include "MatlabDataArray.hpp"
 
 using namespace std;
 using namespace Eigen;
+using namespace matlab::engine;
+using namespace matlab::data;
+
+// Checked!
+inline
+double getInterpolatedPoint(const MatrixXd pos, const MatrixXd scales, double x, double y, double z, int type) {
+    unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
+    matlab::data::ArrayFactory factory;
+
+    const unsigned long posRows=pos.rows();
+    const unsigned long posCols=pos.cols();
+
+    TypedArray<double> pos_matlab = factory.createArray<double>({ posRows, posCols }, pos.data(), pos.data()+posRows*posCols);
+    TypedArray<double> scales_matlab = factory.createArray<double>({ 1, posCols }, scales.data(), scales.data()+posCols);
+
+    TypedArray<double>  args_x = factory.createScalar<double>(x);
+    TypedArray<double>  args_y = factory.createScalar<double>(y);
+    matlab::data::TypedArray<double>  args_z = factory.createScalar<double>(z);
+    matlab::data::TypedArray<double>  args_type = factory.createScalar<double>(type);
+
+    matlabPtr->setVariable(u"pos_m", std::move(pos_matlab));
+    matlabPtr->setVariable(u"scales_m", std::move(scales_matlab));
+    matlabPtr->setVariable(u"x_m", std::move(args_x));
+    matlabPtr->setVariable(u"y_m", std::move(args_y));
+    matlabPtr->setVariable(u"z_m", std::move(args_z));
+    matlabPtr->setVariable(u"type_m", std::move(args_type));
+
+    matlabPtr->eval(u"v=interpolationAtPoint(pos_m,scales_m,x_m,y_m,z_m,type_m)");
+    matlab::data::TypedArray<double> const v = matlabPtr->getVariable(u"v");
+
+    return v[0];
+}
+
+inline
+double getScalingRatioAtPoint(const MatrixXd pos, const MatrixXd scales, double x, double y, double z){
+    int interpolationType=0;
+    MatrixXd posHuman(pos.rows(), pos.cols());
+    MatrixXd scalesHuman(pos.rows(), pos.cols());
+
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv", &posHuman);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScales.csv", &scalesHuman);
+    double robotInterpolatedPoint = getInterpolatedPoint(pos, scales, x,y,z, interpolationType);
+    double humanInterpolatedPoint = getInterpolatedPoint(posHuman, scalesHuman, x,y,z, interpolationType);
+    return robotInterpolatedPoint/humanInterpolatedPoint;
+
+}
 
 inline
 MatrixXd getPrincipalAxes(MatrixXd ellipsoid){ // colwise
@@ -37,12 +85,21 @@ MatrixXd getLengthsOfPrincipalAxes(MatrixXd ellipsoid){
     return eigvals;
 }
 
+// as described page 1 in paper
+inline
+double getLengthOfPrincipalAxis(MatrixXd ellipsoid){
+    EigenSolver<MatrixXd> es(ellipsoid);
+    MatrixXd eigvals= es.eigenvalues().real();
+    return sqrt(eigvals.maxCoeff());
+}
+
 inline
 MatrixXd getRatiosOfAxesLengths(MatrixXd ellipsoidTeacher, MatrixXd ellipsoidStudent){ //
     MatrixXd lengthTeacher = getLengthsOfPrincipalAxes(ellipsoidTeacher);
     MatrixXd lengthStudent = getLengthsOfPrincipalAxes(ellipsoidStudent);
     return (lengthStudent.array()/lengthTeacher.array()).matrix();
 }
+
 
 
 #endif //MA_THESIS_MAPPING_UTILS_H

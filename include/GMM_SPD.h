@@ -2,7 +2,6 @@
 #define MA_THESIS_GMM_SPD_H
 
 #include <vector>
-#include <unsupported/Eigen/CXX11/Tensor>
 #include <unsupported/Eigen/MatrixFunctions>
 #include <Eigen/Eigenvalues>
 #include <numeric>

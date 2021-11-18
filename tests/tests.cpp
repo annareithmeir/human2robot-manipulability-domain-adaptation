@@ -38,6 +38,15 @@ TEST_CASE("Ellipsoid axes ratio"){
 
 }
 
+TEST_CASE("Ellipsoid alength of principal axis"){
+    MatrixXd T(3,3);
+    T << 1,0,0,0,1,0,0,0,1;
+    double length = getLengthOfPrincipalAxis(T);
+
+    REQUIRE(length==1.0);
+
+}
+
 TEST_CASE("Matrix-Vector multiplication"){
     MatrixXd m(3,3);
     MatrixXd result(3,3);
@@ -49,6 +58,14 @@ TEST_CASE("Matrix-Vector multiplication"){
     MatrixXd m3=(m* v.transpose()).asDiagonal();
 
     REQUIRE(m3==result);
+}
+
+TEST_CASE("MATLAB interpolation function"){
+    MatrixXd pos(3,3);
+    pos.setIdentity();
+    MatrixXd scales(1,3);
+    scales.setOnes();
+    double x = getInterpolatedPoint(pos, scales,0,0,0,0);
 }
 
 TEST_CASE("Franka random generator"){

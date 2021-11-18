@@ -18,7 +18,7 @@ void learn2d(){
     string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/C_Mat.csv";
     //MatrixXd data(3, 400);
     MatrixXd data(4, 400);
-    vector<Tensor3d> data_m;
+//    vector<Tensor3d> data_m;
     load_data_cmat(cmat_path, &data);
     data.row(3)=data.row(2)*0.75;
 
@@ -38,7 +38,7 @@ void learn2d(){
 //     Build GMM for Manifold
     string mmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/Manip_Mat.csv";
     MatrixXd data2(400, 4);
-    load_data_mmat_skip_first(mmat_path, &data2);
+    LoadCSVSkipFirst(mmat_path, &data2);
 
     GMM_SPD model2 = GMM_SPD();
     model2.InitModel(data2, 4);
@@ -63,12 +63,12 @@ void learn3d(MatrixXd &xd, MatrixXd &xHat){
     std::cout<<"Loading demonstrations ..."<<std::endl;
     string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv";
     MatrixXd data(80, 4);
-    load_data_mmat_skip_first(cmat_path, &data);
+    LoadCSVSkipFirst(cmat_path, &data);
 
     string mmat_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/translationManip3d.csv";
     MatrixXd data2(80, 10);
     MatrixXd dataVectorized(80, 7);
-    load_data_mmat_skip_first(mmat_path, &data2);
+    LoadCSVSkipFirst(mmat_path, &data2);
 
     for (int i = 0; i < data2.rows(); i++) {
         dataVectorized(i, 0) = data2(i,0);
@@ -247,8 +247,8 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
 
     deb(tPath)
     deb(mPath)
-    load_data_mmat_skip_first(tPath, &data);
-    load_data_mmat_skip_first(mPath, &m);
+    LoadCSVSkipFirst(tPath, &data);
+    LoadCSVSkipFirst(mPath, &m);
 
     MatrixXd tmp;
     dataVectorized.leftCols(1) = data.leftCols(1);
@@ -303,7 +303,7 @@ void transfer3d(Franka robotStudent){
     // Build GMM for trajectories in cartesian coordinates
     string cmat_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv";
     MatrixXd data(80, 4);
-    load_data_mmat_skip_first(cmat_path, &data);
+    LoadCSVSkipFirst(cmat_path, &data);
 
     GMM model = GMM();
     model.InitModel(data.transpose(), 4);
@@ -317,7 +317,7 @@ void transfer3d(Franka robotStudent){
     string mmat_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/translationManip3d.csv";
     MatrixXd data2(80, 10);
     MatrixXd dataVectorized(80, 7);
-    load_data_mmat_skip_first(mmat_path, &data2);
+    LoadCSVSkipFirst(mmat_path, &data2);
 
     for (int i = 0; i < data2.rows(); i++) {
         dataVectorized(i, 0) = data2(i,0);
@@ -434,9 +434,9 @@ void control(){
     MatrixXd xdTmp(80,4);
     MatrixXd xd(3, 20);
     MatrixXd xHat(20,9);
-    load_data_mmat_skip_first("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv", &xdTmp);
+    LoadCSVSkipFirst("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/trajectories.csv", &xdTmp);
     xd=xdTmp.rightCols(3).topRows(20).transpose();
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/xhat.csv", &xHat);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/xhat.csv", &xHat);
 
     VectorXd dx(3);
     VectorXd x0(3);
@@ -480,10 +480,10 @@ void controlManipulabilitiesHumanArm(){
     MatrixXd xhatTmp(1600,9);
     MatrixXd xd(3, 400);
     MatrixXd xHat(400,9);
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv", &xdTmp);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv", &xdTmp);
     xd=xdTmp.rightCols(3).topRows(400).transpose();
     xd=xd*10;
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv", &xhatTmp);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv", &xhatTmp);
     xHat = xhatTmp.topRows(400);
     xHat=xHat*10;
 
@@ -531,8 +531,8 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
     MatrixXd xHat(nPoints,9);
     deb(exp)
     deb(proband)
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xd.csv", &xd);
-    load_data_mmat("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband+"/xhat.csv", &xHat);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xd.csv", &xd);
+    LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xhat.csv", &xHat);
 
     if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {
@@ -716,14 +716,19 @@ int main() {
 /**
  * Calibration process
  */
-Franka robot = Franka();
-int n=10;
+//Franka robot = Franka();
+int n=30;
 MatrixXd pos(3,n);
 MatrixXd scales(1,n);
-robot.CalibrationProcess(pos, scales);
-WriteCSV(scales, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScales.csv");
-WriteCSV(pos, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv");
-
+//robot.CalibrationProcess(pos, scales);
+//WriteCSV(scales, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScales.csv");
+//WriteCSV(pos, "/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv");
+LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScales.csv", &scales);
+deb(scales)
+//LoadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPos.csv", &pos);
+//double x = getInterpolatedPoint(pos, scales,0.5,0.5,0.5,0);
+//double x= getScalingRatioAtPoint(pos, scales,0.5,0.5,0.5);
+//deb(x)
 
 return 0;
 }

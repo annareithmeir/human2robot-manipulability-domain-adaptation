@@ -10,7 +10,7 @@ find_package (Threads REQUIRED)
 add_definitions(-DMAX_EXT_API_CONNECTIONS=255)
 
 add_compile_options(-lMatlabDataArray -lMatlabEngine)
-set(MATLABPATH matlab)  # "addpath matlab" to startup.m must be done additonally!
+set(MATLABPATH matlab matlab/extra matlab/@rHuManModel)  # "addpath matlab ..." to startup.m must be done additonally!
 set(LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/usr/local/MATLAB/2021a/extern/bin/glnxa64:/usr/local/MATLAB/2021a/sys/os/glnxa64)
 
 include_directories(
@@ -27,9 +27,25 @@ target_link_libraries(franka
         Eigen3::Eigen
         dqrobotics
         dqrobotics-interface-vrep
-        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabEngine.so
-        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabDataArray.so
+#        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabEngine.so
+#        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabDataArray.so
         ${CMAKE_THREAD_LIBS_INIT})
+
+add_library(controller src/control.cpp)
+target_link_libraries(controller
+        pthread
+        Eigen3::Eigen
+        dqrobotics
+        dqrobotics-interface-vrep
+        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabEngine.so
+        /usr/local/MATLAB/R2021a/extern/bin/glnxa64/libMatlabDataArray.so)
+
+add_library(learn src/learn.cpp)
+target_link_libraries(learn
+        pthread
+        Eigen3::Eigen
+        gmm)
+
 
 add_executable(ma_thesis src/main.cpp
         )
@@ -37,7 +53,20 @@ add_executable(ma_thesis src/main.cpp
 target_link_libraries (ma_thesis
         Eigen3::Eigen
         gmm
-        franka)
+        franka
+        controller
+        learn)
+
+
+add_executable(calibration_process src/calibrationProcess.cpp
+        )
+
+target_link_libraries (calibration_process
+        Eigen3::Eigen
+        gmm
+        franka
+        controller
+        learn)
 
 
 add_executable(tests

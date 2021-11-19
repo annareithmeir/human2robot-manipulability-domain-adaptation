@@ -1,0 +1,4 @@
+In order to download the files, please use a SVN client.
+
+If you're using command line tools, just type in svn checkout svn://svn.code.sf.net/p/dqrobotics/code/trunk dqrobotics-code
+

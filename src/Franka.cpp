@@ -1,13 +1,12 @@
-#include <chrono>
-#include <thread>
 #include "Franka.h"
 
-#define deb(x) cout << #x << " " << x << endl;
 #define dimensions 3
-
 #define USE_VREP false
 
-Franka::Franka(){
+Franka::Franka(bool useVREP){
+    if(useVREP) this->m_useVREP=true;
+    else this->m_useVREP=false;
+
     const double pi2 = pi/2.0;
     this->m_kinematics= MatrixXd(5,7);
     this->m_kinematics <<   0,      0,          0,          0,      0,      0,          0,
@@ -26,16 +25,19 @@ Franka::Franka(){
                             "Franka_joint5",
                             "Franka_joint6",
                             "Franka_joint7"};
+
+    this->m_qt = VectorXd(7);
+    this->m_qt << +6.600e+01, +2.200e+01, +1.500e+01, -9.000e+01, +0.000e+00, +8.000e+01, +0.000e+00;
 }
-
-
 
 void Franka::startSimulation(){
     m_vi.start_simulation();
 }
 
 void Franka::stopSimulation(){
-    m_vi.stop_simulation();
+    std::cout << "Stopping V-REP simulation..." << std::endl;
+    this->m_vi.stop_simulation();
+    this->m_vi.disconnect();
 }
 
 DQ_SerialManipulator Franka::getKinematicsDQ(){
@@ -55,13 +57,13 @@ void Franka::moveToQGoal(const VectorXd& q_goal){
     e(0)=1.0;
 
     std::cout << "Starting control loop..." << std::endl;
-    std::cout << "Joint positions q (at starting) is: \n"<< std::endl << this->m_vi.get_joint_positions(this->m_jointNames) << std::endl;
+    std::cout << "Joint positions q (at starting) is: \n"<< std::endl << getCurrentJointPositions() << std::endl;
 
     // Control Loop
     while(e.norm()>0.05)
     {
         // Read the current robot joint positions
-        q          = m_vi.get_joint_positions(m_jointNames);
+        q          = getCurrentJointPositions();
         // Perform forward kinematics to obtain current EE configuration
         x       = m_robot.fkm(q);
         // Compute error in the Task-Space
@@ -75,30 +77,25 @@ void Franka::moveToQGoal(const VectorXd& q_goal){
         std::cout << "Tracking error: " <<e.norm()<< std::endl;
         std::cout << "====================================="<< std::endl;
         // Send commands to the robot
-        m_vi.set_joint_positions(m_jointNames,q);
+        setJointPositions(q);
         // Always sleep for a while before next step
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     std::cout << "Control finished..." << std::endl;
 }
 
-void Franka::setJoints(VectorXd q){
-    m_vi.set_joint_positions(m_jointNames,q);
+void Franka::setJointPositions(VectorXd q){
+    if(m_useVREP) m_vi.set_joint_positions(m_jointNames,q);
+    m_qt = q;
 }
 
 VectorXd Franka::getCurrentJointPositions(){
-    return m_vi.get_joint_positions(m_jointNames);
-}
-
-void Franka::StopSimulation(){
-    std::cout << "Stopping V-REP simulation..." << std::endl;
-    this->m_vi.stop_simulation();
-    this->m_vi.disconnect();
+    return m_qt;
 }
 
 MatrixXd Franka::getTranslationJacobian() {
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-    MatrixXd q  = m_vi.get_joint_positions(m_jointNames);
+    MatrixXd q  = getCurrentJointPositions();
     DQ x       = m_robot.fkm(q);
     MatrixXd J = m_robot.pose_jacobian(q);
     MatrixXd Jt = m_robot.translation_jacobian(J, x);
@@ -107,7 +104,7 @@ MatrixXd Franka::getTranslationJacobian() {
 
 MatrixXd Franka::getRotationJacobian() {
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-    MatrixXd q  = m_vi.get_joint_positions(m_jointNames);
+    MatrixXd q  = getCurrentJointPositions();
     DQ x       = m_robot.fkm(q);
     MatrixXd J = m_robot.pose_jacobian(q);
     MatrixXd Jt = m_robot.rotation_jacobian(J);
@@ -143,7 +140,7 @@ VectorXd Franka::getCurrentPosition(const MatrixXd &q) {
 
 VectorXd Franka::getCurrentPosition() {
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-    MatrixXd q          = m_vi.get_joint_positions(m_jointNames);
+    MatrixXd q          = getCurrentJointPositions();
     // Perform forward kinematics to obtain current EE configuration
     DQ x       = m_robot.fkm(q);
     Vector3d xvec;
@@ -153,7 +150,7 @@ VectorXd Franka::getCurrentPosition() {
 
 MatrixXd Franka::getPoseJacobian() {
     DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-    MatrixXd q  = m_vi.get_joint_positions(m_jointNames);
+    MatrixXd q  = getCurrentJointPositions();
     MatrixXd J = m_robot.pose_jacobian(q);
     return J;
 }
@@ -175,165 +172,6 @@ MatrixXd Franka::getManipulabilityMajorAxis(const MatrixXd& m) {
     int maxIdx;
 //    D.array().maxCoeff(&maxIdx);
     return V.col(maxIdx);
-}
-
-// Checked for 2d!
-MatrixXd Franka::ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
-    float km0 = 0.4; // 0.4 good
-    float km = km0;
-
-    int niter=1;
-    float dt=1e-2;
-    float err=1000;
-    DQ x;
-    MatrixXd J, M, JFull, qt, JmT, MDiff, pinv, dqt1;
-    MatrixXd Jgeo(6,7);
-    DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-
-//    while(err>0.05){
-    for(int i=0;i<niter; i++){
-        if(dimensions==2){
-            qt  = m_vi.get_joint_positions(m_jointNames);
-            J = this->getTranslationJacobian();
-            deb(J)
-            JFull = this->getPoseJacobian();
-            M = JFull*JFull.transpose();
-
-            JmT = ComputeManipulabilityJacobian(JFull); // Checked!
-            MDiff = LogMap(MDesired, M); // Checked!
-            pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-            dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
-
-            m_vi.set_joint_positions(m_jointNames,qt + dqt1*dt); // Checked!
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
-
-            std::cout << "Tracking error: " <<err<< std::endl; //norm returns Frobenius norm if Matrices
-            std::cout << "====================================="<< std::endl;
-        }
-        else{
-            qt  = m_vi.get_joint_positions(m_jointNames);
-            J = this->getTranslationJacobian().bottomRows(3);
-            JFull = this->getPoseJacobian();
-            deb(JFull)
-//            M=JFull*JFull.transpose();
-
-            Jgeo = buildGeometricJacobian(JFull, qt);
-            deb(Jgeo)
-            M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
-            deb(M)
-//            M=J*J.transpose();
-            JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
-            deb(JmT)
-            JmT.bottomRows(3).setZero();
-//            deb(JmT)
-
-            MDiff = LogMap(MDesired, M); // Checked! Like in MATLAB
-            deb(MDiff)
-            pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-            deb(pinv)
-            dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
-            deb(Symmat2Vec(MDiff).transpose())
-            deb(dqt1)
-
-            m_vi.set_joint_positions(m_jointNames,qt + dqt1*dt); // Checked!
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
-
-            mLoop.push_back(M);
-            eLoop.push_back(err);
-
-            km = km0* err;
-
-            std::cout << "Tracking error: " <<err << "  new gain: " <<km<< std::endl; //norm returns Frobenius norm if Matrices
-        }
-    }
-    std::cout << "====================================="<< std::endl;
-    return M;
-}
-
-MatrixXd Franka::ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired) {
-    float dt=1e-2;
-    int niter=200;
-    int kp=3; //gain for position control
-    int km=0; // gain for manip in null space
-    int nDoF = 4; //robot dofs
-
-    DQ x;
-    double errPos=1000, errManip=1000;
-    MatrixXd J, M, qt, JmT, DxR, pinv, dqt1, MDiff, pinv2, mnsCommand, dqns, JFull, xPos;
-    if(dimensions==2) xPos = MatrixXd(2,1);
-    else xPos=MatrixXd(3,1);
-    DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-
-//    while(errPos>0.02) {
-//    while(errPos>0.02 || errManip>0.6) {
-    for(int i=0;i<niter; i++) {
-        if(dimensions==2){
-            qt = m_vi.get_joint_positions(m_jointNames);
-            x = m_robot.fkm(qt);
-            cout<<"x DQ: "<<x.vec8();
-            xPos << x.translation().vec3()[0], x.translation().vec3()[1];
-
-            J = this->getPoseJacobian();
-            M = J * J.transpose();
-
-            JmT = ComputeManipulabilityJacobian(J); // Checked!
-            deb(JmT)
-
-            // Compute joint velocities
-            DxR = DXDesired + kp*(XDesired-xPos);
-            pinv = J.completeOrthogonalDecomposition().pseudoInverse();
-            dqt1 = pinv*DxR;
-
-            // Compute null space joint velocities
-            MDiff = LogMap(MDesired, M); // Checked!
-            pinv2 = JmT.completeOrthogonalDecomposition().pseudoInverse();
-            mnsCommand = pinv2 * Symmat2Vec(MDiff);
-            dqns = (MatrixXd::Identity(nDoF, nDoF) - pinv*J)*km*mnsCommand; // Redundancy resolution
-
-            m_vi.set_joint_positions(m_jointNames,qt + (dqt1+dqns)*dt);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            std::cout << "Position/Manipulability tracking error: " <<(XDesired-xPos).norm()<<"   "<<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl;
-//            std::cout << "Manipulability tracking error: " <<(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm()<< std::endl; //norm returns Frobenius norm if Matrices
-            std::cout << "====================================="<< std::endl;
-        }
-        else{
-            qt = m_vi.get_joint_positions(m_jointNames);
-            x = m_robot.fkm(qt);
-            xPos << x.translation().vec3()[0], x.translation().vec3()[1], x.translation().vec3()[2];
-
-            JFull = this->getPoseJacobian();
-            J = this->getTranslationJacobian().bottomRows(3);
-            M=J*J.transpose();
-
-
-            JmT = ComputeManipulabilityJacobian(JFull); // Checked!
-
-            // Compute joint velocities
-            DxR = DXDesired + kp*(XDesired-xPos);
-            pinv = J.completeOrthogonalDecomposition().pseudoInverse();
-            dqt1 = pinv*DxR;
-
-            // Compute null space joint velocities
-            MDiff = LogMap(MDesired, M); // Checked!
-            pinv2 = JmT.completeOrthogonalDecomposition().pseudoInverse();
-            mnsCommand = pinv2 * Symmat2Vec(MDiff).transpose();
-            dqns = (MatrixXd::Identity(this->m_dof, this->m_dof) - pinv*J)*km*mnsCommand; // Redundancy resolution
-            m_vi.set_joint_positions(m_jointNames,qt + (dqt1+dqns)*dt);
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
-
-            errPos=(XDesired-xPos).norm();
-            errManip=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
-
-            std::cout << "Position/Manipulability tracking error: " <<errPos<<"   "<<errManip<< std::endl;
-        }
-    }
-    std::cout << "====================================="<< std::endl;
-    return M;
 }
 
 std::vector<MatrixXd> Franka::ComputeTensorMatrixProduct(const vector<MatrixXd>& T, const MatrixXd& U, int mode){
@@ -507,8 +345,8 @@ MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     else JmRed=MatrixXd(6, Jm.size());
     JmRed.setZero();
     for(int i=0;i<Jm.size();i++) {
-        if (dimensions==2) JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 2, 2))).transpose(); //TaskVar 1:2 in MATLAB
-        else JmRed.col(i) = (Symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:3 in MATLAB
+        if (dimensions==2) JmRed.col(i) = (symmat2Vec(Jm[i].block(0, 0, 2, 2))).transpose(); //TaskVar 1:2 in MATLAB
+        else JmRed.col(i) = (symmat2Vec(Jm[i].block(0, 0, 3, 3))).transpose(); //TaskVar 1:3 in MATLAB
     }
     return JmRed;
 }
@@ -576,113 +414,17 @@ MatrixXd Franka::GetRandomJointConfig(int n){
 
 }
 
-/**
- *
- * @param PosInit initial posotion to start from
- * @param MDesired manipulability we control for
- * @param finalM resulting manipulability
- * @param finalPos resulting EE position
- * @param mLoop vector of resulting manipulabilities throughout loop
- * @param eLoop vector of errors throughout loop
- */
-void Franka::UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd> &finalM, vector<MatrixXd> &finalPos, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
-    float km0 = 0.03;
-    float km = km0;
-    uint8_t scaledFlag =0;
-
-    int niter=1000;
-    float dt=1e-2;
-    float err=1000;
-    MatrixXd J, M, JFull, JmT, MDiff, pinv, dqt1;
-    VectorXd qt= PosInit.row(0);
-
-    MatrixXd Jgeo(6,7);
-    DQ_SerialManipulator m_robot = this->getKinematicsDQ();
-
-    MatrixXd MDesired(3,3);
-    MDesired.setIdentity();
-
-//    while(err>0.05){
-    for(int i=0;i<niter; i++){
-        J = this->getTranslationJacobian(qt).bottomRows(3);
-        JFull = this->getPoseJacobian(qt);
-
-        Jgeo = buildGeometricJacobian(JFull, qt);
-        M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
-        if(i==0) cout<<M<<endl;
-        JmT = ComputeManipulabilityJacobian(Jgeo); // Checked!
-//        JmT.bottomRows(3).setZero();
-
-        MDiff = LogMap(MDesired, M); // Checked! Like in MATLAB
-        pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-        dqt1 = pinv*km*Symmat2Vec(MDiff).transpose(); //Checked!
-
-        qt=qt + dqt1*dt;
-
-        err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
-
-        if(err<1.5 && scaledFlag==0) {
-            // singular values
-            MDesired=MDesired* getSingularValues(M).minCoeff(); // TODO min makes sense?
-
-            //eig values like page 1 in paper
-            MDesired = MDesired * getLengthOfPrincipalAxis(M);
-            scaledFlag=1;
-        }
-
-        mLoop.push_back(M);
-        eLoop.push_back(err);
-
-//        km = km0* err;
-
-        std::cout << "Tracking error: " <<err << "  new gain: " <<km<< std::endl; //norm returns Frobenius norm if Matrices
-    }
-    std::cout << "====================================="<< std::endl;
-    cout<<M<<endl;
-
-    DQ xFinal       = m_robot.fkm(qt).translation();
-    finalPos.push_back(vec3(xFinal));
-    finalM.push_back(M);
-    cout<<getSingularValues(M)<<endl;
-}
-
-/**
- * Calibration process to calculate the scale distribution when controling for unit sphere.
- * @param positions 3xnum matrix, colwise positions of calibration process
- * @param scales 1xnum scales from process
- */
-void Franka::CalibrationProcess(MatrixXd &positions, MatrixXd &scales){
-    assert(positions.cols() == scales.cols());
-    assert(positions.rows()==3);
-    assert(scales.rows()==1);
-
-    int num = positions.cols();
-    cout<< "Calibration process based on "<<num<<" random configurations of the robot."<<endl;
-
-    vector<double> eLoop;
-    vector<MatrixXd> mLoop, finalM, finalPos;
-
-    MatrixXd randomJoints = GetRandomJointConfig(num); // num x 7, colwise
-    MatrixXd MDesired;
-    MDesired.setIdentity();
-
-    for(int i=0;i<num; ++i){
-        // finalM and finalPos: num elements, mLoop and eLoop: num*iter elements
-        UnitShpereTrackingMainTask(randomJoints.row(i),  finalM, finalPos, mLoop, eLoop);
-    }
-    assert(finalM.size()==num);
-    assert(finalPos.size()==num);
-
-
-    for(int i=0; i< num;++i){
-        scales(0,i)=getSingularValues(finalM[i]).minCoeff(); //TODO makes sense?
-        positions.col(i) = finalPos[i];
-    }
-}
-
 MatrixXd Franka::GetVelocityConstraints() {
     // https://frankaemika.github.io/docs/control_parameters.html
     MatrixXd cons(1,7);
     cons << 2.1750 ,2.1750 ,2.1750, 2.1750,2.6100 ,2.6100, 2.6100; //rad/s
     return cons;
+}
+
+DQ_VrepInterface Franka::getVREPInterface() {
+    return this->m_vi;
+}
+
+bool Franka::usingVREP() {
+    return m_useVREP;
 }

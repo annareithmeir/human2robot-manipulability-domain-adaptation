@@ -108,15 +108,16 @@ void GMM_SPD::InitModel(const MatrixXd& data, int demos) {
 
         // MuMan checked!
         this->m_muMan.col(i) = collectedMatrixFull.colwise().mean();
-        if(dimensions==2) this->m_muMan.block(1,i,3,1) = Symmat2Vec(SPDMean(Vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
-        else this->m_muMan.block(1,i,6,1) = Symmat2Vec(SPDMean(Vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
+        if(dimensions==2) this->m_muMan.block(1,i,3,1) = symmat2Vec(
+                    spdMean(vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
+        else this->m_muMan.block(1,i,6,1) = symmat2Vec(spdMean(vec2Symmat(collectedMatrix.transpose()), 10)).transpose();
 
         vector<MatrixXd> dataTangent;
         // DataTangent checked!
-        if(dimensions==2) dataTangent = LogmapVec(collectedMatrix.transpose(),
-                                                 this->m_muMan.col(i).bottomRows(3)); // cut off t data
-        else dataTangent = LogmapVec(collectedMatrix.transpose(),
-                                                                   this->m_muMan.col(i).bottomRows(6)); // cut off t data
+        if(dimensions==2) dataTangent = logMapVec(collectedMatrix.transpose(),
+                                                  this->m_muMan.col(i).bottomRows(3)); // cut off t data
+        else dataTangent = logMapVec(collectedMatrix.transpose(),
+                                     this->m_muMan.col(i).bottomRows(6)); // cut off t data
 
         MatrixXd dataTangentMatrix;
         if(dimensions==2) dataTangentMatrix=MatrixXd(4, dataTangent.size());
@@ -179,10 +180,10 @@ void GMM_SPD::EStep() {
         xts.row(0) = this->m_data.col(0).transpose() - tmp;
 
         vector<MatrixXd> logmapvec;
-        if(dimensions==2) logmapvec = LogmapVec(this->m_data.transpose().bottomRows(3),
-                                               this->m_muMan.block(1, k, 3, 1)); //row vector
-        else logmapvec = LogmapVec(this->m_data.transpose().bottomRows(6),
-                                                                 this->m_muMan.block(1, k, 6, 1)); //row vector
+        if(dimensions==2) logmapvec = logMapVec(this->m_data.transpose().bottomRows(3),
+                                                this->m_muMan.block(1, k, 3, 1)); //row vector
+        else logmapvec = logMapVec(this->m_data.transpose().bottomRows(6),
+                                   this->m_muMan.block(1, k, 6, 1)); //row vector
         for (int v = 0; v < logmapvec.size(); v++) {
             if(dimensions==2) xts.block(1, v, 3, 1) = logmapvec[v].transpose();
             else xts.block(1, v, 6, 1) = logmapvec[v].transpose();
@@ -214,10 +215,10 @@ void GMM_SPD::MStep() {
             logmapvec.clear();
             tmp.setConstant(this->m_muMan(0, k));
             uTmp.row(0) = this->m_data.col(0).transpose() - tmp;
-            if(dimensions==2) logmapvec = LogmapVec(this->m_data.transpose().bottomRows(3),
-                                  this->m_muMan.block(1, k, 3, 1)); //row vector
-            else logmapvec = LogmapVec(this->m_data.transpose().bottomRows(6),
-                                                    this->m_muMan.block(1, k, 6, 1)); //row vector
+            if(dimensions==2) logmapvec = logMapVec(this->m_data.transpose().bottomRows(3),
+                                                    this->m_muMan.block(1, k, 3, 1)); //row vector
+            else logmapvec = logMapVec(this->m_data.transpose().bottomRows(6),
+                                       this->m_muMan.block(1, k, 6, 1)); //row vector
             for (int v = 0; v < logmapvec.size(); v++) {
                 if(dimensions==2) uTmp.block(1, v, 3, 1) = logmapvec[v].transpose();
                 else uTmp.block(1, v, 6, 1) = logmapvec[v].transpose();
@@ -227,10 +228,10 @@ void GMM_SPD::MStep() {
 
             //Upd on manifold
             this->m_muMan(0, k) = uTmpTot(0) + this->m_muMan(0, k);
-            if(dimensions==2) this->m_muMan.block(1, k, 3, 1) = ExpmapVec(uTmpTot.bottomRows(3),
-                                                        this->m_muMan.block(1, k, 3, 1))[0].transpose();
-            else this->m_muMan.block(1, k, 6, 1) = ExpmapVec(uTmpTot.bottomRows(6),
-                                                                          this->m_muMan.block(1, k, 6, 1))[0].transpose();
+            if(dimensions==2) this->m_muMan.block(1, k, 3, 1) = expmapVec(uTmpTot.bottomRows(3),
+                                                                          this->m_muMan.block(1, k, 3, 1))[0].transpose();
+            else this->m_muMan.block(1, k, 6, 1) = expmapVec(uTmpTot.bottomRows(6),
+                                                             this->m_muMan.block(1, k, 6, 1))[0].transpose();
         }
         this->m_sigma[k] = (uTmp * this->m_H.row(k).asDiagonal() * uTmp.transpose()) +
                            (tmpId * this->m_regTerm);
@@ -345,16 +346,16 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
 
             for (int k = 0; k < this->m_k; k++) {
                 if(dimensions==2){
-                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 3, 1));
-                    S2 = Vec2Symmat(xHat.col(t));
+                    S1 = vec2Symmat(this->m_muMan.block(1, k, 3, 1));
+                    S2 = vec2Symmat(xHat.col(t));
                     Ac(0, 0) = 1;
-                    Ac.bottomRightCorner(2, 2) = ParallelTransport(S1[0], S2[0]);
+                    Ac.bottomRightCorner(2, 2) = parallelTransport(S1[0], S2[0]);
                 }
                 else{
-                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 6, 1));
-                    S2 = Vec2Symmat(xHat.col(t));
+                    S1 = vec2Symmat(this->m_muMan.block(1, k, 6, 1));
+                    S2 = vec2Symmat(xHat.col(t));
                     Ac(0, 0) = 1;
-                    Ac.bottomRightCorner(3, 3) = ParallelTransport(S1[0], S2[0]);
+                    Ac.bottomRightCorner(3, 3) = parallelTransport(S1[0], S2[0]);
                 }
 
                 pvMatK.clear();
@@ -364,24 +365,24 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
                     if(dimensions==2){
                         vMatTmp.setZero();
                         vMatTmp(0, 0) = V[k](0, j);
-                        vMatTmp.bottomRightCorner(2, 2) = Vec2Symmat(
-                                V[k].block(1, j, 3, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatTmp.bottomRightCorner(2, 2) = vec2Symmat(
+                                V[k].block(1, j, 3, 1))[0]; //vec2Symmat only one matrix here
                         vMatK.push_back(vMatTmp);
 
                         pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
                         pvKTmp(0, j) = pvMatK[j](0, 0);
-                        pvKTmp.col(j).bottomRows(3) = Symmat2Vec(pvMatK[j].block(1, 1, 2, 2)).transpose();
+                        pvKTmp.col(j).bottomRows(3) = symmat2Vec(pvMatK[j].block(1, 1, 2, 2)).transpose();
                     }
                     else{
                         vMatTmp.setZero();
                         vMatTmp(0, 0) = V[k](0, j);
-                        vMatTmp.bottomRightCorner(3, 3) = Vec2Symmat(
-                                V[k].block(1, j, 6, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatTmp.bottomRightCorner(3, 3) = vec2Symmat(
+                                V[k].block(1, j, 6, 1))[0]; //vec2Symmat only one matrix here
                         vMatK.push_back(vMatTmp);
 
                         pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
                         pvKTmp(0, j) = pvMatK[j](0, 0);
-                        pvKTmp.col(j).bottomRows(6) = Symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
+                        pvKTmp.col(j).bottomRows(6) = symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
                     }
                 }
 
@@ -393,15 +394,15 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
                 pSigma.push_back(pv[k] * pv[k].transpose());
 
                 // Gaussian conditioning on tangent space
-                if(dimensions==2) uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 3, 1), xHat.col(t))[0].transpose() +
-                                 (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
-                                  (xIn(0, t) - this->m_muMan(0, k))).matrix();
-                else uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 6, 1), xHat.col(t))[0].transpose() +
+                if(dimensions==2) uoutTmp.col(k) = logMapVec(this->m_muMan.block(1, k, 3, 1), xHat.col(t))[0].transpose() +
                                                    (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
+                                  (xIn(0, t) - this->m_muMan(0, k))).matrix();
+                else uoutTmp.col(k) = logMapVec(this->m_muMan.block(1, k, 6, 1), xHat.col(t))[0].transpose() +
+                                      (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
                                                     (xIn(0, t) - this->m_muMan(0, k))).matrix();
                 uHat.col(t) = uHat.col(t) + uoutTmp.col(k) * H(k, t);
             }
-            xHat.col(t) = ExpmapVec(uHat.col(t), xHat.col(t))[0].transpose();
+            xHat.col(t) = expmapVec(uHat.col(t), xHat.col(t))[0].transpose();
         }
         uOut.push_back(uoutTmp);
         expSigmaT.setZero();
@@ -485,16 +486,16 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
 
             for (int k = 0; k < this->m_k; k++) {
                 if(dimensions==2){
-                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 3, 1));
-                    S2 = Vec2Symmat(xHat.col(t));
+                    S1 = vec2Symmat(this->m_muMan.block(1, k, 3, 1));
+                    S2 = vec2Symmat(xHat.col(t));
                     Ac(0, 0) = 1;
-                    Ac.bottomRightCorner(2, 2) = ParallelTransport(S1[0], S2[0]);
+                    Ac.bottomRightCorner(2, 2) = parallelTransport(S1[0], S2[0]);
                 }
                 else{
-                    S1 = Vec2Symmat(this->m_muMan.block(1, k, 6, 1));
-                    S2 = Vec2Symmat(xHat.col(t));
+                    S1 = vec2Symmat(this->m_muMan.block(1, k, 6, 1));
+                    S2 = vec2Symmat(xHat.col(t));
                     Ac(0, 0) = 1;
-                    Ac.bottomRightCorner(3, 3) = ParallelTransport(S1[0], S2[0]);
+                    Ac.bottomRightCorner(3, 3) = parallelTransport(S1[0], S2[0]);
                 }
 
                 pvMatK.clear();
@@ -504,24 +505,24 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
                     if(dimensions==2){
                         vMatTmp.setZero();
                         vMatTmp(0, 0) = V[k](0, j);
-                        vMatTmp.bottomRightCorner(2, 2) = Vec2Symmat(
-                                V[k].block(1, j, 3, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatTmp.bottomRightCorner(2, 2) = vec2Symmat(
+                                V[k].block(1, j, 3, 1))[0]; //vec2Symmat only one matrix here
                         vMatK.push_back(vMatTmp);
 
                         pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
                         pvKTmp(0, j) = pvMatK[j](0, 0);
-                        pvKTmp.col(j).bottomRows(3) = Symmat2Vec(pvMatK[j].block(1, 1, 2, 2)).transpose();
+                        pvKTmp.col(j).bottomRows(3) = symmat2Vec(pvMatK[j].block(1, 1, 2, 2)).transpose();
                     }
                     else{
                         vMatTmp.setZero();
                         vMatTmp(0, 0) = V[k](0, j);
-                        vMatTmp.bottomRightCorner(3, 3) = Vec2Symmat(
-                                V[k].block(1, j, 6, 1))[0]; //Vec2Symmat only one matrix here
+                        vMatTmp.bottomRightCorner(3, 3) = vec2Symmat(
+                                V[k].block(1, j, 6, 1))[0]; //vec2Symmat only one matrix here
                         vMatK.push_back(vMatTmp);
 
                         pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
                         pvKTmp(0, j) = pvMatK[j](0, 0);
-                        pvKTmp.col(j).bottomRows(6) = Symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
+                        pvKTmp.col(j).bottomRows(6) = symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
                     }
                 }
 
@@ -533,15 +534,15 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd, int t) {
                 pSigma.push_back(pv[k] * pv[k].transpose());
 
                 // Gaussian conditioning on tangent space
-                if(dimensions==2) uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 3, 1), xHat.col(t))[0].transpose() +
+                if(dimensions==2) uoutTmp.col(k) = logMapVec(this->m_muMan.block(1, k, 3, 1), xHat.col(t))[0].transpose() +
                                                    (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
                                                     (xIn(0, t) - this->m_muMan(0, k))).matrix();
-                else uoutTmp.col(k) = LogmapVec(this->m_muMan.block(1, k, 6, 1), xHat.col(t))[0].transpose() +
+                else uoutTmp.col(k) = logMapVec(this->m_muMan.block(1, k, 6, 1), xHat.col(t))[0].transpose() +
                                       (getOutIn(pSigma[k]).array() / pSigma[k](0, 0) *
                                        (xIn(0, t) - this->m_muMan(0, k))).matrix();
                 uHat.col(t) = uHat.col(t) + uoutTmp.col(k) * H(k, t);
             }
-            xHat.col(t) = ExpmapVec(uHat.col(t), xHat.col(t))[0].transpose();
+            xHat.col(t) = expmapVec(uHat.col(t), xHat.col(t))[0].transpose();
         }
         uOut.push_back(uoutTmp);
         expSigmaT.setZero();

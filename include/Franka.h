@@ -7,7 +7,10 @@
 #include <dqrobotics/utils/DQ_Constants.h>
 #include <dqrobotics/robot_modeling/DQ_SerialManipulatorDH.h>
 #include <random>
-#include "Mapping_utils.h"
+//#include "Mapping_utils.h"
+#include "utils.h"
+#include <chrono>
+#include <thread>
 
 using namespace Eigen;
 using namespace std;
@@ -16,17 +19,18 @@ class Franka {
 
     MatrixXd m_kinematics;
     DQ_VrepInterface m_vi;
-    std::vector<std::string> m_jointNames;
-//    DQ_SerialManipulator m_robot;
+    vector<std::string> m_jointNames;
+    VectorXd m_qt;
+    bool m_useVREP;
+
 public:
-    Franka();
+    Franka(bool useVREP);
+    bool usingVREP();
+    DQ_VrepInterface getVREPInterface();
     void startSimulation();
     void stopSimulation();
     int m_dof;
     void moveToQGoal(const VectorXd& q_goal);
-    MatrixXd ManipulabilityTrackingMainTask(const MatrixXd& MDesired, vector<MatrixXd> &mLoop, vector<double> &eLoop);
-    void UnitShpereTrackingMainTask(const MatrixXd& PosInit, vector<MatrixXd> &finalM, vector<MatrixXd> &finalPos, vector<MatrixXd> &mLoop, vector<double> &eLoop);
-    MatrixXd ManipulabilityTrackingSecondaryTask(const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired);
     DQ_SerialManipulator getKinematicsDQ();
     MatrixXd GetVelocityConstraints();
     MatrixXd GetJointConstraints();
@@ -40,7 +44,7 @@ public:
     MatrixXd getPoseJacobian(const MatrixXd &q);
     MatrixXd getPoseJacobian();
     MatrixXd buildGeometricJacobian(MatrixXd J, MatrixXd qt);
-    void setJoints(VectorXd q);
+    void setJointPositions(VectorXd q);
     MatrixXd getManipulabilityMajorAxis(const MatrixXd& m);
     MatrixXd getManipulabilityLength(const MatrixXd& m);
     void StopSimulation();
@@ -49,10 +53,7 @@ public:
     VectorXd getCurrentPosition(const MatrixXd &q);
     VectorXd getCurrentPosition();
     std::vector<MatrixXd> ComputeTensorMatrixProduct(const vector<MatrixXd>& T, const MatrixXd& U, int mode);
-
-    void CalibrationProcess(MatrixXd &positions, MatrixXd &scales);
-
-};
+    };
 
 
 #endif //MA_THESIS_FRANKA_H

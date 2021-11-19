@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <unsupported/Eigen/MatrixFunctions>
+#include <sys/stat.h>
 
 #define deb(x) cout << #x << " " << x << endl;
 using namespace std;
@@ -16,7 +17,13 @@ using namespace Eigen;
 const static IOFormat CSVFormat(StreamPrecision, DontAlignCols, ", ", "\n");
 
 inline
-int LoadCSV (const string path, vector<vector<double>> &values) {
+bool fileExists (const std::string& name) {
+    struct stat buffer;
+    return (stat (name.c_str(), &buffer) == 0);
+}
+
+inline
+int loadCSV (const string path, vector<vector<double>> &values) {
     ifstream indata;
 //    ios_base::iostate exceptionMask = indata.exceptions() | std::ios::failbit;
 //    indata.exceptions(exceptionMask);
@@ -49,7 +56,7 @@ int LoadCSV (const string path, vector<vector<double>> &values) {
 }
 
 inline
-int LoadCSVSkipFirst (const string path, vector<vector<double>> values) {
+int loadCSVSkipFirst (const string path, vector<vector<double>> values) {
     ifstream indata;
     indata.exceptions ( ifstream::failbit | ifstream::badbit );
     try{
@@ -87,7 +94,7 @@ int LoadCSVSkipFirst (const string path, vector<vector<double>> values) {
 }
 
 inline
-void WriteCSV(const MatrixXd& data, const string path){
+void writeCSV(const MatrixXd& data, const string path){
     ofstream outdata;
     outdata.open(path);
     outdata << data.format(CSVFormat);
@@ -100,7 +107,7 @@ void WriteCSV(const MatrixXd& data, const string path){
  * @param path
  */
 inline
-void WriteCSV(const vector<MatrixXd>& data, const string path){
+void writeCSV(const vector<MatrixXd>& data, const string path){
     ofstream outdata;
     MatrixXd tmp(data.size(), data[0].cols()*data[0].rows());
     tmp.setZero();
@@ -128,7 +135,7 @@ void WriteCSV(const vector<MatrixXd>& data, const string path){
 inline
 MatrixXd read_cartesian_trajectories(const string file_path){
     vector<vector<double>> data;
-    LoadCSV(file_path, data);
+    loadCSV(file_path, data);
     MatrixXd trajs(4,data.size());
     trajs.setZero();
     for (int t = 0; t < data.size(); t++) {
@@ -178,7 +185,7 @@ void load_data_cmat(const string data_path, MatrixXd *data_pos){
     data_pos->setZero();
 
     vector<vector<double>> data;
-    LoadCSV(data_path, data);
+    loadCSV(data_path, data);
     std::cout<<data.size()<<" "<<data[0].size()<<std::endl;
     for (int t = 0; t < 400; t++) {
         (*data_pos)(0, t) = data[0][t];
@@ -188,11 +195,11 @@ void load_data_cmat(const string data_path, MatrixXd *data_pos){
 }
 
 inline
-void LoadCSV(const string data_path, MatrixXd *data_m){
+void loadCSV(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
     vector<vector<double>> data;
-    LoadCSV(data_path,data);
+    loadCSV(data_path, data);
     for (int t = 0; t < data.size(); t++) {
         for (int c = 0; c < data[0].size(); c++) {
             (*data_m)(t, c) = data[t][c];
@@ -201,11 +208,11 @@ void LoadCSV(const string data_path, MatrixXd *data_m){
 }
 
 inline
-void LoadCSVSkipFirst(const string data_path, MatrixXd *data_m){
+void loadCSVSkipFirst(const string data_path, MatrixXd *data_m){
     data_m->setZero();
 
     vector<vector<double>> data;
-    LoadCSVSkipFirst(data_path, data);
+    loadCSVSkipFirst(data_path, data);
     for (int t = 0; t < data.size(); t++) {
         for (int c = 0; c < data[0].size(); c++) {
             (*data_m)(t, c) = data[t][c];
@@ -228,7 +235,7 @@ vector<int> linspace(double a, double b, size_t N) {
 
 // Checked!
 inline
-void CumulativeSum(const VectorXd &input, VectorXd &result) {
+void cumulativeSum(const VectorXd &input, VectorXd &result) {
     result(0) = input[0];
     for (int i = 1; i < input.size(); i++) {
         result(i) = result(i - 1) + input(i);
@@ -237,7 +244,7 @@ void CumulativeSum(const VectorXd &input, VectorXd &result) {
 
 // Checked!
 inline
-MatrixXd ParallelTransport(const MatrixXd& S1, const MatrixXd& S2) {
+MatrixXd parallelTransport(const MatrixXd& S1, const MatrixXd& S2) {
     MatrixXd S3;
     S3 = (S1.transpose().inverse() * S2.transpose()).transpose().pow(0.5); //B/A = (A'\B')' and A\B = A.inv()*B
     return S3;
@@ -245,17 +252,17 @@ MatrixXd ParallelTransport(const MatrixXd& S1, const MatrixXd& S2) {
 
 // Checked!
 inline
-vector<MatrixXd> ParallelTransport(const vector<MatrixXd>& S1, const vector<MatrixXd>& S2) {
+vector<MatrixXd> parallelTransport(const vector<MatrixXd>& S1, const vector<MatrixXd>& S2) {
     vector<MatrixXd> S3;
     for (int i = 0; i < S1.size(); i++) {
-        S3.push_back(ParallelTransport(S1[i], S2[i])); //B/A = (A'\B')' and A\B = A.inv()*B
+        S3.push_back(parallelTransport(S1[i], S2[i])); //B/A = (A'\B')' and A\B = A.inv()*B
     }
     return S3;
 }
 
 // Checked!
 inline
-MatrixXd Symmat2Vec(const MatrixXd& mat) {
+MatrixXd symmat2Vec(const MatrixXd& mat) {
     int N = mat.rows();
     vector<double> v;
     VectorXd dia = mat.diagonal();
@@ -281,12 +288,12 @@ MatrixXd Symmat2Vec(const MatrixXd& mat) {
 
 // Checked!
 inline
-vector<MatrixXd> Symmat2Vec(const vector<MatrixXd>& mat_vec) {
+vector<MatrixXd> symmat2Vec(const vector<MatrixXd>& mat_vec) {
     MatrixXd vn;
     int N = mat_vec.size();
     vector<MatrixXd> vec;
     for (int i = 0; i < N; i++) {
-        vn = Symmat2Vec(mat_vec[i]);
+        vn = symmat2Vec(mat_vec[i]);
         vec.push_back(vn);
     }
     return vec;
@@ -294,7 +301,7 @@ vector<MatrixXd> Symmat2Vec(const vector<MatrixXd>& mat_vec) {
 
 // Checked!
 inline
-vector<MatrixXd> Vec2Symmat(const MatrixXd& vec) {
+vector<MatrixXd> vec2Symmat(const MatrixXd& vec) {
     vector<MatrixXd> MVector;
     MatrixXd vn, Mn;
     int d = vec.rows();
@@ -306,7 +313,7 @@ vector<MatrixXd> Vec2Symmat(const MatrixXd& vec) {
         vn = vec.col(n).transpose();
         Mn = vn.row(0).leftCols(D).asDiagonal();
         id.setZero();
-        CumulativeSum(VectorXd::LinSpaced(D, D, 1), id);
+        cumulativeSum(VectorXd::LinSpaced(D, D, 1), id);
         MatrixXd tmp1(Mn.rows(), Mn.cols());
         MatrixXd tmp2(Mn.rows(), Mn.cols());
         for (int i = 1; i < D; i++) {
@@ -331,17 +338,17 @@ vector<MatrixXd> Vec2Symmat(const MatrixXd& vec) {
 
 // Checked!
 inline
-vector<MatrixXd> Vec2Symmat(const vector<MatrixXd>& vec) {
+vector<MatrixXd> vec2Symmat(const vector<MatrixXd>& vec) {
     MatrixXd v(vec[0].rows(), vec.size());
     for (int i = 0; i < vec.size(); i++) {
         v.col(i) = vec[i];
     }
-    return Vec2Symmat(v);
+    return vec2Symmat(v);
 }
 
 // Checked!
 inline
-vector<MatrixXd> ExpMap(const vector<MatrixXd>& U, const MatrixXd& S) {
+vector<MatrixXd> expMap(const vector<MatrixXd>& U, const MatrixXd& S) {
     vector<MatrixXd> X;
     MatrixXd D,V, tmp2;
     for (int i = 0; i < U.size(); i++) {
@@ -357,17 +364,17 @@ vector<MatrixXd> ExpMap(const vector<MatrixXd>& U, const MatrixXd& S) {
 
 // Checked!
 inline
-vector<MatrixXd> ExpmapVec(const MatrixXd& u, const MatrixXd& s) {
-    vector<MatrixXd> U = Vec2Symmat(u);
-    vector<MatrixXd> S = Vec2Symmat(s);
-    vector<MatrixXd> X = ExpMap(U, S[0]); //Vec2Symmat gives back vector of size 1 here
-    vector<MatrixXd> x = Symmat2Vec(X);
+vector<MatrixXd> expmapVec(const MatrixXd& u, const MatrixXd& s) {
+    vector<MatrixXd> U = vec2Symmat(u);
+    vector<MatrixXd> S = vec2Symmat(s);
+    vector<MatrixXd> X = expMap(U, S[0]); //vec2Symmat gives back vector of size 1 here
+    vector<MatrixXd> x = symmat2Vec(X);
     return x;
 }
 
 // Checked!
 inline
-vector<MatrixXd> LogMap(const vector<MatrixXd>& X, const MatrixXd& S) {
+vector<MatrixXd> logMap(const vector<MatrixXd>& X, const MatrixXd& S) {
     vector<MatrixXd> U;
     MatrixXd tmp, D, V, tmp2;
     for (int i = 0; i < X.size(); i++) {
@@ -382,7 +389,7 @@ vector<MatrixXd> LogMap(const vector<MatrixXd>& X, const MatrixXd& S) {
 }
 
 inline
-MatrixXd LogMap(const MatrixXd& X, const MatrixXd& S) {
+MatrixXd logMap(const MatrixXd& X, const MatrixXd& S) {
     MatrixXd U;
     MatrixXd tmp = (S.inverse()) * X; //A\B in MATLAB is a^-1 * B
     EigenSolver<MatrixXd> es(tmp);
@@ -395,17 +402,17 @@ MatrixXd LogMap(const MatrixXd& X, const MatrixXd& S) {
 
 // Checked!
 inline
-vector<MatrixXd> LogmapVec(const MatrixXd& x, const MatrixXd& s) {
-    vector<MatrixXd> X = Vec2Symmat(x);
-    vector<MatrixXd> S = Vec2Symmat(s);
-    vector<MatrixXd> U = LogMap(X, S[0]); //Vec2Symmat gives back vector of size 1 here
-    vector<MatrixXd> u = Symmat2Vec(U);
+vector<MatrixXd> logMapVec(const MatrixXd& x, const MatrixXd& s) {
+    vector<MatrixXd> X = vec2Symmat(x);
+    vector<MatrixXd> S = vec2Symmat(s);
+    vector<MatrixXd> U = logMap(X, S[0]); //vec2Symmat gives back vector of size 1 here
+    vector<MatrixXd> u = symmat2Vec(U);
     return u;
 }
 
 // Checked!
 inline
-MatrixXd SPDMean(const vector<MatrixXd>& mat, int nIter) {
+MatrixXd spdMean(const vector<MatrixXd>& mat, int nIter) {
     MatrixXd M = mat[0];
     MatrixXd tmp;
     MatrixXd L(mat[0].rows(), mat[0].cols());
@@ -421,7 +428,7 @@ MatrixXd SPDMean(const vector<MatrixXd>& mat, int nIter) {
 }
 
 inline
-MatrixXd GetDiffVector(const vector<MatrixXd>& xHat, const MatrixXd& m, const int nPoints){
+MatrixXd getDiffVector(const vector<MatrixXd>& xHat, const MatrixXd& m, const int nPoints){
     int nDemos = m.rows()/nPoints;
     MatrixXd diffs(nDemos,nPoints);
     MatrixXd MDesired, M;

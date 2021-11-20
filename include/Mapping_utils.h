@@ -65,7 +65,7 @@ void getInterpolatedPoints(const MatrixXd pos, const MatrixXd scales, MatrixXd &
         matlabPtr->setVariable(u"type_m", std::move(args_type));
 
         matlabPtr->eval(u"v=interpolationAtPoint(pos_m,scales_m,x_m,y_m,z_m,type_m)");
-        matlab::data::TypedArray<double> const v = matlabPtr->getVariable(u"v");
+        matlab::data::TypedArray<double> v = matlabPtr->getVariable(u"v");
         scalesInterpolated(0,i) = v[0];
     }
 }
@@ -98,6 +98,11 @@ void getScalingRatiosAtPoints(int num, MatrixXd &xd, MatrixXd &ratios){
     MatrixXd scalesHuman(1, num);
     MatrixXd posRobot(3, num);
     MatrixXd scalesRobot(1, num);
+
+    assert(fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosUser1.csv") &&
+                   fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesUser1.csv") &&
+                   fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosRobot.csv") &&
+                   fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesRobot.csv"));
 
     loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosUser1.csv", &posHuman);
     loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesUser1.csv", &scalesHuman);

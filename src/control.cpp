@@ -169,7 +169,7 @@ MatrixXd manipulabilityTrackingSecondaryTask(Franka robot, const MatrixXd& XDesi
 /**
  *  Control only manipulabilities of given human arm movement
  */
-void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband, int nPoints, MatrixXd &ratios){
+void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband, int nPoints, bool mainTask, MatrixXd &ratios){
     int num = 30; //number of random samples for interpolation data
     MatrixXd xdTmp(nPoints,4);
     MatrixXd xhatTmp(nPoints,9);
@@ -216,10 +216,9 @@ void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband,
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
         MDesired = MDesired * ratios(0,i);
-//        MDesired = MDesired * getScalingRatioAtPoint(num, xd(0,i), xd(1,i), xd(2,i));
 
-//        Mcurr = manipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
-        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+        if(mainTask) Mcurr = manipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
+        else Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -310,7 +309,7 @@ void unitShpereTrackingMainTask(Franka robot, const MatrixXd& PosInit, vector<Ma
     DQ xFinal       = m_robot.fkm(qt).translation();
     finalPos.push_back(vec3(xFinal));
     finalM.push_back(M);
-    cout<<getSingularValues(M)<<endl;
+//    cout<<getSingularValues(M)<<endl;
 }
 
 void precomputeScalingRatios(Franka &robot, MatrixXd &xd, MatrixXd &ratios){
@@ -353,13 +352,12 @@ void calibrationProcessRobot(Franka robot, MatrixXd &positions, MatrixXd &scales
     }
 }
 
-
 /**
  * Calibration process for human arm to calculate the scale distribution when controling for unit sphere.
  * @param positions 3xnum matrix, colwise positions of calibration process
  * @param scales 1xnum scales from process
  */
-void calibrationProcessHuman(MatrixXd &positions, MatrixXd &scales){
+void calibrationProcessHuman(MatrixXd &positions, MatrixXd &scales, double shoulderHeight){
     assert(positions.cols() == scales.cols());
     assert(positions.rows()==3);
     assert(scales.rows()==1);
@@ -370,7 +368,7 @@ void calibrationProcessHuman(MatrixXd &positions, MatrixXd &scales){
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;
 
-    matlab::data::TypedArray<double>  args_shoulderHeight = factory.createScalar<double>(1.35);
+    matlab::data::TypedArray<double>  args_shoulderHeight = factory.createScalar<double>(shoulderHeight);
     matlab::data::TypedArray<int>  args_num = factory.createScalar<int>(num);
 
     matlabPtr->setVariable(u"shoulderHeight_m", std::move(args_shoulderHeight));

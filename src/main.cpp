@@ -121,7 +121,7 @@ void learnAndConrol(){
         if(i>0) dx = xd.col(i) - xd.col(i-1);
         deb(dx);
         deb(xd.col(i));
-        Mcurr = ManipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, vec2Symmat(xHat.col(i))[0]);
+        Mcurr = manipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, vec2Symmat(xHat.col(i))[0]);
 
 //        Mcurr=robot.ManipulabilityTrackingMainTask(vec2Symmat(xHat.col(i))[0]);
 //        saveData.block(i,0,1,3) = vec2Symmat(xHat.col(i))[0].row(0);
@@ -172,7 +172,7 @@ void control(){
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = ManipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
-        Mcurr=ManipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -219,7 +219,7 @@ void controlManipulabilitiesHumanArm(){
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = ManipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
-        Mcurr=ManipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;
@@ -287,7 +287,7 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
         MDesired=MDesired/3;
 //        MDesired=MDesired/5;
 //        Mcurr = ManipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
-        Mcurr=ManipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;

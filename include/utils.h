@@ -25,32 +25,31 @@ bool fileExists (const std::string& name) {
 inline
 int loadCSV (const string path, vector<vector<double>> &values) {
     ifstream indata;
-//    ios_base::iostate exceptionMask = indata.exceptions() | std::ios::failbit;
-//    indata.exceptions(exceptionMask);
-//    try{
-        indata.open(path);
-        string line;
-        uint rows = 0;
-        while (getline(indata, line)) {
-            vector<double> values_i;
-            stringstream lineStream(line);
-            string cell;
+
+    if(!fileExists(path)){
+        cout<<" [ERROR] File "<<path<<" does not exist"<<endl;
+        throw;
+    }
+    indata.open(path);
+    string line;
+    uint rows = 0;
+    while (getline(indata, line)) {
+        vector<double> values_i;
+        stringstream lineStream(line);
+        string cell;
 //            uint cols=0;
-            while (getline(lineStream, cell, ',')) {
+        while (getline(lineStream, cell, ',')) {
 //            if(cols<2){
 //                cols++;
 //                continue;
 //            }
-                values_i.push_back(stod(cell));
-            }
-            values.push_back(values_i);
-            ++rows;
+            values_i.push_back(stod(cell));
         }
-        indata.close();
-//    }
-//    catch (std::ios_base::failure& e) {
-//        std::cerr << e.what() << '\n';
-//    }
+        values.push_back(values_i);
+        ++rows;
+    }
+    indata.close();
+
 
     return 0;
 }
@@ -58,37 +57,35 @@ int loadCSV (const string path, vector<vector<double>> &values) {
 inline
 int loadCSVSkipFirst (const string path, vector<vector<double>> values) {
     ifstream indata;
-    indata.exceptions ( ifstream::failbit | ifstream::badbit );
-    try{
-        indata.open(path);
-        string line;
-        uint rows = 0;
+    if(!fileExists(path)){
+        cout<<" [ERROR] File "<<path<<" does not exist"<<endl;
+        throw;
+    }
+    indata.open(path);
+    string line;
+    uint rows = 0;
 
-        while (getline(indata, line)) {
-            if(rows<1){
-                ++rows;
-                continue;
-            }
-            vector<double> values_i;
-            stringstream lineStream(line);
-            string cell;
-            uint cols=0;
-            while (getline(lineStream, cell, ',')) {
+    while (getline(indata, line)) {
+        if(rows<1){
+            ++rows;
+            continue;
+        }
+        vector<double> values_i;
+        stringstream lineStream(line);
+        string cell;
+        uint cols=0;
+        while (getline(lineStream, cell, ',')) {
 //            if(cols<2){
 //                cols++;
 //                continue;
 //            }
-                values_i.push_back(stod(cell));
-            }
-            values.push_back(values_i);
-            ++rows;
+            values_i.push_back(stod(cell));
         }
-        indata.close();
+        values.push_back(values_i);
+        ++rows;
     }
-    catch (const ifstream::failure& e) {
-        cout << "Exception opening/reading file";
-        throw;
-    }
+    indata.close();
+
 
     return 0;
 }
@@ -134,6 +131,10 @@ void writeCSV(const vector<MatrixXd>& data, const string path){
 //TODO resample spline(), maybe preprocess data by using promp-ias/utils.py interpolation
 inline
 MatrixXd read_cartesian_trajectories(const string file_path){
+    if(!fileExists(file_path)){
+        cout<<" [ERROR] File "<<file_path<<" does not exist"<<endl;
+        throw;
+    }
     vector<vector<double>> data;
     loadCSV(file_path, data);
     MatrixXd trajs(4,data.size());
@@ -182,6 +183,10 @@ void readTxtFile(std::string fileName, MatrixXd *positions, MatrixXd *positionJa
 
 inline
 void load_data_cmat(const string data_path, MatrixXd *data_pos){
+    if(!fileExists(data_path)){
+        cout<<" [ERROR] File "<<data_path<<" does not exist"<<endl;
+        throw;
+    }
     data_pos->setZero();
 
     vector<vector<double>> data;
@@ -196,6 +201,10 @@ void load_data_cmat(const string data_path, MatrixXd *data_pos){
 
 inline
 void loadCSV(const string data_path, MatrixXd *data_m){
+    if(!fileExists(data_path)){
+        cout<<" [ERROR] File "<<data_path<<" does not exist"<<endl;
+        throw;
+    }
     data_m->setZero();
 
     vector<vector<double>> data;
@@ -209,6 +218,10 @@ void loadCSV(const string data_path, MatrixXd *data_m){
 
 inline
 void loadCSVSkipFirst(const string data_path, MatrixXd *data_m){
+    if(!fileExists(data_path)){
+        cout<<" [ERROR] File "<<data_path<<" does not exist"<<endl;
+        throw;
+    }
     data_m->setZero();
 
     vector<vector<double>> data;

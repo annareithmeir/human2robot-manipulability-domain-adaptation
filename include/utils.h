@@ -11,6 +11,9 @@
 #include <unsupported/Eigen/MatrixFunctions>
 #include <sys/stat.h>
 
+#define PY_SSIZE_T_CLEAN
+#include <Python.h>
+
 #define deb(x) cout << #x << " " << x << endl;
 using namespace std;
 using namespace Eigen;
@@ -458,4 +461,15 @@ MatrixXd getDiffVector(const vector<MatrixXd>& xHat, const MatrixXd& m, const in
     }
     return diffs;
 }
+
+inline
+void runPythonScript(const char *filename){
+    FILE* fp;
+    Py_Initialize();
+    fp = _Py_fopen(filename, "r");
+    PyRun_SimpleFile(fp, filename);
+    Py_Finalize();
+}
+
+
 #endif //MA_THESIS_UTILS_H

@@ -184,8 +184,8 @@ void learn3dHumanMotion(MatrixXd &xd, MatrixXd &xHat){
     //Write model2.muMan, model2.sigma, xhat to files
 //    writeCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
 //    writeCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
-    writeCSV(vec2Symmat(xHat / 10), "/home/nnrthmr/CLionProjects/ma_thesis/data/results/human_arm/xhat.csv");
-    writeCSV(xd / 10, "/home/nnrthmr/CLionProjects/ma_thesis/data/results/human_arm/xd.csv");
+    writeCSV(vec2Symmat(xHat / 10), "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/human_arm/xhat.csv");
+    writeCSV(xd / 10, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/human_arm/xd.csv");
     writeCSV(data / 10, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv");
     vector<MatrixXd> manips = vec2Symmat(dataVectorized.rightCols(6).transpose());
     for(int i=0;i<manips.size();i++) manips[i]=manips[i]/10;
@@ -205,14 +205,14 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     deb(exp)
     deb(proband)
 
-    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {
         if( errno == EEXIST ) {
         } else {
             throw std::runtime_error( strerror(errno) );
         }
     }
-    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {
         if( errno == EEXIST ) {
         } else {
@@ -276,15 +276,15 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
 
     MatrixXd errors = getDiffVector(vec2Symmat(xHat), m, nPoints); //demo0
     writeCSV(errors.colwise().mean().transpose(),
-             "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xhatErrors.csv");
+             "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhatErrors.csv");
     deb(errors.mean())
 
     //Write model2.muMan, model2.sigma, xhat to files
 //    writeCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
 //    writeCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
     writeCSV(vec2Symmat(xHat),
-             "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xhat.csv");
-    writeCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xd.csv");
+             "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhat.csv");
+    writeCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv");
 //    writeCSV(data/10, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv");
 //    vector<MatrixXd> manips = vec2Symmat(dataVectorized.rightCols(6).transpose());
 //    writeCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv");

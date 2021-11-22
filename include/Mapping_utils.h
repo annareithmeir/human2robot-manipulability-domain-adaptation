@@ -99,13 +99,13 @@ void getScalingRatiosAtPoints(int num, MatrixXd &xd, MatrixXd &ratios){
     MatrixXd posRobot(3, num);
     MatrixXd scalesRobot(1, num);
 
-    assert(fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosUser1.csv") &&
-                   fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesUser1.csv") &&
+    assert(fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosHuman.csv") &&
+                   fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesHuman.csv") &&
                    fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosRobot.csv") &&
                    fileExists("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesRobot.csv"));
 
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosUser1.csv", &posHuman);
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesUser1.csv", &scalesHuman);
+    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosHuman.csv", &posHuman);
+    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesHuman.csv", &scalesHuman);
     loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalPosRobot.csv", &posRobot);
     loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/finalScalesRobot.csv", &scalesRobot);
 

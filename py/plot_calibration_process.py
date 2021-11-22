@@ -18,11 +18,11 @@ experiment_name="cut_userchoice"
 proband=4
 
 
-plot_trajectories_all = False
-plot_manipulabilities_selected = False
+plot_trajectories_all = 0
+plot_manipulabilities_selected = 0
 plot_GMM = 0
-plot_time_traj = 0
-plot_time_loop = 1
+plot_time_traj = 1
+plot_time_loop = 0
 plot_test = 0
 
 

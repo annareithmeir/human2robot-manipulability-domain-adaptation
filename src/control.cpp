@@ -1,5 +1,4 @@
 #include <control.h>
-#include <sys/stat.h>
 
 #define dimensions 3
 
@@ -169,31 +168,30 @@ MatrixXd manipulabilityTrackingSecondaryTask(Franka robot, const MatrixXd& XDesi
 /**
  *  Control only manipulabilities of given human arm movement
  */
-void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband, int nPoints, bool mainTask, MatrixXd &ratios){
+void controlManipulabilitiesRHumanArm(Franka &robot, MatrixXd &xd, MatrixXd &xHat, int nPoints, bool mainTask, MatrixXd &ratios, MatrixXd &errors, MatrixXd &controlledManips){
     int num = 30; //number of random samples for interpolation data
-    MatrixXd xdTmp(nPoints,4);
-    MatrixXd xhatTmp(nPoints,9);
-    MatrixXd xd(3, nPoints);
-    MatrixXd xHat(nPoints,9);
-    deb(exp)
-    deb(proband)
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xd.csv", &xd);
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xhat.csv", &xHat);
+//    MatrixXd xdTmp(nPoints,4);
+//    MatrixXd xhatTmp(nPoints,9);
+//    MatrixXd xd(3, nPoints);
+//    MatrixXd xHat(nPoints,9);
 
-    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-    {
-        if( errno == EEXIST ) {
-        } else {
-            throw std::runtime_error( strerror(errno) );
-        }
-    }
-    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-    {
-        if( errno == EEXIST ) {
-        } else {
-            throw std::runtime_error( strerror(errno) );
-        }
-    }
+//    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv", &xd);
+//    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhat.csv", &xHat);
+
+//    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//    {
+//        if( errno == EEXIST ) {
+//        } else {
+//            throw std::runtime_error( strerror(errno) );
+//        }
+//    }
+//    if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp+"/"+proband).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//    {
+//        if( errno == EEXIST ) {
+//        } else {
+//            throw std::runtime_error( strerror(errno) );
+//        }
+//    }
 
     vector<MatrixXd> mLoop;
     vector<double> eLoop;
@@ -204,9 +202,9 @@ void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband,
     dx = xd.col(0) - x0;
 
     MatrixXd Mcurr;
-    MatrixXd manips(xd.cols(), 9);
-    MatrixXd errMatrix(xd.cols(),1);
-    errMatrix.setZero();
+//    MatrixXd manips(xd.cols(), 9);
+//    MatrixXd errMatrix(xd.cols(),1);
+//    errMatrix.setZero();
     if(robot.usingVREP())  robot.startSimulation();
 
     for(int i=0;i<1;i++){
@@ -219,9 +217,9 @@ void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband,
 
         if(mainTask) Mcurr = manipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
         else Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
-        errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
+        errors(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
-        manips.row(i) = Mcurr;
+        controlledManips.row(i) = Mcurr;
 
         MatrixXd eLoopMat(1, eLoop.size());
         for(int i=0;i<eLoop.size();i++){
@@ -234,10 +232,6 @@ void controlManipulabilitiesRHumanArm(Franka &robot, string exp, string proband,
     deb("done");
 
     if(robot.usingVREP()) robot.stopSimulation();
-    writeCSV(errMatrix, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/" + exp + "/" + proband +
-                        "/errorManipulabilities.csv");
-    writeCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/" + exp + "/" + proband +
-                     "/controlledManipulabilities.csv");
 }
 
 /**

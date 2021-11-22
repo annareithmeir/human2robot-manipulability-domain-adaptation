@@ -243,8 +243,8 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
     MatrixXd xHat(nPoints,9);
     deb(exp)
     deb(proband)
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xd.csv", &xd);
-    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/results/rhuman/" + exp + "/" + proband + "/xhat.csv", &xHat);
+    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv", &xd);
+    loadCSV("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhat.csv", &xHat);
 
     if (mkdir(("/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+exp).c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
     {

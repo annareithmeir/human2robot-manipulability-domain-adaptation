@@ -13,6 +13,14 @@ TEST_CASE("simpleTest", ""){
     REQUIRE(a==2);
 }
 
+TEST_CASE("plot MATLAB", ""){
+    unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
+    matlab::data::ArrayFactory factory;
+    matlab::data::TypedArray<int>  args_type = factory.createScalar<int>(0);
+    matlabPtr->setVariable(u"type_m", std::move(args_type));
+    matlabPtr->eval(u"plotInterpolation(type_m);");
+}
+
 TEST_CASE("Ellipsoid principal axes"){
     MatrixXd A(3,3);
     A << 1,0,0,0,1,0,0,0,1;
@@ -69,7 +77,7 @@ TEST_CASE("MATLAB interpolation function"){
 }
 
 TEST_CASE("Franka random generator"){
-    Franka franka;
+    Franka franka = Franka(false);
     MatrixXd m = franka.GetJointConstraints();
     MatrixXd m2 = franka.GetRandomJointConfig(1);
     
@@ -112,7 +120,7 @@ TEST_CASE("buildGeometricJacobian", ""){
         1.39626,
         0;
 
-    Franka robot = Franka();
+    Franka robot = Franka(false);
     MatrixXd result = robot.buildGeometricJacobian(m, qt);
     deb(result)
 

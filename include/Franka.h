@@ -37,6 +37,7 @@ public:
     MatrixXd GetRandomJointConfig(int n);
     vector<MatrixXd> ComputeJointDerivative(const MatrixXd& J);
     MatrixXd ComputeManipulabilityJacobian(const MatrixXd& J);
+    MatrixXd ComputeManipulabilityJacobianLower(const MatrixXd& J);
     MatrixXd getManipulabilityFromVI();
     MatrixXd getTranslationJacobian();
     MatrixXd getTranslationJacobian(const MatrixXd &q);

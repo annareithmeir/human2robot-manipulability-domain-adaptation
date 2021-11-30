@@ -244,14 +244,16 @@ void controlManipulabilitiesRHumanArm(Franka &robot, MatrixXd &xd, MatrixXd &xHa
  * @param eLoop vector of errors throughout loop
  */
 void unitShpereTrackingMainTask(Franka robot, const MatrixXd& PosInit, vector<MatrixXd> &finalM, vector<MatrixXd> &finalPos, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
-    float km0 = 0.03;
-    float km = km0;
+    float km = 15;
+    double singularRegion = 0.1;
+    double dampingFactorMax= 0.0001;
+
     uint8_t scaledFlag =0;
 
-    int niter=10;
+    int niter=1000;
     float dt=1e-2;
     float err=1000;
-    MatrixXd J, M, JFull, JmT, MDiff, pinv, dqt1;
+    MatrixXd J, M, JFull, JmT, MDiff, pinv, dqt1, errMatrix(1000,1);
     VectorXd qt;
     robot.setJointPositions(PosInit.row(0));
 
@@ -261,41 +263,81 @@ void unitShpereTrackingMainTask(Franka robot, const MatrixXd& PosInit, vector<Ma
     MatrixXd MDesired(3,3);
     MDesired.setIdentity();
 
+    MatrixXd S, U,Um;
+    int rank;
+    double minSingVal, dampingFactor;
+
 //    while(err>0.05){
     for(int i=0;i<niter; i++){
         qt=robot.getCurrentJointPositions();
-        J = robot.getTranslationJacobian(qt).bottomRows(3);
         JFull = robot.getPoseJacobian(qt);
 
         Jgeo = robot.buildGeometricJacobian(JFull, qt);
-        M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
+        M=Jgeo.bottomRows(3)*Jgeo.bottomRows(3).transpose();
         if(i==0) cout<<M<<endl;
-        JmT = robot.ComputeManipulabilityJacobian(Jgeo); // Checked!
-//        JmT.bottomRows(3).setZero();
+
+        JmT = robot.ComputeManipulabilityJacobianLower(Jgeo); // taskvar 4:6
 
         MDiff = logMap(MDesired, M); // Checked! Like in MATLAB
-        pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-        dqt1 = pinv * km * symmat2Vec(MDiff).transpose(); //Checked!
+        err=symmat2Vec(MDiff).norm();
+
+        JacobiSVD<MatrixXd> svd(JmT, ComputeThinU | ComputeThinV);
+
+        S = svd.singularValues().real();
+        U=svd.matrixU();
+        rank= svd.rank();
+        minSingVal = S(rank-1, 0);
+//        deb(U)
+//        deb(S)
+//        deb(minSingVal)
+//        deb(rank)
+
+        MatrixXd Umtmp(6,rank);
+        Umtmp.setZero();
+
+        int cnt=0;
+        if(minSingVal<=singularRegion){
+            for(int ii=rank-1; ii>=0;--ii){
+                if(S(ii,0)<=singularRegion){
+                    Umtmp.col(ii) = U.col(ii);
+                    cnt++;
+                }
+            }
+            dampingFactor = (1-pow(minSingVal/singularRegion,2))*dampingFactorMax;
+        }
+        else{
+            dampingFactor=0;
+        }
+
+        Um = Umtmp.rightCols(cnt);
+//        deb(Um)
+//        deb(cnt)
+
+//        pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+//        dqt1 = pinv * km * symmat2Vec(MDiff).transpose(); //Checked!
+
+//        pinv = JmT.transpose()*(JmT*JmT.transpose() + 0.1*MatrixXd::Identity(6,6)).completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+        pinv = JmT.transpose()*(JmT*JmT.transpose() + dampingFactor*Um*Um.transpose()).completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+        dqt1 = pinv * (km/err) * symmat2Vec(MDiff).transpose(); //Checked!
 
         robot.setJointPositions(qt + dqt1*dt);
 
-        err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
+//        err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
 
-        if(err<1.5 && scaledFlag==0) {
-            // singular values
-            MDesired=MDesired* getSingularValues(M).minCoeff(); // TODO min makes sense?
-
-            //eig values like page 1 in paper
-            MDesired = MDesired * getLengthOfPrincipalAxis(M);
-            scaledFlag=1;
-        }
+//        if(err<0.2 && scaledFlag==0) {
+//            // singular values
+////            MDesired=MDesired* getSingularValues(M).minCoeff(); // TODO min makes sense?
+//
+//            //eig values like page 1 in paper
+//            MDesired = MDesired * getLengthOfPrincipalAxis(M);
+//            scaledFlag=1;
+//        }
 
         mLoop.push_back(M);
         eLoop.push_back(err);
+        errMatrix(i, 0)=err;
 
-//        km = km0* err;
-
-        std::cout << "Tracking error: " <<err << "  new gain: " <<km<< std::endl; //norm returns Frobenius norm if Matrices
+        std::cout << "Tracking error: " <<err << std::endl; //norm returns Frobenius norm if Matrices
     }
     std::cout << "====================================="<< std::endl;
     cout<<M<<endl;
@@ -303,7 +345,8 @@ void unitShpereTrackingMainTask(Franka robot, const MatrixXd& PosInit, vector<Ma
     DQ xFinal       = m_robot.fkm(qt).translation();
     finalPos.push_back(vec3(xFinal));
     finalM.push_back(M);
-//    cout<<getSingularValues(M)<<endl;
+
+    writeCSV(errMatrix, "/home/nnrthmr/errTest.csv");
 }
 
 void precomputeScalingRatios(Franka &robot, MatrixXd &xd, MatrixXd &ratios){

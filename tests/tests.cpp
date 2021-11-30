@@ -13,6 +13,25 @@ TEST_CASE("simpleTest", ""){
     REQUIRE(a==2);
 }
 
+TEST_CASE("Ellipsoid volume"){
+    MatrixXd A(3,3);
+    A << 1,0,0,0,1,0,0,0,1;
+    REQUIRE(getEllipsoidVolume(A)-4.189 < 1e-3);
+}
+
+TEST_CASE("Ellipsoid volume scaling"){
+    MatrixXd A(3,3);
+    A << 0.3465 ,  -0.0040  , -0.1887,
+         -0.0040  ,  0.0557 ,  -0.0024,
+                    -0.1887,   -0.0024 ,   0.1122;
+    double v = 0.0554;
+    REQUIRE(getEllipsoidVolume(A)-v<1e-3);
+    MatrixXd scaledA=scaleEllipsoidVolume(A, 1/v);
+    deb(scaledA)
+    deb(getEllipsoidVolume(scaledA))
+    REQUIRE(getEllipsoidVolume(scaledA)-1 < 1e-3);
+}
+
 TEST_CASE("plot MATLAB", ""){
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;

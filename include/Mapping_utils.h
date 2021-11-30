@@ -148,7 +148,7 @@ inline
 MatrixXd getLengthsOfPrincipalAxes(MatrixXd ellipsoid){
     EigenSolver<MatrixXd> es(ellipsoid);
     MatrixXd eigvals= es.eigenvalues().real();
-    eigvals=eigvals.array().sqrt().pow(-1);
+    eigvals=eigvals.array().sqrt();
     return eigvals;
 }
 
@@ -165,6 +165,18 @@ MatrixXd getRatiosOfAxesLengths(MatrixXd ellipsoidTeacher, MatrixXd ellipsoidStu
     MatrixXd lengthTeacher = getLengthsOfPrincipalAxes(ellipsoidTeacher);
     MatrixXd lengthStudent = getLengthsOfPrincipalAxes(ellipsoidStudent);
     return (lengthStudent.array()/lengthTeacher.array()).matrix();
+}
+
+inline
+double getEllipsoidVolume(MatrixXd A){
+    MatrixXd axes= getLengthsOfPrincipalAxes(A);
+    return 4.0/3.0*M_PI*axes.array().prod();
+}
+
+inline
+MatrixXd scaleEllipsoidVolume(MatrixXd A, double scale){
+    MatrixXd scaledA= pow(pow(scale,1.0/3), 2)*A;
+    return scaledA;
 }
 
 

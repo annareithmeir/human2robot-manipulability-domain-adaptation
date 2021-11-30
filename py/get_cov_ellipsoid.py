@@ -10,7 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patches as mpatches
 import pandas as pd
 
-def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
+def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=1):
     """
     Return the 3d points representing the covariance matrix
     cov centred at mu and scaled by the factor nstd.
@@ -27,6 +27,8 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=3):
     idx = eigvals_temp.argsort()
     eigvals = eigvals[idx]
     eigvecs = eigvecs[:,idx]
+
+    print(eigvals)
 
     # Set of all spherical angles to draw our ellipsoid
     n_points = 100

@@ -351,6 +351,37 @@ MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     return JmRed;
 }
 
+MatrixXd Franka::ComputeManipulabilityJacobianLower(const MatrixXd& J){
+    MatrixXd W = MatrixXd::Identity(J.cols(), J.cols());
+    std::vector<MatrixXd> JGradVec;
+    JGradVec = ComputeJointDerivative(J);
+
+    std::vector<MatrixXd> Jm;
+    MatrixXd tmp, tmp3;
+    MatrixXd U= J*(W*W.transpose());
+    vector<MatrixXd> tmp1= ComputeTensorMatrixProduct(JGradVec, U, 2);
+
+    for(int i=0;i<JGradVec.size();i++) {
+        tmp = JGradVec[i].transpose();
+        JGradVec[i] = tmp;
+    }
+
+    vector<MatrixXd> tmp2 = ComputeTensorMatrixProduct(JGradVec, U, 1);
+    for(int i=0;i<tmp1.size();i++) {
+        tmp3 = tmp1[i] + tmp2[i];
+        Jm.push_back(tmp3);
+    }
+
+    MatrixXd JmRed;
+    if(dimensions==2) JmRed=MatrixXd(3, Jm.size());
+    else JmRed=MatrixXd(6, Jm.size());
+    JmRed.setZero();
+    for(int i=0;i<Jm.size();i++) {
+        JmRed.col(i) = (symmat2Vec(Jm[i].block(3, 3, 3, 3))).transpose(); //TaskVar 4:6 in MATLAB
+    }
+    return JmRed;
+}
+
 // Checked
 MatrixXd Franka::buildGeometricJacobian(MatrixXd J, MatrixXd qt){
     MatrixXd J6(6, J.cols());

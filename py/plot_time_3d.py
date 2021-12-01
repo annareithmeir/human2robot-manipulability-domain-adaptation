@@ -71,8 +71,9 @@ filename_controlled= "../data/results/human_arm/xhat.csv"
 ### plot desired manipulabilities ###
 scaling_factor = 0.1
 n_points=1000
-plot_every_nth=50
-filename_demos="/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/cut_random/3/xhat.csv"
+plot_every_nth=250
+filename_demos="/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/cut_userchoice/4/xhat.csv"
+#filename_demos="/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/cut_random/3/xhat.csv"
 #filename_demos="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_manipulabilities_normalized.csv"
 #filename_demos="/home/nnrthmr/Desktop/someData.csv"
 demo_tmp = genfromtxt(filename_demos, delimiter=',')
@@ -106,7 +107,8 @@ for i in np.arange(0,len(demo),plot_every_nth):
 ### plot mapped manipulabilities ###
 #filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/cut_random/3/mapped_manipulabilities.csv"
 #filename_controlled="/home/nnrthmr/Desktop/someDataMapped_log_exp.csv"
-filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/cut_random/3/mapped_manipulabilities_log_exp.csv"
+#filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/cut_random/3/mapped_manipulabilities_log_exp.csv"
+filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/cut_userchoice/4/mapped_manipulabilities_log_exp.csv"
 controlled_tmp = genfromtxt(filename_controlled, delimiter=',')
 controlled_tmp = scaling_factor*controlled_tmp
 
@@ -121,12 +123,12 @@ for i in np.arange(0,n_points,plot_every_nth):
     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
     cnt+=1
 
-test=np.array([     0.3231 ,   0.0010 ,   0.1556,
-    0.0010 ,   0.4291  , -0.1426,
-    0.1556 ,  -0.1426  ,  0.5337]).reshape(3,3) * scaling_factor
+# test=np.array([     0.3231 ,   0.0010 ,   0.1556,
+#     0.0010 ,   0.4291  , -0.1426,
+#     0.1556 ,  -0.1426  ,  0.5337]).reshape(3,3) * scaling_factor
 
-X2,Y2,Z2 = get_cov_ellipsoid(test, [0,0,0], 1)
-ax.plot_wireframe(X2,Y2,Z2, color='black', alpha=0.1)
+# X2,Y2,Z2 = get_cov_ellipsoid(test, [0,0,0], 1)
+# ax.plot_wireframe(X2,Y2,Z2, color='black', alpha=0.1)
 
 
 blue_patch = mpatches.Patch(color='blue', label='Mapped')

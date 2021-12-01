@@ -23,7 +23,7 @@ include_directories(
 add_library(gmm src/GMM_SPD.cpp src/GMM.cpp)
 target_link_libraries(gmm Eigen3::Eigen)
 
-add_library(franka src/Franka.cpp)
+add_library(franka src/Franka.cpp src/BimanualSystem.cpp)
 target_link_libraries(franka
         pthread
         Eigen3::Eigen

@@ -1,6 +1,7 @@
 
 #include <utils.h>
 #include <Franka.h>
+#include <BimanualSystem.h>
 #include <Mapping_utils.h>
 
 using namespace std;
@@ -17,6 +18,27 @@ TEST_CASE("Ellipsoid volume"){
     MatrixXd A(3,3);
     A << 1,0,0,0,1,0,0,0,1;
     REQUIRE(getEllipsoidVolume(A)-4.189 < 1e-3);
+}
+
+TEST_CASE("bimanual manipulability jacobian"){
+    MatrixXd A(6,3);
+    MatrixXd B(6,3);
+    A << -4.92820323027551,	-1.46410161513776,	2,
+    3.46410161513776,	5.46410161513776,	3.46410161513776,
+            2*3.46410161513776,	2*5.46410161513776,	2*3.46410161513776,
+    0,	0,	0,
+    0,	0,	0,
+    1,	1,	1;
+
+    B<< -4.92820323027551,	-1.46410161513776,	2,
+        -3.46410161513776,	-5.46410161513776,	-3.46410161513776,
+          2*  -3.46410161513776,	2*-5.46410161513776,	2*-3.46410161513776,
+            0,	0,	0,
+            0,	0,	0,
+            1,	1,	1;
+
+    BimanualSystem s;
+    cout<< s.ComputeManipulabilityJacobian(A, B, s.m_graspMatrix);
 }
 
 TEST_CASE("Ellipsoid volume scaling"){

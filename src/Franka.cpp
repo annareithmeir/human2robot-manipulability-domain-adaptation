@@ -321,10 +321,10 @@ vector<MatrixXd> Franka::ComputeJointDerivative(const MatrixXd& J){ // How to ca
 // Checked!
 MatrixXd Franka::ComputeManipulabilityJacobian(const MatrixXd& J){
     MatrixXd W = MatrixXd::Identity(J.cols(), J.cols());
-    std::vector<MatrixXd> JGradVec;
+    vector<MatrixXd> JGradVec;
     JGradVec = ComputeJointDerivative(J);
 
-    std::vector<MatrixXd> Jm;
+    vector<MatrixXd> Jm;
     MatrixXd tmp, tmp3;
     MatrixXd U= J*(W*W.transpose());
     vector<MatrixXd> tmp1= ComputeTensorMatrixProduct(JGradVec, U, 2);

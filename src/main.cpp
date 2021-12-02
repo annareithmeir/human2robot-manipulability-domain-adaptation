@@ -310,6 +310,8 @@ void controlManipulabilitiesRHumanArm(string exp, string proband, int nPoints, i
 }
 
 int main() {
+
+
     // Load the demonstration data
 //    string data_path="/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/";
 //    MatrixXd data_pos(4, 2*21);

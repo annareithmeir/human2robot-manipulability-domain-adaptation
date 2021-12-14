@@ -1,18 +1,24 @@
-function createLookupTable()
+function createLookupTable(base_path)
 
-    positionsHuman = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_positions.csv");
-    scalesHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_scales_normalized.csv");
-    manipsHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_manipulabilities_normalized.csv");
-    positionsRobot = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_positions.csv");
-    scalesRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_scales_normalized.csv");
-    manipsRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv");
+%     positionsHuman = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_positions.csv");
+%     scalesHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_scales_normalized.csv");
+%     manipsHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_manipulabilities_normalized.csv");
+%     positionsRobot = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_positions.csv");
+%     scalesRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_scales_normalized.csv");
+%     manipsRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv");
     
+disp("creating lookup table...");
+    manipsHuman=csvread(base_path+"/h_manipulabilities_normalized.csv");
+    manipsRobot=csvread(base_path+"/r_manipulabilities_normalized.csv");
+    scalesHuman=csvread(base_path+"/h_scales.csv");
+    scalesRobot=csvread(base_path+"/r_scales.csv");
+    
+
     %frob norm
-    num= size(positionsHuman,1);
-    %num=20;
+    num= size(manipsHuman,1);
     frobs=zeros(num, num);
     for i=1:num
-        i
+        disp("Step 1   "+ i+ "/"+ num);
         mh=reshape(manipsHuman(i,:),3,3);
         for j=1:num
             mr=reshape(manipsRobot(j,:),3,3);
@@ -25,7 +31,7 @@ function createLookupTable()
     %normalized volume error
     vol_errs=zeros(num, num);
     for i=1:num
-        i
+        disp("Step 2   "+ i+ "/"+ num);
         vh=scalesHuman(i,1);
         for j=1:num
             vr=scalesRobot(j,1);
@@ -46,7 +52,7 @@ function createLookupTable()
     % affine trafos
     affine_trafos=zeros(num,9);
     for i=1:num
-        i
+        disp("Step 3   "+ i+ "/"+ num);
         mh=reshape(manipsHuman(i,:),3,3);
         mr=reshape(manipsRobot(minIndicesCombined(i),:),3,3);
         
@@ -54,6 +60,6 @@ function createLookupTable()
         affine_trafos(i,:) = reshape(L1, 1,9);
     end
     
-    csvwrite("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/lookup_trafos_log_exp.csv", affine_trafos);
+    csvwrite(base_path+"/lookup_trafos_naive.csv", affine_trafos);
 
 end

@@ -23,13 +23,13 @@ void printProgress(double percentage) {
 void generate_human_robot_data_random(int num, double shoulder_height){
 
     string base_path = "/home/nnrthmr/testing";
-//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data";
+//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/500/data";
 
-    string manips_normalized_path=base_path+"/r_manipulabilities_normalized.csv";
-    string manips_path=base_path+"/r_manipulabilities.csv";
-    string scales_path=base_path+"/r_scales.csv";
-    string positions_path=base_path+"/r_positions.csv";
-    string scales_normalized_path=base_path+"/r_scales_normalized.csv";
+    string manips_normalized_path=base_path+"500/data/r_manipulabilities_normalized.csv";
+    string manips_path=base_path+"500/data/r_manipulabilities.csv";
+    string scales_path=base_path+"500/data/r_scales.csv";
+    string positions_path=base_path+"500/data/r_positions.csv";
+    string scales_normalized_path=base_path+"500/data/r_scales_normalized.csv";
 
     Franka robot = Franka(false);
     MatrixXd positions(num, 3);

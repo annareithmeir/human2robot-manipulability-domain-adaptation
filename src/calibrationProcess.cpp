@@ -98,7 +98,7 @@ void generate_human_robot_data_random(int num, double shoulder_height){
 
 }
 
-void mapManipulabilities(){
+void mapManipulabilitiesNaive(){
     string base_path = "/home/nnrthmr/testing";
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;
@@ -107,76 +107,87 @@ void mapManipulabilities(){
     matlabPtr->eval(u"map_manipulabilities(base_path_m);");
 }
 
+void mapManipulabilitiesICP(){
+    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/run_rpa.py && deactivate");
+}
+
+void plot(){
+    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_2d_embeddings.py && deactivate");
+    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_3d_ellipsoids.py && deactivate");
+}
+
 int main(){
+//    generate_human_robot_data_random(10, 1.35);
+//    mapManipulabilitiesNaive();
+//    mapManipulabilitiesICP();
+//    plot();
 
-    int a= 1;
-    if (a==1) generate_human_robot_data_random(10, 1.35);
-    else {
-        string manips_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities_normalized.csv";
-        string manips_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities.csv";
-        string scales_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_scales.csv";
-        string scales_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_scales_normalized.csv";
 
-//    string manips_normalized_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv";
-//    string positions_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_positions.csv";
-//    string scales_normalized_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_scales_normalized.csv";
-
-        string robot_manips_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities.csv";
-        MatrixXd manips(500, 9);
-        loadCSV(robot_manips_path, &manips);
-        int num = 500;
-        Franka robot = Franka(false);
-        MatrixXd positions(num, 3);
-        MatrixXd scales(num, 1);
-        MatrixXd scalesNormalized(num, 1);
-        MatrixXd manipsNormalized(num, 9);
-//    MatrixXd manips(num,9);
-
-        MatrixXd JFull, Jgeo, M, Mnormalized, Mresized;
-//    MatrixXd randomJoints = robot.GetRandomJointConfig(num); // num x 7
-        VectorXd jointsCurr(7);
-
-        for (int i = 0; i < num; ++i) {
-            deb(i)
-
-//        jointsCurr= randomJoints.row(i).transpose();
+//        string manips_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities_normalized.csv";
+//        string manips_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities.csv";
+//        string scales_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_scales.csv";
+//        string scales_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_scales_normalized.csv";
 //
-//        // Positions
-//        positions.row(i) = robot.getCurrentPosition(jointsCurr);
+////    string manips_normalized_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv";
+////    string positions_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_positions.csv";
+////    string scales_normalized_path="/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_scales_normalized.csv";
 //
-//        // Compute manipulabilities
-//        JFull = robot.getPoseJacobian(jointsCurr);
-//        Jgeo = robot.buildGeometricJacobian(JFull, jointsCurr);
-//        M=Jgeo.bottomRows(3)*Jgeo.bottomRows(3).transpose();
-//        Mresized=M;
-//        Mresized.resize(1,9);
-//        manips.row(i) = Mresized;
-
-            M = manips.row(i);
-            M.resize(3, 3);
-
-            // Normalize manipulabilities to volume = 1
-            double vol = getEllipsoidVolume(M);
-            Mnormalized = scaleEllipsoidVolume(M, 1 / vol);
-            assert(getEllipsoidVolume(Mnormalized) - 1 < 1e-4);
-            Mnormalized.resize(1, 9);
-            manipsNormalized.row(i) = Mnormalized;
-            scales(i, 0) = vol;
-        }
-
-        // Normalize scales
-        scalesNormalized = (scales.array() - scales.minCoeff()) / (scales.maxCoeff() - scales.minCoeff());
-        assert(scalesNormalized.minCoeff() >= 0 && scalesNormalized.maxCoeff() <= 1);
-
-        deb(manipsNormalized.topRows(5))
-        deb(manips.topRows(5))
-        deb(scales.topRows(5))
-
-        writeCSV(manipsNormalized, manips_normalized_path);
-        writeCSV(manips, manips_path);
-        writeCSV(scales, scales_path);
-        writeCSV(scalesNormalized, scales_normalized_path);
-    }
+//        string robot_manips_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities.csv";
+//        MatrixXd manips(500, 9);
+//        loadCSV(robot_manips_path, &manips);
+//        int num = 500;
+//        Franka robot = Franka(false);
+//        MatrixXd positions(num, 3);
+//        MatrixXd scales(num, 1);
+//        MatrixXd scalesNormalized(num, 1);
+//        MatrixXd manipsNormalized(num, 9);
+////    MatrixXd manips(num,9);
+//
+//        MatrixXd JFull, Jgeo, M, Mnormalized, Mresized;
+////    MatrixXd randomJoints = robot.GetRandomJointConfig(num); // num x 7
+//        VectorXd jointsCurr(7);
+//
+//        for (int i = 0; i < num; ++i) {
+//            deb(i)
+//
+////        jointsCurr= randomJoints.row(i).transpose();
+////
+////        // Positions
+////        positions.row(i) = robot.getCurrentPosition(jointsCurr);
+////
+////        // Compute manipulabilities
+////        JFull = robot.getPoseJacobian(jointsCurr);
+////        Jgeo = robot.buildGeometricJacobian(JFull, jointsCurr);
+////        M=Jgeo.bottomRows(3)*Jgeo.bottomRows(3).transpose();
+////        Mresized=M;
+////        Mresized.resize(1,9);
+////        manips.row(i) = Mresized;
+//
+//            M = manips.row(i);
+//            M.resize(3, 3);
+//
+//            // Normalize manipulabilities to volume = 1
+//            double vol = getEllipsoidVolume(M);
+//            Mnormalized = scaleEllipsoidVolume(M, 1 / vol);
+//            assert(getEllipsoidVolume(Mnormalized) - 1 < 1e-4);
+//            Mnormalized.resize(1, 9);
+//            manipsNormalized.row(i) = Mnormalized;
+//            scales(i, 0) = vol;
+//        }
+//
+//        // Normalize scales
+//        scalesNormalized = (scales.array() - scales.minCoeff()) / (scales.maxCoeff() - scales.minCoeff());
+//        assert(scalesNormalized.minCoeff() >= 0 && scalesNormalized.maxCoeff() <= 1);
+//
+//        deb(manipsNormalized.topRows(5))
+//        deb(manips.topRows(5))
+//        deb(scales.topRows(5))
+//
+//        writeCSV(manipsNormalized, manips_normalized_path);
+//        writeCSV(manips, manips_path);
+//        writeCSV(scales, scales_path);
+//        writeCSV(scalesNormalized, scales_normalized_path);
+//
 
 }
 

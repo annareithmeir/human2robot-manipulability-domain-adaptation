@@ -3,9 +3,9 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
 
     %disp(experiment+" user "+user)
     %desired_manipulabilities = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+experiment+"/"+user+"/xhat.csv");
-    desired_manipulabilities = csvread(base_path+"/h_manipulabilities_2.csv");
-    affine_trafos = csvread(base_path+"/lookup_trafos_naive.csv");
-    human_manipulabilities_random = csvread(base_path+"/h_manipulabilities_normalized.csv");
+    desired_manipulabilities = csvread(base_path+"/data/h_manipulabilities_2.csv");
+    affine_trafos = csvread(base_path+"/results/lookup_trafos_naive.csv");
+    human_manipulabilities_random = csvread(base_path+"/data/h_manipulabilities_normalized.csv");
     
     mapped_manipulabilities=zeros(size(desired_manipulabilities, 1),9);
    
@@ -30,13 +30,17 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
         
         [minMh, minIndex] = min(errs,[],1);
         nearestMh = reshape(human_manipulabilities_random(minIndex,:),3,3);
-        nearestMh
+        nearestMh;
         
         % perform trafo
         L1 = reshape(affine_trafos(minIndex,:),3,3);
-        M= expmap(L1, nearestMh);
+         M= expmap(L1, nearestMh);
+        %M= expmap(L1, Mh);
+        [xxx, scaletest] = normalize_manipulability(M);
+        scaletest
         
         % denormalize
+        scale
         M = scaleEllipsoidVolume(M, scale);
         assert(min(eig(M))>=0);
         M;
@@ -60,6 +64,6 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
 %     end
     
     %csvwrite("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/"+experiment+"/"+user+"/mapped_manipulabilities.csv", mapped_manipulabilities);
-    csvwrite(base_path+"/mapped_manipulabilities_naive_2.csv", mapped_manipulabilities);
+    csvwrite(base_path+"/results/mapped_manipulabilities_naive_2.csv", mapped_manipulabilities);
 
 end

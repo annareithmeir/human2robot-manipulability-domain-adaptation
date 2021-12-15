@@ -7,26 +7,27 @@ function createLookupTable(base_path)
 %     scalesRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_scales_normalized.csv");
 %     manipsRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv");
     
-disp("creating lookup table...");
-    manipsHuman=csvread(base_path+"/h_manipulabilities_normalized.csv");
-    manipsRobot=csvread(base_path+"/r_manipulabilities_normalized.csv");
-    scalesHuman=csvread(base_path+"/h_scales.csv");
-    scalesRobot=csvread(base_path+"/r_scales.csv");
+    disp("creating lookup table...");
+    manipsHuman=csvread(base_path+"/data/h_manipulabilities_normalized.csv");
+    manipsRobot=csvread(base_path+"/data/r_manipulabilities_normalized.csv");
+    scalesHuman=csvread(base_path+"/data/h_scales.csv");
+    scalesRobot=csvread(base_path+"/data/r_scales.csv");
     
 
-    %frob norm
+    %matrix error
     num= size(manipsHuman,1);
-    frobs=zeros(num, num);
+    dist_errs=zeros(num, num);
     for i=1:num
         disp("Step 1   "+ i+ "/"+ num);
         mh=reshape(manipsHuman(i,:),3,3);
         for j=1:num
             mr=reshape(manipsRobot(j,:),3,3);
-            frobs(i,j)= norm(logm(mh^-.5*mr*mh^-.5),'fro');
+            dist_errs(i,j)= distanceLogEuclidean(mh, mr);
+            %dist_errs(i,j)= norm(logm(mh^-.5*mr*mh^-.5),'fro');
         end
     end
     
-    [minValuesFrob, minIndicesFrob] = min(frobs,[],2); % index array of closest index in robot data for each frob err of human
+    [minValuesDistErrs, minIndicesDistErrs] = min(dist_errs,[],2); % index array of closest index in robot data for each frob err of human
     
     %normalized volume error
     vol_errs=zeros(num, num);
@@ -45,7 +46,7 @@ disp("creating lookup table...");
     % combined errors
     w1=0.5;
     w2=0.5;
-    errs = w1.*frobs + w2.* vol_errs;
+    errs = w1.*dist_errs + w2.* vol_errs;
     
     [minValuesCombined, minIndicesCombined] = min(errs,[],2); % index array of closest index in robot data for each  err of human
     
@@ -60,6 +61,6 @@ disp("creating lookup table...");
         affine_trafos(i,:) = reshape(L1, 1,9);
     end
     
-    csvwrite(base_path+"/lookup_trafos_naive.csv", affine_trafos);
+    csvwrite(base_path+"/results/lookup_trafos_naive.csv", affine_trafos);
 
 end

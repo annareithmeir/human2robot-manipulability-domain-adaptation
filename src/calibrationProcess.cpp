@@ -98,7 +98,7 @@ void generate_human_robot_data_random(int num, double shoulder_height){
 
 }
 
-void mapManioulabilities(){
+void mapManipulabilities(){
     string base_path = "/home/nnrthmr/testing";
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;

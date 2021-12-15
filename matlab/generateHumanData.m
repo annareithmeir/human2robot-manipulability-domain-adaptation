@@ -6,7 +6,7 @@ function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
 
      positions=zeros(num, 3);
      manipulabilities=zeros(num, 9);
-     manipulabilities_normalized=zeros(num, 9); % all volume =1
+     manipulabilities_normalized=zeros(num, 9); % all volume = 1
      scales=zeros(1,num);
 
      %fprintf(1,'\n');

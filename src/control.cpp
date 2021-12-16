@@ -81,6 +81,101 @@ MatrixXd manipulabilityTrackingMainTask(Franka &robot, const MatrixXd& MDesired,
     return M;
 }
 
+// Not checked yet
+MatrixXd manipulabilityTrackingNullspace(Franka &robot, const MatrixXd& MDesired, vector<MatrixXd> &mLoop, vector<double> &eLoop) {
+    float km0 = 0.4; // 0.4 good
+    float km = km0;
+    float knp = 20;
+    float knd = 2;
+
+    int niter=1;
+    float dt=1e-2;
+    float err=1000;
+    DQ x;
+    MatrixXd J, M, JFull, JmT, MDiff, pinv, dqt1, dqns;
+    MatrixXd Jgeo(6,7);
+    DQ_SerialManipulator m_robot = robot.getKinematicsDQ();
+    VectorXd qt= robot.getCurrentJointPositions();
+    VectorXd qh= robot.getCurrentJointPositions();
+    VectorXd dqt = VectorXd(7).setZero();
+    VectorXd desiredManipVelocity = VectorXd(3).setZero();
+
+    double threshold = 1e-2;
+    double minEigJmT;
+    MatrixXd eyeNDoF(7,7);
+    eyeNDoF.setIdentity();
+    MatrixXd dMeP(1, 6);
+    dMeP.setZero();
+
+    bool keepDesiredJointAngle = true;
+    MatrixXd Wq(7,7);
+    Wq.setIdentity(); //Which joint angles should stay fixed
+
+    if(robot.usingVREP())  DQ_VrepInterface m_vi = robot.getVREPInterface();
+
+//    while(err>0.05){
+    for(int i=0;i<niter; i++){
+        qt  = robot.getCurrentJointPositions();
+        J = robot.getTranslationJacobian().bottomRows(3);
+        JFull = robot.getPoseJacobian();
+//            M=JFull*JFull.transpose();
+
+        Jgeo = robot.buildGeometricJacobian(JFull, qt);
+        deb(Jgeo)
+        M=Jgeo.topRows(3)*Jgeo.topRows(3).transpose();
+        deb(M)
+//            M=J*J.transpose();
+        JmT = robot.ComputeManipulabilityJacobian(Jgeo); // Checked!
+        deb(JmT)
+        JmT.bottomRows(3).setZero();
+//            deb(JmT)
+
+        MDiff = logMap(MDesired, M); // Checked! Like in MATLAB
+        deb(MDiff)
+
+        //singular avoidance
+        JacobiSVD<MatrixXf> svd(JmT, ComputeThinU | ComputeThinV);
+        minEigJmT = svd.singularValues().minCoeff();
+        if (minEigJmT < threshold) pinv = (JmT.transpose()*JmT + threshold * eyeNDoF).inverse() * JmT.transpose();
+        else pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+        dMeP = symmat2Vec(desiredManipVelocity) + km* symmat2Vec(MDiff);
+        dqt1 = pinv *dMeP;
+
+        if (keepDesiredJointAngle){
+            dqns = (eyeNDoF - pinv * JmT) * Wq * (knp * (qh-qt) - knd*dqt);
+            dqt = dqt1 +dqns;
+        }
+        else{
+            dqt = dqt1;
+        }
+
+        qt = qt + dqt*dt;
+
+
+
+        pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+        deb(pinv)
+        dqt1 = pinv * km * symmat2Vec(MDiff).transpose(); //Checked!
+        deb(symmat2Vec(MDiff).transpose())
+        deb(dqt1)
+
+        robot.setJointPositions(qt + dqt1*dt); // Checked!
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+        err=(MDesired.pow(-0.5)*M*MDesired.pow(-0.5)).log().norm();
+
+        mLoop.push_back(M);
+        eLoop.push_back(err);
+
+        km = km0* err;
+
+        std::cout << "Tracking error: " <<err << "  new gain: " <<km<< std::endl; //norm returns Frobenius norm if Matrices
+
+    }
+    std::cout << "====================================="<< std::endl;
+    return M;
+}
+
 MatrixXd manipulabilityTrackingSecondaryTask(Franka robot, const MatrixXd& XDesired, const MatrixXd& DXDesired, const MatrixXd& MDesired) {
     float dt=1e-2;
     int niter=200;

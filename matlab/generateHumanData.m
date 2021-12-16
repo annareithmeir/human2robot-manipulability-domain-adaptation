@@ -31,10 +31,10 @@ function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
 
 	scales_normalized = (scales-min(scales))/(max(scales)-min(scales));     % volume in [0,1]
 
-	csvwrite(basePath+"/h_manipulabilities_normalized.csv", manipulabilities_normalized);
-	csvwrite(basePath+"/h_manipulabilities.csv", manipulabilities);
-	csvwrite(basePath+"/h_scales.csv", scales');
-	csvwrite(basePath+"/h_scales_normalized.csv", scales_normalized');
-	csvwrite(basePath+"/h_positions.csv", positions);
+	csvwrite(basePath+"/data/h_manipulabilities_normalized.csv", manipulabilities_normalized);
+	csvwrite(basePath+"/data/h_manipulabilities.csv", manipulabilities);
+	csvwrite(basePath+"/data/h_scales.csv", scales');
+	csvwrite(basePath+"/data/h_scales_normalized.csv", scales_normalized');
+	csvwrite(basePath+"/data/h_positions.csv", positions);
 
 end

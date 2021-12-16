@@ -20,16 +20,31 @@ void printProgress(double percentage) {
     fflush(stdout);
 }
 
-void generate_human_robot_data_random(int num, double shoulder_height){
+void generate_human_robot_data_random(string base_path, int num, double shoulder_height){
 
-    string base_path = "/home/nnrthmr/testing";
-//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/500/data";
+//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
 
-    string manips_normalized_path=base_path+"500/data/r_manipulabilities_normalized.csv";
-    string manips_path=base_path+"500/data/r_manipulabilities.csv";
-    string scales_path=base_path+"500/data/r_scales.csv";
-    string positions_path=base_path+"500/data/r_positions.csv";
-    string scales_normalized_path=base_path+"500/data/r_scales_normalized.csv";
+    if (mkdir((base_path+"/data").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+
+    if (mkdir((base_path+"/results").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+
+    string manips_normalized_path=base_path+"/data/r_manipulabilities_normalized.csv";
+    string manips_path=base_path+"/data/r_manipulabilities.csv";
+    string scales_path=base_path+"/data/r_scales.csv";
+    string positions_path=base_path+"/data/r_positions.csv";
+    string scales_normalized_path=base_path+"/data/r_scales_normalized.csv";
 
     Franka robot = Franka(false);
     MatrixXd positions(num, 3);
@@ -72,10 +87,6 @@ void generate_human_robot_data_random(int num, double shoulder_height){
     scalesNormalized = (scales.array()-scales.minCoeff())/(scales.maxCoeff()-scales.minCoeff());
     assert(scalesNormalized.minCoeff()>=0 && scalesNormalized.maxCoeff()<=1);
 
-//    deb(manipsNormalized.topRows(5))
-//    deb(manips.topRows(5))
-//    deb(scales.topRows(5))
-
     writeCSV(manipsNormalized, manips_normalized_path);
     writeCSV(manips, manips_path);
     writeCSV(scales, scales_path);
@@ -98,8 +109,8 @@ void generate_human_robot_data_random(int num, double shoulder_height){
 
 }
 
-void mapManipulabilitiesNaive(){
-    string base_path = "/home/nnrthmr/testing";
+void mapManipulabilitiesNaive(string base_path){
+//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;
     matlab::data::CharArray args_base_path = factory.createCharArray(base_path);
@@ -107,20 +118,30 @@ void mapManipulabilitiesNaive(){
     matlabPtr->eval(u"map_manipulabilities(base_path_m);");
 }
 
-void mapManipulabilitiesICP(){
-    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/run_rpa.py && deactivate");
+void mapManipulabilitiesICP(string base_path_py){
+    string syscall = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/run_rpa.py "+base_path_py+" && deactivate";
+    system(syscall.c_str());
 }
 
-void plot(){
-    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_2d_embeddings.py && deactivate");
-    system("cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_3d_ellipsoids.py && deactivate");
+void plot(string base_path_py){
+//    string syscall1 = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_2d_embeddings.py "+base_path_py+" && deactivate";
+//    system(syscall1.c_str());
+    string syscall2 = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_3d_ellipsoids.py "+base_path_py+" && deactivate";
+    system(syscall2.c_str());
 }
 
 int main(){
-//    generate_human_robot_data_random(10, 1.35);
-//    mapManipulabilitiesNaive();
-//    mapManipulabilitiesICP();
-//    plot();
+    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
+    if(!fileExists(base_path+"/data/h_manipulabilities.csv")
+        || !fileExists(base_path+"/data/r_manipulabilities.csv")
+        || !fileExists(base_path+"/results/lookup_trafos_naive.csv"))
+        generate_human_robot_data_random(base_path, 5000, 1.35);
+    else
+        cout<< "Data already generated ..." << endl;
+
+    mapManipulabilitiesNaive(base_path);
+    mapManipulabilitiesICP("/home/nnrthmr/PycharmProjects/ma_thesis/5000");
+    plot("/home/nnrthmr/PycharmProjects/ma_thesis/5000");
 
 
 //        string manips_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities_normalized.csv";

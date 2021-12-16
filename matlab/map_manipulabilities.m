@@ -23,7 +23,8 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
         errs=zeros(size(human_manipulabilities_random, 1), 1);
         for j=1:size(human_manipulabilities_random, 1)
             Mh = reshape(human_manipulabilities_random(j,:),3,3);
-            errs(j,1) = norm(logm(Mh^-.5*M*Mh^-.5),'fro');
+            %errs(j,1) = norm(logm(Mh^-.5*M*Mh^-.5),'fro');
+            errs(j,1) = distanceLogEuclidean(Mh,M);
         end
         
         errs;
@@ -34,24 +35,22 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
         
         % perform trafo
         L1 = reshape(affine_trafos(minIndex,:),3,3);
-         M= expmap(L1, nearestMh);
-        %M= expmap(L1, Mh);
-        [xxx, scaletest] = normalize_manipulability(M);
-        scaletest
+        % M= expmap(L1, nearestMh);
+        M= expmap(L1, Mh);
+        [M, ~] = normalize_manipulability(M);
         
         % denormalize
-        scale
         M = scaleEllipsoidVolume(M, scale);
-        assert(min(eig(M))>=0);
-        M;
+        assert(min(eig(M))>0)
+        eig(M)
         
         %save
         mapped_manipulabilities(i,:) = reshape(M, 1,9);
         
         % calculate error between desired and mapped
-        err_fro= norm(logm(Mdesired^-.5*M*Mdesired^-.5),'fro');
-        mdiff_i=logmap(Mdesired, M);          
-        err_norm=norm(symmat2vec(mdiff_i));
+%         err_fro= norm(logm(Mdesired^-.5*M*Mdesired^-.5),'fro');
+%         mdiff_i=logmap(Mdesired, M);          
+%         err_norm=norm(symmat2vec(mdiff_i));
     
     end
     

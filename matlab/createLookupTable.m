@@ -8,6 +8,7 @@ function createLookupTable(base_path)
 %     manipsRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv");
     
     disp("creating lookup table...");
+    disp(base_path);
     manipsHuman=csvread(base_path+"/data/h_manipulabilities_normalized.csv");
     manipsRobot=csvread(base_path+"/data/r_manipulabilities_normalized.csv");
     scalesHuman=csvread(base_path+"/data/h_scales.csv");
@@ -44,8 +45,8 @@ function createLookupTable(base_path)
     
     
     % combined errors
-    w1=0.5;
-    w2=0.5;
+    w1=1;
+    w2=0;
     errs = w1.*dist_errs + w2.* vol_errs;
     
     [minValuesCombined, minIndicesCombined] = min(errs,[],2); % index array of closest index in robot data for each  err of human

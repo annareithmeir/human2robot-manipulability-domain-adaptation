@@ -172,7 +172,8 @@ void control(){
         MatrixXd MDesired = xHat.row(i);
         MDesired.resize(3,3);
 //        Mcurr = ManipulabilityTrackingSecondaryTask(robot, xd.col(i), dx, MDesired);
-        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+//        Mcurr=manipulabilityTrackingMainTask(robot, MDesired, mLoop, eLoop);
+        Mcurr=manipulabilityTrackingNullspace(robot, MDesired, mLoop, eLoop);
         errMatrix(i,0)=(MDesired.pow(-0.5)*Mcurr*MDesired.pow(-0.5)).log().norm();
         Mcurr.resize(1,9);
         manips.row(i) = Mcurr;

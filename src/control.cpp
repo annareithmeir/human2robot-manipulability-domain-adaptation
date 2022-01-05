@@ -133,21 +133,21 @@ MatrixXd manipulabilityTrackingNullspace(Franka &robot, const MatrixXd& MDesired
         MDiff = logMap(MDesired, M); // Checked! Like in MATLAB
         deb(MDiff)
 
-        //singular avoidance
-        JacobiSVD<MatrixXf> svd(JmT, ComputeThinU | ComputeThinV);
-        minEigJmT = svd.singularValues().minCoeff();
-        if (minEigJmT < threshold) pinv = (JmT.transpose()*JmT + threshold * eyeNDoF).inverse() * JmT.transpose();
-        else pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
-        dMeP = symmat2Vec(desiredManipVelocity) + km* symmat2Vec(MDiff);
-        dqt1 = pinv *dMeP;
-
-        if (keepDesiredJointAngle){
-            dqns = (eyeNDoF - pinv * JmT) * Wq * (knp * (qh-qt) - knd*dqt);
-            dqt = dqt1 +dqns;
-        }
-        else{
-            dqt = dqt1;
-        }
+//        //singular avoidance
+//        JacobiSVD<MatrixXf> svd(JmT, ComputeThinU | ComputeThinV);
+//        minEigJmT = svd.singularValues().minCoeff();
+//        if (minEigJmT < threshold) pinv = (JmT.transpose()*JmT + threshold * eyeNDoF).inverse() * JmT.transpose();
+//        else pinv = JmT.completeOrthogonalDecomposition().pseudoInverse(); // Checked!
+//        dMeP = symmat2Vec(desiredManipVelocity) + km* symmat2Vec(MDiff);
+//        dqt1 = pinv *dMeP;
+//
+//        if (keepDesiredJointAngle){
+//            dqns = (eyeNDoF - pinv * JmT) * Wq * (knp * (qh-qt) - knd*dqt);
+//            dqt = dqt1 +dqns;
+//        }
+//        else{
+//            dqt = dqt1;
+//        }
 
         qt = qt + dqt*dt;
 

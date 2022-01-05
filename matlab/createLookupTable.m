@@ -1,4 +1,4 @@
-function createLookupTable(base_path)
+function createLookupTable(base_path_h, base_path_r)
 
 %     positionsHuman = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_positions.csv");
 %     scalesHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_scales_normalized.csv");
@@ -8,11 +8,23 @@ function createLookupTable(base_path)
 %     manipsRobot=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/r_manipulabilities_normalized.csv");
     
     disp("creating lookup table...");
-    disp(base_path);
-    manipsHuman=csvread(base_path+"/data/h_manipulabilities_normalized.csv");
-    manipsRobot=csvread(base_path+"/data/r_manipulabilities_normalized.csv");
-    scalesHuman=csvread(base_path+"/data/h_scales.csv");
-    scalesRobot=csvread(base_path+"/data/r_scales.csv");
+
+    source_name = split(base_path_h,'/');
+    source_name=source_name(size(source_name,1));
+    target_name = split(base_path_r,'/');
+    target_name=target_name(size(target_name,1));
+
+    if source_name == "human"
+        manipsHuman=csvread(base_path_h+"/h_manipulabilities_normalized.csv");
+	manipsRobot=csvread(base_path_r+"/r_manipulabilities_normalized.csv");
+	scalesHuman=csvread(base_path_h+"/h_scales.csv");
+	scalesRobot=csvread(base_path_r+"/r_scales.csv");
+    else
+    	manipsHuman=csvread(base_path_h+"/r_manipulabilities_normalized.csv");
+    	manipsRobot=csvread(base_path_r+"/r_manipulabilities_normalized.csv");
+    	scalesHuman=csvread(base_path_h+"/r_scales.csv");
+    	scalesRobot=csvread(base_path_r+"/r_scales.csv");
+    end
     
 
     %matrix error
@@ -24,7 +36,6 @@ function createLookupTable(base_path)
         for j=1:num
             mr=reshape(manipsRobot(j,:),3,3);
             dist_errs(i,j)= distanceLogEuclidean(mh, mr);
-            %dist_errs(i,j)= norm(logm(mh^-.5*mr*mh^-.5),'fro');
         end
     end
     
@@ -62,6 +73,7 @@ function createLookupTable(base_path)
         affine_trafos(i,:) = reshape(L1, 1,9);
     end
     
-    csvwrite(base_path+"/results/lookup_trafos_naive.csv", affine_trafos);
+
+    dlmwrite(base_path_r+"/lookup_trafos_naive_"+source_name+"_to_"+target_name+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
 
 end

@@ -1,8 +1,9 @@
 % add rhuman to path
+% First run 'startup_rvc' from the robotics toolbox
 
-function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
-     rhuman = rHuManModel('shoulderHeight',shoulderHeight,'verbose',true);
-     joints=rhuman.getRandJoints('length',num, 'seed', 1);
+function [scales, positions] = generateRobotDataPUMA560(num, basePath)
+     mdl_puma560;
+     joints = rand(6,num) .* (p560.qlim(:,1) + (p560.qlim(:,2)-p560.qlim(:,1)));
 
      positions=zeros(num, 3);
      manipulabilities=zeros(num, 9);
@@ -15,10 +16,12 @@ function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
 		 %waittext(i/num,'fraction');
 		disp("Step 1   "+ i+ "/"+ num);
 		 joints_i = joints(:,i);
-		 positions(i,:) = rhuman.getPos(joints_i);
+		 positions(i,:) = p560.fkine(joints_i).t';
 
-		 j_geom_i=rhuman.getJacobGeom(joints_i);
-		 manip_i = j_geom_i(4:6,:)*j_geom_i(4:6,:)';
+                 % translational part of geomManip
+		 j_geom_i=p560.jacob0(joints_i, 'trans');
+                 j_geom_i=j_geom_i(:,1:3);
+		 manip_i = j_geom_i*j_geom_i';
 		 manipulabilities(i,:) = reshape(manip_i,1,9);
 
 		% Normalize manipulability to volume = 1
@@ -31,10 +34,10 @@ function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
 
 	scales_normalized = (scales-min(scales))/(max(scales)-min(scales));     % volume in [0,1]
 
-	dlmwrite(basePath+"/h_manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 64);
-	dlmwrite(basePath+"/h_manipulabilities.csv", manipulabilities, 'delimiter', ',', 'precision', 64);
-	csvwrite(basePath+"/h_scales.csv", scales');
-	csvwrite(basePath+"/h_scales_normalized.csv", scales_normalized');
-	csvwrite(basePath+"/h_positions.csv", positions);
+	csvwrite(basePath+"/r_manipulabilities_normalized.csv", manipulabilities_normalized);
+	csvwrite(basePath+"/r_manipulabilities.csv", manipulabilities);
+	csvwrite(basePath+"/r_scales.csv", scales');
+	csvwrite(basePath+"/r_scales_normalized.csv", scales_normalized');
+	csvwrite(basePath+"/r_positions.csv", positions);
 
 end

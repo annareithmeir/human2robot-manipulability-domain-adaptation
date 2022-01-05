@@ -3,14 +3,15 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
 
     %disp(experiment+" user "+user)
     %desired_manipulabilities = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+experiment+"/"+user+"/xhat.csv");
-    desired_manipulabilities = csvread(base_path+"/data/h_manipulabilities_2.csv");
-    affine_trafos = csvread(base_path+"/results/lookup_trafos_naive.csv");
-    human_manipulabilities_random = csvread(base_path+"/data/h_manipulabilities_normalized.csv");
+    desired_manipulabilities = csvread(base_path+"/data/human/h_manipulabilities.csv");
+    affine_trafos = csvread(base_path+"/data/panda/lookup_trafos_naive_human_to_panda.csv");
+    human_manipulabilities_random = csvread(base_path+"/data/human/h_manipulabilities_normalized.csv");
     
     mapped_manipulabilities=zeros(size(desired_manipulabilities, 1),9);
    
     % for each desired manipulability
     num = size(desired_manipulabilities, 1)
+    base_path
     
     for i=1:num
         disp(i+ "/"+ num);
@@ -23,26 +24,29 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
         errs=zeros(size(human_manipulabilities_random, 1), 1);
         for j=1:size(human_manipulabilities_random, 1)
             Mh = reshape(human_manipulabilities_random(j,:),3,3);
-            %errs(j,1) = norm(logm(Mh^-.5*M*Mh^-.5),'fro');
             errs(j,1) = distanceLogEuclidean(Mh,M);
         end
         
         errs;
         
-        [minMh, minIndex] = min(errs,[],1);
+        [minMh, minIndex] = min(errs,[],1)
         nearestMh = reshape(human_manipulabilities_random(minIndex,:),3,3);
         nearestMh;
         
         % perform trafo
         L1 = reshape(affine_trafos(minIndex,:),3,3);
         % M= expmap(L1, nearestMh);
-        M= expmap(L1, Mh);
+
+        Ac = transp_operator(nearestMh, M)
+		L1 = Ac * L1 * Ac';
+        M= expmap(L1, M);
+
+		assert(min(eig(M)) >0)
         [M, ~] = normalize_manipulability(M);
         
         % denormalize
         M = scaleEllipsoidVolume(M, scale);
         assert(min(eig(M))>0)
-        eig(M)
         
         %save
         mapped_manipulabilities(i,:) = reshape(M, 1,9);
@@ -63,6 +67,6 @@ function mapped_manipulabilities = map_manipulabilities(base_path)
 %     end
     
     %csvwrite("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/"+experiment+"/"+user+"/mapped_manipulabilities.csv", mapped_manipulabilities);
-    csvwrite(base_path+"/results/mapped_manipulabilities_naive_2.csv", mapped_manipulabilities);
+    dlmwrite(base_path+"/results/panda/mapped_manipulabilities_naive.csv", mapped_manipulabilities, 'delimiter', ',', 'precision', 64);
 
 end

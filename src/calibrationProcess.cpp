@@ -34,7 +34,7 @@ void generate_human_robot_data_random(string base_path, int num, double shoulder
         }
     }
 
-    if (mkdir((base_path+"/data/human").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    if (mkdir((base_path+"/data/human").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1 || robot_type== 0)
     {
         if( errno == EEXIST ) {
         } else {
@@ -214,10 +214,73 @@ void generate_human_robot_data_random(string base_path, int num, double shoulder
         matlabPtr->eval(u"generateRobotDataPUMA560(num_m, base_path_r_m);");
         matlabPtr->eval(u"createLookupTable(base_path_h_m,base_path_r_m);");
     }
+    else if (robot_type==0){}
     else{
         cout << "No correct robot type specified. Must be 0 (human), 1 (panda) 2 (fanuc) or 3 (puma560)!"<<endl;
     }
 
+}
+
+void create_panda_data_from_manipulabilities(string base_path){
+    // /home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities
+
+    if (mkdir((base_path+"/results").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+
+    if (mkdir((base_path+"/results/panda").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+    {
+        if( errno == EEXIST ) {
+        } else {
+            throw std::runtime_error( strerror(errno) );
+        }
+    }
+
+    string manips_normalized_path=base_path+"/data/panda/r_manipulabilities_normalized.csv";
+    string manips_path=base_path+"/data/panda/panda_reach_up_manipulabilities_interpolated.csv";
+    string scales_path=base_path+"/data/panda/r_scales.csv";
+    string positions_path=base_path+"/data/panda/r_positions.csv";
+    string scales_normalized_path=base_path+"/data/panda/r_scales_normalized.csv";
+
+    MatrixXd manips;
+    loadCSV(manips_path, &manips);
+    int num = manips.rows();
+
+    Franka robot = Franka(false);
+    MatrixXd scales(num,1);
+    MatrixXd scalesNormalized(num,1);
+    MatrixXd manipsNormalized(num,9);
+
+    MatrixXd JFull, Jgeo, M, Mnormalized, Mresized;
+
+
+    cout<< " Generating missing robot data (Franka Emika Panda)..."<<endl;
+
+    for(int i=0;i<num;++i){
+        printProgress((float) (i)/ (float) num);
+        M = manips.row(i);
+        M.resize(3,3);
+
+        // Normalize manipulabilities to volume = 1
+        double vol= getEllipsoidVolume(M);
+        Mnormalized = scaleEllipsoidVolume(M, 1/vol);
+        assert(getEllipsoidVolume(Mnormalized)-1<1e-4);
+        Mnormalized.resize(1,9);
+        manipsNormalized.row(i) = Mnormalized;
+        scales(i,0) = vol;
+    }
+
+    // Normalize scales
+    scalesNormalized = (scales.array()-scales.minCoeff())/(scales.maxCoeff()-scales.minCoeff());
+    assert(scalesNormalized.minCoeff()>=0 && scalesNormalized.maxCoeff()<=1);
+
+    writeCSV(manipsNormalized, manips_normalized_path);
+    writeCSV(scales, scales_path);
+    writeCSV(scalesNormalized, scales_normalized_path);
 }
 
 void create_lookup_table_from_source_to_target(string base_path, int source, int target){
@@ -233,13 +296,15 @@ void create_lookup_table_from_source_to_target(string base_path, int source, int
     matlabPtr->eval(u"createLookupTable(base_path_h_m,base_path_r_m);");
 }
 
-void mapManipulabilitiesNaive(string base_path){
+void mapManipulabilitiesNaive(string base_path, int robot_type){
 //    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
     unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
     matlab::data::ArrayFactory factory;
-    matlab::data::CharArray args_base_path = factory.createCharArray(base_path);
-    matlabPtr->setVariable(u"base_path_m", std::move(args_base_path));
-    matlabPtr->eval(u"map_manipulabilities(base_path_m);");
+    matlab::data::CharArray args_base_path_h = factory.createCharArray(base_path+"/data/human");
+    matlab::data::CharArray args_base_path_r = factory.createCharArray(base_path+"/data/"+robots[robot_type]);
+    matlabPtr->setVariable(u"base_path_h_m", std::move(args_base_path_h));
+    matlabPtr->setVariable(u"base_path_r_m", std::move(args_base_path_r));
+    matlabPtr->eval(u"map_manipulabilities(base_path_h_m, base_path_r_m);");
 }
 
 void mapManipulabilitiesICP(string base_path_py){
@@ -247,28 +312,29 @@ void mapManipulabilitiesICP(string base_path_py){
     system(syscall.c_str());
 }
 
-void plot(string base_path_py){
+void plot(string base_path_py, int robot_type){
 //    string syscall1 = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_2d_embeddings.py "+base_path_py+" && deactivate";
 //    system(syscall1.c_str());
-    string syscall2 = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_3d_ellipsoids.py "+base_path_py+" && deactivate";
+    string syscall2 = "cd /home/nnrthmr/PycharmProjects/ma_thesis/venv3-6/ && . bin/activate && python /home/nnrthmr/PycharmProjects/ma_thesis/plot_3d_ellipsoids.py "+base_path_py+" "+ robots[robot_type] +" && deactivate";
     system(syscall2.c_str());
 }
 
 int main(){
+    create_panda_data_from_manipulabilities("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities");
 //    string base_path = "/home/nnrthmr/test";
-    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
-    int robot_type = 0;
-    if(!fileExists(base_path+"/data/human/h_manipulabilities.csv")
-        || !fileExists(base_path+"/data/"+robots[robot_type]+"/r_manipulabilities.csv"))
-        generate_human_robot_data_random(base_path, 5000, 1.35, 0);
-    else
-        cout<< "Data already generated ..." << endl;
-
-//    create_lookup_table_from_source_to_target(base_path, 1, 2); // lookup between r1 and r2
-
-    mapManipulabilitiesNaive(base_path);
-//    mapManipulabilitiesICP("/home/nnrthmr/PycharmProjects/ma_thesis/5000");
-//    plot("/home/nnrthmr/PycharmProjects/ma_thesis/5000");
+////    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
+//    int robot_type = 1;
+//    if(!fileExists(base_path+"/data/human/h_manipulabilities.csv")
+//        || (!fileExists(base_path+"/data/"+robots[robot_type]+"/r_manipulabilities.csv") && robot_type>0 ))
+//        generate_human_robot_data_random(base_path, 5000, 1.35, 1);
+//    else
+//        cout<< "Data already generated ..." << endl;
+//
+////    create_lookup_table_from_source_to_target(base_path, 1, 2); // lookup between r1 and r2
+//
+//    mapManipulabilitiesNaive(base_path, robot_type);
+////    mapManipulabilitiesICP("/home/nnrthmr/PycharmProjects/ma_thesis/5000");
+//    plot(base_path, robot_type);
 
 
 //        string manips_normalized_path = "/home/nnrthmr/PycharmProjects/ma_thesis/data/r_manipulabilities_normalized.csv";

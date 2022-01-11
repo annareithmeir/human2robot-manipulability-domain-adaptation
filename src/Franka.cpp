@@ -55,6 +55,7 @@ void Franka::moveToQGoal(const VectorXd& q_goal){
     MatrixXd J;
     VectorXd e(8);
     e(0)=1.0;
+    vector<VectorXd> qs;
 
     std::cout << "Starting control loop..." << std::endl;
     std::cout << "Joint positions q (at starting) is: \n"<< std::endl << getCurrentJointPositions() << std::endl;
@@ -78,10 +79,17 @@ void Franka::moveToQGoal(const VectorXd& q_goal){
         std::cout << "====================================="<< std::endl;
         // Send commands to the robot
         setJointPositions(q);
+        qs.push_back(q);
         // Always sleep for a while before next step
         std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
     std::cout << "Control finished..." << std::endl;
+    MatrixXd qs_m(qs.size(), 7);
+    for(int i=0;i<qs.size();i++){
+        qs_m.row(i) = qs[i];
+    }
+
+    writeCSV(qs_m, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities/panda/panda_reach_up_joints.csv");
 }
 
 void Franka::setJointPositions(VectorXd q){

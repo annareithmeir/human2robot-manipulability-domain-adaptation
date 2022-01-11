@@ -3,8 +3,10 @@ import matplotlib as mpl
 import sys
 import glob
 from numpy import genfromtxt
+import math
 import numpy as np
 from scipy import linalg
+from scipy.linalg import logm, expm
 from mpl_toolkits import mplot3d
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.patches as mpatches
@@ -28,7 +30,7 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=1):
     eigvals = eigvals[idx]
     eigvecs = eigvecs[:,idx]
 
-    print(eigvals)
+    #print(eigvals)
 
     # Set of all spherical angles to draw our ellipsoid
     n_points = 100
@@ -57,3 +59,40 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=1):
     Z = Z + mu[2]
     
     return X,Y,Z
+
+
+
+def scale_volume(A, scaling_factor):
+    # A= (nthroot(scale,3)^2).*A;
+    return ((scaling_factor**(1/float(3)))**2)*A
+
+
+def scale_axes(A, scaling_factors):
+    u, s, vh = np.linalg.svd(A, full_matrices=True)
+    s=s*scaling_factors
+    #s=s*1/np.sqrt(scaling_factors)
+    return np.matmul(np.matmul(u, np.diag(s)), vh)
+
+
+def get_volume(A):
+    # scale=prod(sqrt(eig(M)))*(4.0/3.0)*pi;
+    w,v = np.linalg.eig(A)
+
+    return (math.sqrt(w[0])*math.sqrt(w[1])*math.sqrt(w[2]))*(4.0/3.0)*math.pi
+
+
+
+def logmap(X,S):
+    v,d = np.linalg.eig(np.linalg.inv(S)*X)
+    U = S* v* np.diag(np.log(np.diag(d)))*(np.linalg.inv(v))
+    return U
+
+def expmap(U, S):
+    v,d = np.linalg.eig(np.linalg.inv(S)*U)
+    X = S* v* np.diag(np.exp(np.diag(d)))*(np.linalg.inv(v))
+    return X
+
+
+def get_logeuclidean_distance(A,B):
+    # d = norm(logm(A) - logm(B), 'fro');
+    return np.linalg.norm(logm(A)-logm(B), 'fro')

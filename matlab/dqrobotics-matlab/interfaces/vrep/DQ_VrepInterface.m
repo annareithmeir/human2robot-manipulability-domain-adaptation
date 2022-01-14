@@ -78,7 +78,7 @@
 
 classdef DQ_VrepInterface < handle
     
-    properties 
+    properties (Access = public)
         % the V-REP remote API instance used by this interface
         vrep;
         % the client ID of this remote API connection
@@ -98,7 +98,7 @@ classdef DQ_VrepInterface < handle
         OP_BUFFER    = remApi('remoteApi').simx_opmode_buffer;
     end
     
-    methods (Access = private)
+    methods
         
         function handle = handle_from_string_or_handle(obj,name_or_handle)
             if(ischar(name_or_handle))
@@ -189,6 +189,7 @@ classdef DQ_VrepInterface < handle
                 name,...
                 obj.vrep.simx_opmode_blocking);
         end
+
         
         %% Get Object Translation
         function t = get_object_translation(obj,handle,relative_to_handle,opmode)

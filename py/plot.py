@@ -11,11 +11,10 @@ colors=['green', 'blue', 'orange', 'red', 'purple']
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-plt.title('Demonstrations')
 
 n_demos=1
 n_points=10
-scaling_factor = 0.5
+scaling_factor = 0.2
 plot_every_nth = 1
 
 COLS=['s','x','y','z']
@@ -43,7 +42,9 @@ COLS=['s','x','y','z']
 #filename_manip = "../data/demos/tum_tuda/translationManip3d.csv"
 #filename_manip = "../data/demos/translationManip3d.csv"
 #filename_manip = "/home/nnrthmr/Desktop/master-thesis/vrep/vrep_franka_promps/py_scripts/data/sphere/EEpos_translationmanipulability_sphere_trial_"+str(i)+".csv"
-filename_manip = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities/panda/panda_reach_up_manipulabilities_interpolated.csv"
+filename_manip = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/bimanual/reach_up/manipulabilities_interpolated.csv"
+plt.title(filename_manip)
+
 manip_tmp = genfromtxt(filename_manip, delimiter=',')
 manip_tmp=manip_tmp[1:,:]
 print(manip_tmp)

@@ -33,14 +33,11 @@ COLS=["Franka_joint1","Franka_joint2","Franka_joint3","Franka_joint4","Franka_jo
 COLS2=["s","Franka_joint1","Franka_joint2","Franka_joint3","Franka_joint4","Franka_joint5","Franka_joint6","Franka_joint7"]
 
 BASE_PATH = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities/panda/"
-FILE_PATH = BASE_PATH + "panda_reach_up_joints.csv"
-FILE_PATH_INTERP = BASE_PATH + "panda_reach_up_joints_interpolated.csv"
-FILE_PATH_MANIPS = BASE_PATH + "panda_reach_up_manipulabilities_interpolated.csv"
-FILE_PATH_TS = BASE_PATH + "panda_reach_up_t_interpolated.csv"
+FILE_PATH = BASE_PATH + "joints.csv"
+FILE_PATH_INTERP = BASE_PATH + "joints_interpolated.csv"
+FILE_PATH_MANIPS = BASE_PATH + "manipulabilities_interpolated.csv"
+FILE_PATH_TS = BASE_PATH + "t_interpolated.csv"
 
-FILE_PATH = BASE_PATH + "panda_reach_up_joints.csv"
-FILE_PATH_INTERP = BASE_PATH + "panda_reach_up_joints_interpolated.csv"
-FILE_PATH_MANIPS = BASE_PATH + "panda_reach_up_manipulabilities_interpolated.csv"
 
 DESIRED_POINTS = 10
 DESIRED_SECONDS = 1

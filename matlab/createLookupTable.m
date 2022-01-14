@@ -1,4 +1,4 @@
-function createLookupTable(base_path_h, base_path_r)
+function createLookupTable(base_path, robot_teacher, robot_student, lookup_dataset)
 
 %     positionsHuman = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_positions.csv");
 %     scalesHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_scales_normalized.csv");
@@ -9,32 +9,19 @@ function createLookupTable(base_path_h, base_path_r)
     
     disp("creating lookup table...");
 
-    source_name = split(base_path_h,'/');
-    source_name=source_name(size(source_name,1));
-    target_name = split(base_path_r,'/');
-    target_name=target_name(size(target_name,1));
-
-    if source_name == "human"
-        manipsHuman=csvread(base_path_h+"/h_manipulabilities_normalized.csv");
-	manipsRobot=csvread(base_path_r+"/r_manipulabilities_normalized.csv");
-	scalesHuman=csvread(base_path_h+"/h_scales.csv");
-	scalesRobot=csvread(base_path_r+"/r_scales.csv");
-    else
-    	manipsHuman=csvread(base_path_h+"/r_manipulabilities_normalized.csv");
-    	manipsRobot=csvread(base_path_r+"/r_manipulabilities_normalized.csv");
-    	scalesHuman=csvread(base_path_h+"/r_scales.csv");
-    	scalesRobot=csvread(base_path_r+"/r_scales.csv");
-    end
-    
+    manips_robot_teacher=csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/manipulabilities_normalized.csv");
+    manips_robot_student=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/manipulabilities_normalized.csv");
+    scales_robot_teacher=csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/scales.csv");
+    scales_robot_student=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/scales.csv");
 
     %matrix error
-    num= size(manipsHuman,1);
+    num= size(manips_robot_teacher,1);
     dist_errs=zeros(num, num);
     for i=1:num
         disp("Step 1   "+ i+ "/"+ num);
-        mh=reshape(manipsHuman(i,:),3,3);
+        mh=reshape(manips_robot_teacher(i,:),3,3);
         for j=1:num
-            mr=reshape(manipsRobot(j,:),3,3);
+            mr=reshape(manips_robot_student(j,:),3,3);
             dist_errs(i,j)= distanceLogEuclidean(mh, mr);
         end
     end
@@ -45,9 +32,9 @@ function createLookupTable(base_path_h, base_path_r)
     vol_errs=zeros(num, num);
     for i=1:num
         disp("Step 2   "+ i+ "/"+ num);
-        vh=scalesHuman(i,1);
+        vh=scales_robot_teacher(i,1);
         for j=1:num
-            vr=scalesRobot(j,1);
+            vr=scales_robot_student(j,1);
             vol_errs(i,j)= norm(vr-vh);
         end
     end
@@ -66,14 +53,14 @@ function createLookupTable(base_path_h, base_path_r)
     affine_trafos=zeros(num,9);
     for i=1:num
         disp("Step 3   "+ i+ "/"+ num);
-        mh=reshape(manipsHuman(i,:),3,3);
-        mr=reshape(manipsRobot(minIndicesCombined(i),:),3,3);
+        mh=reshape(manips_robot_teacher(i,:),3,3);
+        mr=reshape(manips_robot_student(minIndicesCombined(i),:),3,3);
         
         L1=logmap(mr, mh); % exp(mr) wrt mh
         affine_trafos(i,:) = reshape(L1, 1,9);
     end
     
 
-    dlmwrite(base_path_r+"/lookup_trafos_naive_"+source_name+"_to_"+target_name+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
+    dlmwrite(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/lookup_trafos_naive_"+robot_teacher+"_to_"+robot_student+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
 
 end

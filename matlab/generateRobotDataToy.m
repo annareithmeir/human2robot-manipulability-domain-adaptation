@@ -1,8 +1,8 @@
 % add rhuman to path
 % First run 'startup_rvc' from the robotics toolbox
 
-function generateRobotDataToy(basePath)
-     manipulabilities = csvread(basePath+"/toy_data/r_manipulabilities.csv");
+function generateRobotDataToy(basePath, dataset)
+     manipulabilities = csvread(basePath+"/toy_data/"+dataset+"/manipulabilities.csv");
      num = size(manipulabilities,1);
      manipulabilities_normalized=zeros(num, 9); % all volume = 1
      scales=zeros(1,num);
@@ -25,10 +25,9 @@ function generateRobotDataToy(basePath)
 
 	scales_normalized = (scales-min(scales))/(max(scales)-min(scales));     % volume in [0,1]
 
-	dlmwrite(basePath+"/toy_data/r_manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
-	%dlmwrite(basePath+"/r_manipulabilities.csv", manipulabilities, 'delimiter', ',', 'precision', 32);
-	csvwrite(basePath+"/toy_data/r_scales.csv", scales');
-	csvwrite(basePath+"/toy_data/r_scales_normalized.csv", scales_normalized');
+	dlmwrite(basePath+"/toy_data/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
+	csvwrite(basePath+"/toy_data/"+dataset+"/scales.csv", scales');
+	csvwrite(basePath+"/toy_data/"+dataset+"/scales_normalized.csv", scales_normalized');
 	%csvwrite(basePath+"/r_positions.csv", positions);
 
 end

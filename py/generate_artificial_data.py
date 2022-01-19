@@ -6,16 +6,17 @@ from numpy import genfromtxt
 from get_cov_ellipsoid import get_cov_ellipsoid, scale_volume, get_volume, scale_axes
 from mpl_toolkits.mplot3d import Axes3D
 import os
+import matplotlib.patches as mpatches
 import argparse
 
 colors=['green', 'blue', 'orange', 'red', 'purple']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("base_path", help="base_path.", type=str)
-parser.add_argument("dataset", help="dataset.", type=str)
-parser.add_argument("dataset_map", help="dataset_map", type=str)
-parser.add_argument("volume_scaling", help="volume_scaling", type=float)
-parser.add_argument('-axes_scaling','--l', nargs='+', type=str)
+parser.add_argument("dataset", help="dataset.", type=str) # random teacher dataset used as basis for artificial data
+parser.add_argument("dataset_map", help="dataset_map", type=str) # to be mapped data for generation of ground truth
+parser.add_argument("volume_scaling", help="volume_scaling", type=float) # volume scaling factor
+parser.add_argument('-axes_scaling','--l', nargs='+', type=str) #axes scaling factors (3 values)
 
 args = parser.parse_args()
 args.axes_scaling = [float(item) for item in args.l[0].split(',')]
@@ -26,7 +27,7 @@ args.axes_scaling = [float(item) for item in args.l[0].split(',')]
 volume_scaling = args.volume_scaling
 axes_scaling = args.axes_scaling
 assert(len(axes_scaling)==3)
-print("Using volume scaling = %f and axes scalings = [ %f,%f,%f]" %(volume_scaling, axes_scaling[0],axes_scaling[1], axes_scaling[2]))
+print("Using volume scaling = %.3f and axes scalings = [ %.2f,%.2f,%.2f]" %(volume_scaling, axes_scaling[0],axes_scaling[1], axes_scaling[2]))
 
 # Generate toy data manipulabilities e.g. 5000 random from panda random manipulabilities -> CALL generateRobotDataToy.m afterwards to create all necessary data
 
@@ -34,7 +35,7 @@ base_path=args.base_path
 robot_teacher="panda" # based on which robot should the artificial data be created
 robot_student="toy_data" # name of the generated dataset
 
-dataset_random=args.dataset # random teacher dataset for random artificial dataset
+dataset_random=args.dataset 
 dataset_map=args.dataset_map # dataset which should be mapped, e.g. reach_up
 
 filename_manip = base_path+"/"+robot_teacher+"/"+dataset_random+"/manipulabilities.csv"
@@ -60,7 +61,7 @@ np.savetxt(filename_manip_student, manip_artificial_array, delimiter=",")
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-plt.title('Demonstrations')
+plt.title('Artificial data set with volume scaling: %.3f and axes scaling :%.2f, %.2f, %.2f' %(volume_scaling, axes_scaling[0], axes_scaling[1], axes_scaling[2]))
 
 
 filename_manip = base_path+"/"+robot_teacher+"/"+dataset_map+"/manipulabilities_interpolated.csv"
@@ -100,10 +101,10 @@ for i in np.arange(0,len(manip),plot_every_nth):
     m_a = manip_artificial[i]
 
     X2,Y2,Z2 = get_cov_ellipsoid(m_i, [1*cnt,0,0], 1)
-    ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
+    ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
 
     X2,Y2,Z2 = get_cov_ellipsoid(m_a, [1*cnt,0,0], 1)
-    ax.plot_wireframe(X2,Y2,Z2, color='red', alpha=0.05)
+    ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
     cnt+=1
 
 
@@ -124,6 +125,10 @@ def short_proj():
 
 ax.get_proj=short_proj
 ax.set_box_aspect(aspect = (1,1,1))
+
+blue_patch = mpatches.Patch(color='green', label='Original data')
+red_patch = mpatches.Patch(color='blue', label='Artificial data')
+plt.legend(handles=[ blue_patch, red_patch])
 
 plt.xlim(-0.5, n_points/plot_every_nth)
 plt.ylim(-0.5, 0.5)

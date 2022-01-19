@@ -26,69 +26,75 @@ void generate_human_robot_data_random(string base_path, int num, double shoulder
 
 //    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
 
-    if (mkdir((base_path+"/data").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-    {
-        if( errno == EEXIST ) {
-        } else {
-            throw std::runtime_error( strerror(errno) );
-        }
-    }
+//    if (mkdir((base_path+"/data").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//    {
+//        if( errno == EEXIST ) {
+//        } else {
+//            throw std::runtime_error( strerror(errno) );
+//        }
+//    }
+//
+//    if (mkdir((base_path+"/data/human").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1 || robot_type== 0)
+//    {
+//        if( errno == EEXIST ) {
+//        } else {
+//            throw std::runtime_error( strerror(errno) );
+//        }
+//
+//    }
+//    else{
+//        cout<< " Generating human data ..."<<endl;
+//
+//        unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
+//        matlab::data::ArrayFactory factory;
+//        matlab::data::TypedArray<float>  args_shoulder_height = factory.createScalar<float>(shoulder_height);
+//        matlab::data::TypedArray<int>  args_num = factory.createScalar<int>(num);
+//        matlab::data::CharArray args_base_path_h = factory.createCharArray(base_path+"/data/human");
+//        matlabPtr->setVariable(u"shoulder_height_m", std::move(args_shoulder_height));
+//        matlabPtr->setVariable(u"num_m", std::move(args_num));
+//        matlabPtr->setVariable(u"base_path_h_m", std::move(args_base_path_h));
+//        matlabPtr->eval(u"generateHumanData(shoulder_height_m, num_m, base_path_h_m);");
+//    }
 
-    if (mkdir((base_path+"/data/human").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1 || robot_type== 0)
-    {
-        if( errno == EEXIST ) {
-        } else {
-            throw std::runtime_error( strerror(errno) );
-        }
 
-    }
-    else{
-        cout<< " Generating human data ..."<<endl;
-
-        unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
-        matlab::data::ArrayFactory factory;
-        matlab::data::TypedArray<float>  args_shoulder_height = factory.createScalar<float>(shoulder_height);
-        matlab::data::TypedArray<int>  args_num = factory.createScalar<int>(num);
-        matlab::data::CharArray args_base_path_h = factory.createCharArray(base_path+"/data/human");
-        matlabPtr->setVariable(u"shoulder_height_m", std::move(args_shoulder_height));
-        matlabPtr->setVariable(u"num_m", std::move(args_num));
-        matlabPtr->setVariable(u"base_path_h_m", std::move(args_base_path_h));
-        matlabPtr->eval(u"generateHumanData(shoulder_height_m, num_m, base_path_h_m);");
-    }
-
-
-    if (mkdir((base_path+"/results").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-    {
-        if( errno == EEXIST ) {
-        } else {
-            throw std::runtime_error( strerror(errno) );
-        }
-    }
+//    if (mkdir((base_path+"/results").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//    {
+//        if( errno == EEXIST ) {
+//        } else {
+//            throw std::runtime_error( strerror(errno) );
+//        }
+//    }
 
 
     if(robot_type==1){ // franka panda
-        if (mkdir((base_path+"/data/panda").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-        {
-            if( errno == EEXIST ) {
-            } else {
-                throw std::runtime_error( strerror(errno) );
-            }
-        }
+//        if (mkdir((base_path+"/data/panda").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//        {
+//            if( errno == EEXIST ) {
+//            } else {
+//                throw std::runtime_error( strerror(errno) );
+//            }
+//        }
+//
+//
+//        if (mkdir((base_path+"/results/panda").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
+//        {
+//            if( errno == EEXIST ) {
+//            } else {
+//                throw std::runtime_error( strerror(errno) );
+//            }
+//        }
 
+//        string manips_normalized_path=base_path+"/data/panda/r_manipulabilities_normalized.csv";
+//        string manips_path=base_path+"/data/panda/r_manipulabilities.csv";
+//        string scales_path=base_path+"/data/panda/r_scales.csv";
+//        string positions_path=base_path+"/data/panda/r_positions.csv";
+//        string scales_normalized_path=base_path+"/data/panda/r_scales_normalized.csv";
 
-        if (mkdir((base_path+"/results/panda").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
-        {
-            if( errno == EEXIST ) {
-            } else {
-                throw std::runtime_error( strerror(errno) );
-            }
-        }
-
-        string manips_normalized_path=base_path+"/data/panda/r_manipulabilities_normalized.csv";
-        string manips_path=base_path+"/data/panda/r_manipulabilities.csv";
-        string scales_path=base_path+"/data/panda/r_scales.csv";
-        string positions_path=base_path+"/data/panda/r_positions.csv";
-        string scales_normalized_path=base_path+"/data/panda/r_scales_normalized.csv";
+        string manips_normalized_path=base_path+"/manipulabilities_normalized.csv";
+        string manips_path=base_path+"/manipulabilities.csv";
+        string scales_path=base_path+"/scales.csv";
+        string positions_path=base_path+"/positions.csv";
+        string scales_normalized_path=base_path+"/scales_normalized.csv";
 
         Franka robot = Franka(false);
         MatrixXd positions(num, 3);
@@ -138,15 +144,15 @@ void generate_human_robot_data_random(string base_path, int num, double shoulder
         writeCSV(scalesNormalized, scales_normalized_path);
 
         // Create Lookup table
-        unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
-        matlab::data::ArrayFactory factory;
-        matlab::data::CharArray args_base_path = factory.createCharArray(base_path);
-        matlab::data::CharArray args_base_path_r = factory.createCharArray(base_path+"/data/panda");
-        matlab::data::CharArray args_base_path_h = factory.createCharArray(base_path+"/data/human");
-        matlabPtr->setVariable(u"base_path_r_m", std::move(args_base_path_r));
-        matlabPtr->setVariable(u"base_path_h_m", std::move(args_base_path_h));
-
-        matlabPtr->eval(u"createLookupTable(base_path_h_m,base_path_r_m);");
+//        unique_ptr<MATLABEngine> matlabPtr = startMATLAB();
+//        matlab::data::ArrayFactory factory;
+//        matlab::data::CharArray args_base_path = factory.createCharArray(base_path);
+//        matlab::data::CharArray args_base_path_r = factory.createCharArray(base_path+"/data/panda");
+//        matlab::data::CharArray args_base_path_h = factory.createCharArray(base_path+"/data/human");
+//        matlabPtr->setVariable(u"base_path_r_m", std::move(args_base_path_r));
+//        matlabPtr->setVariable(u"base_path_h_m", std::move(args_base_path_h));
+//
+//        matlabPtr->eval(u"createLookupTable(base_path_h_m,base_path_r_m);");
     }
     else if(robot_type==2){ // fanuc
         if (mkdir((base_path+"/data/fanuc").c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH) == -1)
@@ -320,13 +326,13 @@ void plot(string base_path_py, int robot_type){
 }
 
 int main(){
-    create_panda_data_from_manipulabilities("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities");
-//    string base_path = "/home/nnrthmr/test";
-////    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
-//    int robot_type = 1;
-//    if(!fileExists(base_path+"/data/human/h_manipulabilities.csv")
+   // create_panda_data_from_manipulabilities("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities");
+    string base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100";
+//    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
+    int robot_type = 1;
+//    if(!fileExists(base_path+"/manipulabilities.csv")
 //        || (!fileExists(base_path+"/data/"+robots[robot_type]+"/r_manipulabilities.csv") && robot_type>0 ))
-//        generate_human_robot_data_random(base_path, 5000, 1.35, 1);
+        generate_human_robot_data_random(base_path, 100, 1.35, 1);
 //    else
 //        cout<< "Data already generated ..." << endl;
 //

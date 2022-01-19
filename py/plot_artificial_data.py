@@ -10,6 +10,8 @@ import argparse
 
 colors=['green', 'blue', 'orange', 'red', 'purple']
 
+
+### artificial dataset with volume and axes scaling ###
 parser = argparse.ArgumentParser()
 parser.add_argument("input_path", help="input_path.", type=str)
 parser.add_argument("naive_path", help="naive_path.", type=str)
@@ -30,9 +32,10 @@ filename_manip_mapped_icp = args.icp_path
 filename_manips_input = args.input_path
 
 manip_groundtruth = genfromtxt(filename_manip_groundtruth, delimiter=',')
-manip_groundtruth=manip_groundtruth[1:,:]
+#manip_groundtruth=manip_groundtruth[1:,:]
+#print(manip_groundtruth)
 manip_naive = genfromtxt(filename_manip_mapped_naive, delimiter=',')
-manip_naive=manip_naive[1:,:]
+#manip_naive=manip_naive[1:,:]
 manip_icp = genfromtxt(filename_manip_mapped_icp, delimiter=',')
 manip_input = genfromtxt(filename_manips_input, delimiter=',')
 manip_input=manip_input[1:,:]
@@ -50,6 +53,7 @@ manip_in=list()
 
 for i in np.arange(0, manip_groundtruth.shape[0]):
     m_i=manip_groundtruth[i,1:].reshape(3,3)
+    #print(m_i)
     manip.append(scaling_factor_plot*m_i)
 
     m_naive=manip_naive[i,:].reshape(3,3)
@@ -59,10 +63,15 @@ for i in np.arange(0, manip_groundtruth.shape[0]):
     manip_icpl.append(scaling_factor_plot*m_icp)
 
     m_in=manip_input[i,1:].reshape(3,3)
+    #print(m_in)
     manip_in.append(scaling_factor_plot*m_in)
+    #print("---")
 
 
 cnt=0
+mse_naive=0.0
+mse_icp=0.0
+
 print("Errors between groundtruth and naive/icp")
 for i in np.arange(0,len(manip),plot_every_nth):
     m_i = manip[i]
@@ -83,9 +92,11 @@ for i in np.arange(0,len(manip),plot_every_nth):
     ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
 
     print("%.3f / %.3f" %(get_logeuclidean_distance(m_i, m_i_n), get_logeuclidean_distance(m_i, m_i_icp)))
+    mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
+    mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
     cnt+=1
 
-
+print("MSE: %.3f / %.3f" %(mse_naive/len(manip), mse_icp/len(manip)))
 
 # ax.set_zlim(-1, 1)
 # plt.xlim(-1 ,1)

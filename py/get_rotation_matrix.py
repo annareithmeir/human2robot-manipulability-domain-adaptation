@@ -81,7 +81,7 @@ def get_rotation_matrix(M, Mtilde, weights=None, dist=None, x=None):
     if dist == 'euc':
         cost = partial(cost_function_full, M=M, Mtilde=Mtilde, weights=weights, dist=dist)    
         problem = Problem(manifold=manifold, cost=cost, verbosity=0)
-    elif dist == 'rie':
+    elif dist == 'rie' or dist == 'was':
         cost = partial(cost_function_full, M=M, Mtilde=Mtilde, weights=weights, dist=dist)    
         egrad = partial(egrad_function_full_rie, M=M, Mtilde=Mtilde, weights=weights) 
         problem = Problem(manifold=manifold, cost=cost, egrad=egrad, verbosity=0)

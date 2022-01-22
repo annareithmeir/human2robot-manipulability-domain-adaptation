@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
+from pyriemann.utils.distance import distance_riemann, distance_wasserstein
 import pandas as pd
 from numpy import genfromtxt
 import matplotlib.patches as mpatches
@@ -46,38 +47,25 @@ plot_every_nth = 1
 
 COLS=['s','x','y','z']
 
-manip=list()
-manip_n=list()
-manip_icpl=list()
-manip_in=list()
-
-for i in np.arange(0, manip_groundtruth.shape[0]):
-    m_i=manip_groundtruth[i,1:].reshape(3,3)
-    #print(m_i)
-    manip.append(scaling_factor_plot*m_i)
-
-    m_naive=manip_naive[i,:].reshape(3,3)
-    manip_n.append(scaling_factor_plot*m_naive)
-
-    m_icp=manip_icp[i,:].reshape(3,3)
-    manip_icpl.append(scaling_factor_plot*m_icp)
-
-    m_in=manip_input[i,1:].reshape(3,3)
-    #print(m_in)
-    manip_in.append(scaling_factor_plot*m_in)
-    #print("---")
-
-
 cnt=0
 mse_naive=0.0
 mse_icp=0.0
 
 print("Errors between groundtruth and naive/icp")
-for i in np.arange(0,len(manip),plot_every_nth):
-    m_i = manip[i]
-    m_i_n = manip_n[i]
-    m_i_icp = manip_icpl[i]
-    m_i_in = manip_in[i]
+for i in np.arange(0,n_points,plot_every_nth):
+    m_i = manip_groundtruth[i,1:].reshape(3,3)
+    m_i_n = manip_naive[i,:].reshape(3,3)
+    m_i_icp = manip_icp[i,:].reshape(3,3)
+    m_i_in = manip_input[i,1:].reshape(3,3)
+
+    print("%.3f / %.3f" %(distance_riemann(m_i, m_i_n), distance_riemann(m_i, m_i_icp)))
+    mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
+    mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
+
+    m_i=scaling_factor_plot*m_i
+    m_i_n=scaling_factor_plot*m_i_n
+    m_i_in=scaling_factor_plot*m_i_in
+    m_i_icp=scaling_factor_plot*m_i_icp
 
     X2,Y2,Z2 = get_cov_ellipsoid(m_i, [1*cnt,0,0], 1)
     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
@@ -91,12 +79,9 @@ for i in np.arange(0,len(manip),plot_every_nth):
     X2,Y2,Z2 = get_cov_ellipsoid(m_i_in, [1*cnt,0,0], 1)
     ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
 
-    print("%.3f / %.3f" %(get_logeuclidean_distance(m_i, m_i_n), get_logeuclidean_distance(m_i, m_i_icp)))
-    mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
-    mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
     cnt+=1
 
-print("MSE: %.3f / %.3f" %(mse_naive/len(manip), mse_icp/len(manip)))
+print("MSE: %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
 
 # ax.set_zlim(-1, 1)
 # plt.xlim(-1 ,1)

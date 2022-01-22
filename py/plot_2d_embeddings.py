@@ -111,8 +111,8 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None):
         tmp+=1
 
 
-    ax1.scatter([], [], facecolor=colors[1], label='source (robot)')
-    ax1.scatter([], [], facecolor=colors[2], label='target (human)')
+    ax1.scatter([], [], facecolor=colors[1], label='source (student)')
+    ax1.scatter([], [], facecolor=colors[2], label='target (teacher)')
 
     ax1.legend(loc='lower center')
     return ax1
@@ -123,34 +123,32 @@ def plot_diffusion_embedding_target_new(source, target, target_new, ax1):
     covs = np.concatenate([covs, target_new])
     sess = np.array([1] * len(source) + [2] * len(target) + [3] * len(target_new))
 
-    colors = {1: 'blue', 2: 'green', 3: 'red'}
+    colors = {1: 'blue', 2: 'red', 3: 'green'}
 
     uorg, l = get_diffusionEmbedding(points=covs, distance=distance_riemann)
 
     for ui, si in zip(uorg, sess):
-        ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none')
-    ax1.scatter([], [], facecolor=colors[1], label='source (robot)')
-    ax1.scatter([], [], facecolor=colors[2], label='target (human)')
-    ax1.scatter([], [], facecolor=colors[3], label='target new (human)')
+        ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
+    ax1.scatter([], [], facecolor=colors[1], label='source (student)')
+    ax1.scatter([], [], facecolor=colors[2], label='target (teacher)')
+    ax1.scatter([], [], facecolor=colors[3], label='target new samples')
     ax1.legend(loc='lower right')
     return ax1
 
 
-def plot_diffusion_embedding_target_new_and_naive(source, target, target_new, target_naive, ax1):
-    covs = np.concatenate([source, target])
-    covs = np.concatenate([covs, target_new])
+def plot_diffusion_embedding_target_new_and_naive(groundtruth, target_icp, target_naive, ax1):
+    covs = np.concatenate([groundtruth, target_icp])
     covs = np.concatenate([covs, target_naive])
-    sess = np.array([1] * len(source) + [2] * len(target) + [3] * len(target_new) + [4] * len(target_naive))
+    sess = np.array([1] * len(groundtruth) + [2] * len(target_icp) + [3] * len(target_naive))
 
-    colors = {1: 'blue', 2: 'green', 3: 'red', 4: 'orange'}
+    colors = {1: 'blue', 2: 'purple', 3: 'orange'}
 
     uorg, l = get_diffusionEmbedding(points=covs, distance=distance_riemann)
 
     for ui, si in zip(uorg, sess):
-        ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none')
-    ax1.scatter([], [], facecolor=colors[1], label='source (robot)')
-    ax1.scatter([], [], facecolor=colors[2], label='target (human)')
-    ax1.scatter([], [], facecolor=colors[3], label='target mapped ICP (human)')
-    ax1.scatter([], [], facecolor=colors[4], label='target mapped naive (human)')
+        ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
+    ax1.scatter([], [], facecolor=colors[1], label='ground truth')
+    ax1.scatter([], [], facecolor=colors[2], label='target mapped ICP')
+    ax1.scatter([], [], facecolor=colors[3], label='target mapped naive')
     ax1.legend(loc='lower right')
     return ax1

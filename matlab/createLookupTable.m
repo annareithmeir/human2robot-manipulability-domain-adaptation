@@ -1,4 +1,4 @@
-function createLookupTable(base_path, robot_teacher, robot_student, lookup_dataset)
+function createLookupTable(base_path, robot_teacher, robot_student, lookup_dataset, cv_k)
 
 %     positionsHuman = csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_positions.csv");
 %     scalesHuman=csvread("/home/nnrthmr/CLionProjects/ma_thesis/data/calibration/affineTrafo/h_scales_normalized.csv");
@@ -11,10 +11,22 @@ function createLookupTable(base_path, robot_teacher, robot_student, lookup_datas
 
     manips_robot_teacher=csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/manipulabilities_normalized.csv");
     manips_robot_student=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/manipulabilities_normalized.csv");
+    %manips_robot_teacher=csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/manipulabilities.csv");
+    %manips_robot_student=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/manipulabilities.csv");
     scales_robot_teacher=csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/scales.csv");
     scales_robot_student=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/scales.csv");
+    
+    if nargin ==5
+        cv_idx=csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/cv/cv_idx.csv");
+        manips_robot_teacher=manips_robot_teacher(cv_idx(cv_k,:)==0,:);
+        manips_robot_student=manips_robot_student(cv_idx(cv_k,:)==0,:);
+        scales_robot_teacher=scales_robot_teacher(cv_idx(cv_k,:)==0,:);
+        scales_robot_student=scales_robot_student(cv_idx(cv_k,:)==0,:);
+    end
 
     %matrix error
+    assert(size(manips_robot_teacher,1) == size(manips_robot_student,1));
+    
     num= size(manips_robot_teacher,1);
     dist_errs=zeros(num, num);
     for i=1:num
@@ -26,7 +38,7 @@ function createLookupTable(base_path, robot_teacher, robot_student, lookup_datas
         end
     end
     
-    [minValuesDistErrs, minIndicesDistErrs] = min(dist_errs,[],2); % index array of closest index in robot data for each frob err of human
+    %[minValuesDistErrs, minIndicesDistErrs] = min(dist_errs,[],2); % index array of closest index in robot data for each frob err of human
     
     %normalized volume error
     vol_errs=zeros(num, num);
@@ -39,7 +51,7 @@ function createLookupTable(base_path, robot_teacher, robot_student, lookup_datas
         end
     end
     
-    [minValuesFrob, minIndicesFrob] = min(vol_errs,[],2); % index array of closest index in robot data for each vol err of human
+    %[minValuesFrob, minIndicesFrob] = min(vol_errs,[],2); % index array of closest index in robot data for each vol err of human
     
     
     % combined errors
@@ -60,7 +72,9 @@ function createLookupTable(base_path, robot_teacher, robot_student, lookup_datas
         affine_trafos(i,:) = reshape(L1, 1,9);
     end
     
-
-    dlmwrite(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/lookup_trafos_naive_"+robot_teacher+"_to_"+robot_student+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
-
+    if nargin == 5
+        dlmwrite(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/cv/lookup_trafos_naive_"+robot_teacher+"_to_"+robot_student+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
+    else
+        dlmwrite(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/lookup_trafos_naive_"+robot_teacher+"_to_"+robot_student+".csv", affine_trafos,'delimiter', ',', 'precision', 64); % robot is target, human is source
+    end
 end

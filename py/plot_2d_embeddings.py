@@ -103,7 +103,7 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None):
     for ui, si in zip(uorg, sess):
         if idx_s is not None:
             if((si==1 and tmp in idx_s) or (si==2 and tmp-len(source) in idx_t)):
-                ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7, marker=markers[si])
+                ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.9, marker=markers[si])
             else:
                 ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.2, marker=markers[si])
         else:

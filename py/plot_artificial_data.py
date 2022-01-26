@@ -42,7 +42,7 @@ manip_input = genfromtxt(filename_manips_input, delimiter=',')
 manip_input=manip_input[1:,:]
 
 n_points=manip_groundtruth.shape[0]
-scaling_factor_plot = 0.5
+scaling_factor_plot = 0.3
 plot_every_nth = 1
 
 COLS=['s','x','y','z']
@@ -50,6 +50,9 @@ COLS=['s','x','y','z']
 cnt=0
 mse_naive=0.0
 mse_icp=0.0
+
+le_mse_naive=0.0
+le_mse_icp=0.0
 
 print("Errors between groundtruth and naive/icp")
 for i in np.arange(0,n_points,plot_every_nth):
@@ -59,8 +62,11 @@ for i in np.arange(0,n_points,plot_every_nth):
     m_i_in = manip_input[i,1:].reshape(3,3)
 
     print("%.3f / %.3f" %(distance_riemann(m_i, m_i_n), distance_riemann(m_i, m_i_icp)))
-    mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
-    mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
+    mse_icp += distance_riemann(m_i, m_i_icp)**2
+    mse_naive+= distance_riemann(m_i, m_i_n)**2
+
+    le_mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
+    le_mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
 
     m_i=scaling_factor_plot*m_i
     m_i_n=scaling_factor_plot*m_i_n
@@ -81,7 +87,9 @@ for i in np.arange(0,n_points,plot_every_nth):
 
     cnt+=1
 
-print("MSE: %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
+print("MSE (riemann): %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
+print("MSE (LogEuc): %.3f / %.3f" %(le_mse_naive/n_points, le_mse_icp/n_points))
+plt.title("MSE (riemann): %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
 
 # ax.set_zlim(-1, 1)
 # plt.xlim(-1 ,1)

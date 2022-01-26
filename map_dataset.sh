@@ -8,10 +8,12 @@ robot_student="toy_data"
 base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
 map_dataset="10_new"
 lookup_dataset="100"
-volume_scaling=24
-axes_scaling="2,0.3,1"
+
+volume_scaling=8
+axes_scaling="0.5,3,1"
 
 redo=1
+redo_dataset=1
 
 rm -rf ${base_path}/${robot_student}/${lookup_dataset}/*
 rm ${base_path}/${robot_student}/${map_dataset}/*mapped*
@@ -25,10 +27,11 @@ echo "###	 Map dataset ${map_dataset} from ${robot_teacher} to ${robot_student} 
 
 
 #generate artificial dataset
-if [ ! -f "${base_path}/${robot_student}/${lookup_dataset}/manipulabilities.csv" ] || [ redo==1 ]; then
+if [ ! -f "${base_path}/${robot_student}/${lookup_dataset}/manipulabilities.csv" ] || [ redo_dataset==1 ]; then
 #if [ ! -f "${base_path}/${robot_student}/${lookup_dataset}/manipulabilities.csv" ]; then
 	echo "### 	Create artificial dataset 	###"
 	python3 py/generate_artificial_data.py ${base_path} ${lookup_dataset} ${map_dataset} ${volume_scaling} -axes_scaling ${axes_scaling}
+	#python3 py/generate_artificial_data_r_s_t.py ${base_path} ${lookup_dataset} ${map_dataset}
 fi
 #if [ ! -f "${base_path}/${robot_student}/${lookup_dataset}/scales.csv" ]; then
 if [ ! -f "${base_path}/${robot_student}/${lookup_dataset}/scales.csv" ] || [ redo==1 ]; then
@@ -62,6 +65,7 @@ echo $base_path $robot_teacher $robot_student $lookup_dataset $map_dataset 2
 
 
 if [ ! -f "${base_path}/${robot_teacher}/${lookup_dataset}/R_icp_${robot_teacher}_to_${robot_student}.txt" ] || [ redo==1 ]; then
+#if [ ! -f "${base_path}/${robot_teacher}/${lookup_dataset}/R_icp_${robot_teacher}_to_${robot_student}.txt" ]; then
 	echo "###	 Running ICP now	###"
 	python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
 else

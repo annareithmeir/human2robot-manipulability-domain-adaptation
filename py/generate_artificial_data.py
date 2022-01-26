@@ -9,7 +9,8 @@ import os
 import matplotlib.patches as mpatches
 import argparse
 
-colors=['green', 'blue', 'orange', 'red', 'purple']
+
+# scale volume and axes
 
 parser = argparse.ArgumentParser()
 parser.add_argument("base_path", help="base_path.", type=str)

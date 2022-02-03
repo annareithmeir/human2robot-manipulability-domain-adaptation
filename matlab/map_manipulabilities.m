@@ -6,9 +6,11 @@ function mapped_manipulabilities = map_manipulabilities(base_path, robot_teacher
     
     teacher_manipulabilities_random = csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/manipulabilities.csv");
     affine_trafos = csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/lookup_trafos_naive_"+robot_teacher+"_to_"+robot_student+".csv");
+    %mapping_manipulabilities = csvread(base_path+"/"+robot_teacher+"/"+mapping_dataset+"/manipulabilities.csv");
     mapping_manipulabilities = csvread(base_path+"/"+robot_teacher+"/"+mapping_dataset+"/manipulabilities_interpolated.csv");
 
-    mapping_manipulabilities = mapping_manipulabilities(2:size(mapping_manipulabilities,1),2:10);
+    %mapping_manipulabilities = mapping_manipulabilities(:,1:10);
+    mapping_manipulabilities = mapping_manipulabilities(:,2:10);
     mapped_manipulabilities=zeros(size(mapping_manipulabilities, 1),9);
    
     % for each mapping manipulability

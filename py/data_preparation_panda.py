@@ -32,7 +32,7 @@ def interpolate_equidistant(x, trajectory, interpolate_N_points):
 COLS=["Franka_joint1","Franka_joint2","Franka_joint3","Franka_joint4","Franka_joint5","Franka_joint6","Franka_joint7"]
 COLS2=["s","Franka_joint1","Franka_joint2","Franka_joint3","Franka_joint4","Franka_joint5","Franka_joint6","Franka_joint7"]
 
-BASE_PATH = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities/panda/"
+BASE_PATH = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/reach_up/panda/"
 FILE_PATH = BASE_PATH + "joints.csv"
 FILE_PATH_INTERP = BASE_PATH + "joints_interpolated.csv"
 FILE_PATH_MANIPS = BASE_PATH + "manipulabilities_interpolated.csv"
@@ -80,6 +80,7 @@ manips[:,0] = x
 ts[:,0] = x
 
 df= pd.DataFrame(manips)
+print(df)
 df = df.set_index([0])
 df.to_csv(FILE_PATH_MANIPS)
 

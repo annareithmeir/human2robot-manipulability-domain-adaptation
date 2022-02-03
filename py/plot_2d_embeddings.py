@@ -89,7 +89,7 @@ def embed_2d_target_new_and_naive(source, target, target_new, target_naive, ax):
 # Diffusion maps
 #
 
-def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None):
+def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None, pairwise=False):
     covs = np.concatenate([source, target, [mean_riemann(source)], [mean_riemann(target)]])
     sess = np.array([1] * len(source) + [2] * len(target) + [3] * 1 + [4] * 1)
 
@@ -98,14 +98,24 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None):
 
     colors = {1: 'b', 2: 'r',3: 'b', 4: 'r'}
     markers = {1:'o', 2:'o', 3:'x', 4:'x'}
+    cmapstuff=['orange', 'darkolivegreen', 'darkviolet', 'dodgerblue','deeppink', 'saddlebrown', 'dimgrey','cornflowerblue','plum' ]
     tmp=0
+
+
 
     for ui, si in zip(uorg, sess):
         if idx_s is not None:
             if((si==1 and tmp in idx_s) or (si==2 and tmp-len(source) in idx_t)):
-                ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.9, marker=markers[si])
+                if pairwise:
+                    if (si==1):
+                        itmp = np.where(idx_s == tmp)[0][0]
+                    if (si==2):
+                        itmp = np.where(idx_t == tmp-len(source))[0][0]
+                    ax1.scatter(ui[1], ui[2], facecolor=cmapstuff[itmp], edgecolor='none',alpha=0.9, marker=markers[si])
+                else:
+                    ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none',alpha=0.9, marker=markers[si])
             else:
-                ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.2, marker=markers[si])
+                ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.1, marker=markers[si])
         else:
             ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.8, marker=markers[si])
         tmp+=1

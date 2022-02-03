@@ -39,7 +39,7 @@ manip_naive = genfromtxt(filename_manip_mapped_naive, delimiter=',')
 #manip_naive=manip_naive[1:,:]
 manip_icp = genfromtxt(filename_manip_mapped_icp, delimiter=',')
 manip_input = genfromtxt(filename_manips_input, delimiter=',')
-manip_input=manip_input[1:,:]
+# manip_input=manip_input[1:,:]
 
 n_points=manip_groundtruth.shape[0]
 scaling_factor_plot = 0.3
@@ -55,6 +55,10 @@ le_mse_naive=0.0
 le_mse_icp=0.0
 
 print("Errors between groundtruth and naive/icp")
+print(manip_groundtruth.shape)
+print(manip_naive.shape)
+print(manip_icp.shape)
+print(manip_input.shape)
 for i in np.arange(0,n_points,plot_every_nth):
     m_i = manip_groundtruth[i,1:].reshape(3,3)
     m_i_n = manip_naive[i,:].reshape(3,3)

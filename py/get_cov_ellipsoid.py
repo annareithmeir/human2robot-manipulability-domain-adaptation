@@ -66,6 +66,13 @@ def scale_volume(A, scaling_factor):
     # A= (nthroot(scale,3)^2).*A;
     return ((scaling_factor**(1/float(3)))**2)*A
 
+def scale_volume_to_desired_vol(A, vol):
+    # A= (nthroot(scale,3)^2).*A;
+    v= get_volume(A)
+    A=scale_volume(A, 1/v)
+    A=scale_volume(A, vol)
+    return A
+
 
 def scale_axes(A, scaling_factors):
     u, s, vh = np.linalg.svd(A, full_matrices=True)
@@ -79,7 +86,6 @@ def get_volume(A):
     w,v = np.linalg.eig(A)
 
     return (math.sqrt(w[0])*math.sqrt(w[1])*math.sqrt(w[2]))*(4.0/3.0)*math.pi
-
 
 
 def logmap(X,S):

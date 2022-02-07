@@ -15,7 +15,7 @@ import copy
 from scipy.linalg import eigh
 import matplotlib
 import math
-from path_sing2sing import find_singular_geodesic_paths, find_most_singular_points, find_most_singular_points_diff_dir
+from path_sing2sing import find_singular_geodesic_paths, find_most_singular_points, find_most_singular_points_conv, find_most_singular_points_diff_dir
 
 import os
 os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
@@ -636,10 +636,10 @@ def icp_iteration_sing2sing(source_org, target, dist):
     R=list()
     err_all=list()
 
-    source_nns, target_nns, idx_s, idx_t = find_singular_geodesic_paths(source, target, 2) # num points to use
-    print("IDX LEN: ", idx_s.shape, idx_t.shape)
+    source_nns, target_nns, idx_s, idx_t, w = find_singular_geodesic_paths(source, target, 6) # num points to use
+    print("IDX LEN: ", idx_s.shape, idx_t.shape, w.shape)
     while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=None, dist='rie', x=gen_orth(3))
+        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
         # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
         target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
 
@@ -681,11 +681,13 @@ def icp_iteration_most_singular(source_org, target, dist):
     err_all=list()
 
     #source_nns, target_nns, idx_s, idx_t = find_most_singular_points_diff_dir(source, target, 6)
-    source_nns, target_nns, idx_s, idx_t = find_most_singular_points(source, target, 4)
+    source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 18) # 12 best so far
+    # source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points(source, target, 3) # 12 best so far
+    print(w)
     print("USING %i MOST SINGULAR POINTS " %(idx_s.shape[0]))
 
     while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=None, dist='rie', x=gen_orth(3))
+        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
         # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
         target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
 
@@ -726,30 +728,9 @@ def icp_iteration(source_org, target, dist):
     R=list()
     err_all=list()
 
-    # while (iter_curr < itermax) and (mean_nns > 1e-1*8):
-    #     source_nns, target_nns, w, mean_dist_nns = find_nearest_neighbors(source, target, dist)
-    #     rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
-        
-    #     #target = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
-    #     #target_nns = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
-    #     R_all.append(rotation_matrix_iter)
-
-    #     mean_t=0
-    #     mean_nns=0
-    #     for i in np.arange(source.shape[0]):
-    #         #print(distance_riemann(source[i], target[i]))
-    #         mean_t+= distance_riemann(source[i], target[i])
-    #         mean_nns+= distance_riemann(source_nns[i], target_nns[i])
-    #     iter_curr+=1
-    #     mean_t =mean_t/target.shape[0]
-    #     mean_nns =mean_nns/target_nns.shape[0]
-    #     print("Mean after iteration %i: %.3f" %(iter_curr, mean_nns))
 
     source_nns, target_nns, w, mean_dist_nns = find_nearest_neighbors(source, target, dist, filterdup=False)
-    #print(w)
-    #source_nns=source_org
-    #target_nns=target
-    #w=np.ones(source.shape[0])
+
     while (iter_curr < itermax) and (mean_nns > 1e-1*1):
         rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
         # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
@@ -825,7 +806,7 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 5
+iter = 10
 dist = "rie"
 
 source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
@@ -840,7 +821,10 @@ target_org = target.reshape((target.shape[0], 3, 3))
 source = copy.deepcopy(source_org)
 target = copy.deepcopy(target_org)
 
-np.random.shuffle(target)
+shuf_order = np.arange(target.shape[0])
+np.random.shuffle(shuf_order)
+
+target = target[shuf_order]
 
 results_path = args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset
 results_path2 = args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset
@@ -947,7 +931,7 @@ if run_map_find:
         if iter_i == 0:
             target_tmpplot =copy.deepcopy(target)
 
-        # target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_sing2sing(source, target, dist)
+        #target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_sing2sing(source, target, dist)
         target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_most_singular(source, target, dist)
         # target, s_iter, rotation_matrix_iter = icp_iteration(source, target, dist)
         assert(target.shape[0]==target_org.shape[0])
@@ -957,7 +941,7 @@ if run_map_find:
         if iter_i == 0: # just to get the indices into the plot
             axs3.append(fig3.add_subplot(1, 5, 3))
             axs3[2].set_title("Stretch at id")
-            plot_diffusion_embedding(source, target_tmpplot, axs3[2], idx_s, idx_t)
+            plot_diffusion_embedding(source, target_tmpplot, axs3[2], idx_s, idx_t, True)
 
         axs2.append(fig2.add_subplot(1, iter + 2, iter_i + 3))
         plot_diffusion_embedding(source, target, axs2[iter_i + 2], idx_s, idx_t)
@@ -984,7 +968,7 @@ if run_map_find:
 
     axs3.append(fig3.add_subplot(1, 5, 4))
     axs3[3].set_title("Rotate wrt subsamples")
-    plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t)
+    plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t, True)
     #plot_diffusion_embedding(source, target, axs2[3])
 
     ### move to source ###
@@ -992,15 +976,22 @@ if run_map_find:
 
     axs3.append(fig3.add_subplot(1, 5, 5))
     axs3[4].set_title("Move to source")
-    plot_diffusion_embedding(source_org, target, axs3[4])
+    plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, True)
     fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
 
     R_arr=np.zeros((len(R_list),3,3))
     for i in np.arange(len(R_list)):
         R_arr[i]=R_list[i]
 
-    source_tmp, target_tmp, _, _ = find_nearest_neighbors(source_org, target, dist, filterdup=False)
-    print("AFTER ALL ITERATIONs MEAN DIST: %.3f" % (get_mean_dist_pairs(source_tmp, target_tmp)) )
+
+
+    unshuf_order = np.zeros_like(shuf_order)
+    unshuf_order[shuf_order] = np.arange(target.shape[0])
+
+    target = target[unshuf_order]
+
+    #source_tmp, target_tmp, _, _ = find_nearest_neighbors(source_org, target, dist, filterdup=False)
+    print("AFTER ALL ITERATIONS MEAN DIST TO GROUND TRUTH: %.3f" % (get_mean_dist_pairs(source_org, target)) )
 
 
     # save results

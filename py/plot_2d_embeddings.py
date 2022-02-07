@@ -98,7 +98,7 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None, pairwi
 
     colors = {1: 'b', 2: 'r',3: 'b', 4: 'r'}
     markers = {1:'o', 2:'o', 3:'x', 4:'x'}
-    cmapstuff=['orange', 'darkolivegreen', 'darkviolet', 'dodgerblue','deeppink', 'saddlebrown', 'dimgrey','cornflowerblue','plum' ]
+    cmapstuff=['orange', 'darkolivegreen', 'darkviolet', 'dodgerblue','deeppink', 'saddlebrown', 'dimgrey','cornflowerblue','plum']
     tmp=0
 
 
@@ -111,7 +111,7 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None, pairwi
                         itmp = np.where(idx_s == tmp)[0][0]
                     if (si==2):
                         itmp = np.where(idx_t == tmp-len(source))[0][0]
-                    ax1.scatter(ui[1], ui[2], facecolor=cmapstuff[itmp], edgecolor='none',alpha=0.9, marker=markers[si])
+                    ax1.scatter(ui[1], ui[2], facecolor=cmapstuff[itmp % len(cmapstuff)], edgecolor='none',alpha=0.9, marker=markers[si])
                 else:
                     ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none',alpha=0.9, marker=markers[si])
             else:

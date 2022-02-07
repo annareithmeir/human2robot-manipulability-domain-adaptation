@@ -626,34 +626,69 @@ def initial_iteration_sing2sing(source_org, target, results_path, dist):
     return target, s, [rotation_matrix_iter]
 
 
-def icp_iteration_sing2sing(source_org, target, dist):
+def icp_iteration_sing2sing(source_org, target, dist, plotting=False):
+
+    source_sing, target_sing, idx_s, idx_t = find_singular_geodesic_paths(source, target, 3) # num points to use
+
+    print("USING %i SING2SING POINTS " %(idx_s.shape[0]))
+
+    mean_target_sing = mean_riemann(target_sing)
+    mean_source_sing = mean_riemann(source_sing)
+
+    if plotting:
+        fig3 = plt.figure(figsize=(20, 7))
+        fig3.suptitle('Initial iteration process')
+        axs3 = list()
+        axs3.append(fig3.add_subplot(1, 5, 1))
+        axs3[0].set_title("Original")
+        plot_diffusion_embedding(source_org, target, axs3[0], idx_s, idx_t, pairwise=False)
+
+    ### move target to id ###
+    target = np.stack([np.dot(invsqrtm(mean_target_sing), np.dot(ti, invsqrtm(mean_target_sing))) for ti in target])  
+    target_sing = np.stack([np.dot(invsqrtm(mean_target_sing), np.dot(ti, invsqrtm(mean_target_sing))) for ti in target_sing])  
+    source_sing = np.stack([np.dot(invsqrtm(mean_source_sing), np.dot(si, invsqrtm(mean_source_sing))) for si in source_sing])  # move source to id
+
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 2))
+        axs3[1].set_title("Recenter to id")
+        plot_diffusion_embedding(source_org, target, axs3[1], idx_s, idx_t, pairwise=False)
+
+    ### stretch target at id ###
+    disp_source = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in source_sing]) / len(source_sing)  # get stretching factor
+    disp_target = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in target_sing]) / len(target_sing)
+    s = 1.0 / round(np.sqrt(disp_target / disp_source),4)
+    target_sing = np.stack([powm(ti, s) for ti in target_sing])  # stretch target at id
+    target = np.stack([powm(ti, s) for ti in target])  # stretch target at id
+
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 3))
+        axs3[2].set_title("Stretch at id")
+        plot_diffusion_embedding(source_org, target, axs3[2], idx_s, idx_t, pairwise=False)
 
     ### find R and rotate all targets ###
     itermax=100
     iter_curr=0
     mean_t=999
-    mean_nns=999
+    mean_sing=999
     R=list()
     err_all=list()
 
-    source_nns, target_nns, idx_s, idx_t = find_singular_geodesic_paths(source, target, 2) # num points to use
-    print("IDX LEN: ", idx_s.shape, idx_t.shape)
-    while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=None, dist='rie', x=gen_orth(3))
-        # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
-        target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
+
+    while (iter_curr < itermax) and (mean_sing > 1e-1*1):
+        rotation_matrix_iter = get_rotation_matrix(M=source_sing, Mtilde=target_sing, weights=None, dist='rie', x=gen_orth(3))
+        target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
 
         mean_t=0
         mean_nns=0
-        for i in np.arange(source_nns.shape[0]):
+        for i in np.arange(source.shape[0]):
             # mean_t+= distance_riemann(source[i], target[i])
-            mean_nns+= distance_riemann(source_nns[i], target_tmp[i])
+            mean_nns+= distance_riemann(source_org[i], target_tmp[i])
         iter_curr+=1
         # mean_t =mean_t/target.shape[0]
-        mean_nns =mean_nns/target_nns.shape[0]
+        mean_sing =mean_sing/target_sing.shape[0]
         # mean_nns =mean_nns/target_nns.shape[0]
-        print("Mean after iteration %i: %.3f" %(iter_curr, mean_nns))
-        err_all.append(mean_nns)
+        print("Mean after iteration %i: %.3f" %(iter_curr, mean_sing))
+        err_all.append(mean_sing)
         R.append(rotation_matrix_iter)
 
     if(iter_curr == itermax):
@@ -666,40 +701,97 @@ def icp_iteration_sing2sing(source_org, target, dist):
         rotation_matrix_iter = R[-1]
 
     target = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+    target_sing = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_sing])
 
-    return target, s, [rotation_matrix_iter], idx_s, idx_t
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 4))
+        axs3[3].set_title("Rotate wrt subsamples")
+        plot_diffusion_embedding(source_org, target, axs3[3], idx_s, idx_t, pairwise=False)
+        #plot_diffusion_embedding(source, target, axs2[3])
 
 
-def icp_iteration_most_singular(source_org, target, dist):
+    ### move to source ###
+    target = np.stack([np.dot(sqrtm(mean_source_sing), np.dot(ti, sqrtm(mean_source_sing))) for ti in target]) 
+    target_sing = np.stack([np.dot(sqrtm(mean_source_sing), np.dot(ti, sqrtm(mean_source_sing))) for ti in target_sing]) 
 
-    ### find R and rotate all targets ###
-    itermax=100
-    iter_curr=0
-    mean_t=999
-    mean_nns=999
-    R=list()
-    err_all=list()
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 5))
+        axs3[4].set_title("Move to source")
+        plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, pairwise=False)
+        fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
 
-    #source_nns, target_nns, idx_s, idx_t = find_most_singular_points_diff_dir(source, target, 6)
-    source_nns, target_nns, idx_s, idx_t = find_most_singular_points(source, target, 4)
+    return target, s, rotation_matrix_iter, [mean_target_sing, mean_source_sing]
+
+
+
+def icp_iteration_most_singular(source_org, target, dist, plotting=False):
+
+    #source_org, target, w, mean_dist_nns = find_nearest_neighbors(source_org, target, dist, filterdup=True)
+    # source_sing, target_sing, idx_s, idx_t = find_most_singular_points_diff_dir(source, target, 10)
+    source_sing, target_sing, idx_s, idx_t, w = find_most_singular_points(source, target, 12)
     print("USING %i MOST SINGULAR POINTS " %(idx_s.shape[0]))
+    #source_nn = source_org[w == 1]
+    #target_nn = target[w == 1]
+    #idx_s=np.argwhere(w==1)
+    #idx_t=np.argwhere(w==1)
 
-    while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=None, dist='rie', x=gen_orth(3))
-        # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
-        target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
+    mean_target_sing = mean_riemann(target_sing)
+    mean_source_sing = mean_riemann(source_sing)
+
+    if plotting:
+        fig3 = plt.figure(figsize=(20, 7))
+        fig3.suptitle('Initial iteration process')
+        axs3 = list()
+        axs3.append(fig3.add_subplot(1, 5, 1))
+        axs3[0].set_title("Original")
+        plot_diffusion_embedding(source_org, target, axs3[0], idx_s, idx_t, pairwise=True)
+
+    ### move target to id ###
+    target = np.stack([np.dot(invsqrtm(mean_target_sing), np.dot(ti, invsqrtm(mean_target_sing))) for ti in target])  
+    target_sing = np.stack([np.dot(invsqrtm(mean_target_sing), np.dot(ti, invsqrtm(mean_target_sing))) for ti in target_sing])  
+    source_sing = np.stack([np.dot(invsqrtm(mean_source_sing), np.dot(si, invsqrtm(mean_source_sing))) for si in source_sing])  # move source to id
+
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 2))
+        axs3[1].set_title("Recenter to id")
+        plot_diffusion_embedding(source_org, target, axs3[1], idx_s, idx_t, pairwise=True)
+
+    ### stretch target at id ###
+    disp_source = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in source_sing]) / len(source_sing)  # get stretching factor
+    disp_target = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in target_sing]) / len(target_sing)
+    s = 1.0 / round(np.sqrt(disp_target / disp_source),4)
+    target_sing = np.stack([powm(ti, s) for ti in target_sing])  # stretch target at id
+    target = np.stack([powm(ti, s) for ti in target])  # stretch target at id
+
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 3))
+        axs3[2].set_title("Stretch at id")
+        plot_diffusion_embedding(source_org, target, axs3[2], idx_s, idx_t, pairwise=True)
+
+    ### find R and rotate all targets ###
+    itermax=100
+    iter_curr=0
+    mean_t=999
+    mean_sing=999
+    R=list()
+    err_all=list()
+
+
+    while (iter_curr < itermax) and (mean_sing > 1e-1*1):
+        rotation_matrix_iter = get_rotation_matrix(M=source_sing, Mtilde=target_sing, weights=w, dist='rie', x=gen_orth(3))
+        target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
 
         mean_t=0
         mean_nns=0
-        for i in np.arange(source_nns.shape[0]):
+        for i in np.arange(source.shape[0]):
             # mean_t+= distance_riemann(source[i], target[i])
-            mean_nns+= distance_riemann(source_nns[i], target_tmp[i])
+            mean_nns+= distance_riemann(source_org[i], target_tmp[i])
         iter_curr+=1
         # mean_t =mean_t/target.shape[0]
-        mean_nns =mean_nns/target_nns.shape[0]
+        mean_sing =mean_sing/target_sing.shape[0]
         # mean_nns =mean_nns/target_nns.shape[0]
-        print("Mean after iteration %i: %.3f" %(iter_curr, mean_nns))
-        err_all.append(mean_nns)
+        print("Mean after iteration %i: %.3f" %(iter_curr, mean_sing))
+        err_all.append(mean_sing)
         R.append(rotation_matrix_iter)
 
     if(iter_curr == itermax):
@@ -712,8 +804,27 @@ def icp_iteration_most_singular(source_org, target, dist):
         rotation_matrix_iter = R[-1]
 
     target = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+    target_sing = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_sing])
 
-    return target, s, [rotation_matrix_iter], idx_s, idx_t
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 4))
+        axs3[3].set_title("Rotate wrt subsamples")
+        plot_diffusion_embedding(source_org, target, axs3[3], idx_s, idx_t, pairwise=True)
+        #plot_diffusion_embedding(source, target, axs2[3])
+
+
+    ### move to source ###
+    target = np.stack([np.dot(sqrtm(mean_source_sing), np.dot(ti, sqrtm(mean_source_sing))) for ti in target]) 
+    target_sing = np.stack([np.dot(sqrtm(mean_source_sing), np.dot(ti, sqrtm(mean_source_sing))) for ti in target_sing]) 
+
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 5))
+        axs3[4].set_title("Move to source")
+        plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, pairwise=True)
+        fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
+
+    return target, s, rotation_matrix_iter, [mean_target_sing, mean_source_sing]
+
 
 
 def icp_iteration(source_org, target, dist, plotting=False):
@@ -730,21 +841,23 @@ def icp_iteration(source_org, target, dist, plotting=False):
     mean_target = mean_riemann(target_nn)
     mean_source_org = mean_riemann(source_nn)
 
-    fig3 = plt.figure(figsize=(20, 7))
-    fig3.suptitle('Initial iteration process')
-    axs3 = list()
-    axs3.append(fig3.add_subplot(1, 5, 1))
-    axs3[0].set_title("Original")
-    plot_diffusion_embedding(source_org, target, axs3[0], idx_s, idx_t)
+    if plotting:
+        fig3 = plt.figure(figsize=(20, 7))
+        fig3.suptitle('Initial iteration process')
+        axs3 = list()
+        axs3.append(fig3.add_subplot(1, 5, 1))
+        axs3[0].set_title("Original")
+        plot_diffusion_embedding(source_org, target, axs3[0], idx_s, idx_t)
 
     ### move target to id ###
     target = np.stack([np.dot(invsqrtm(mean_target), np.dot(ti, invsqrtm(mean_target))) for ti in target])  
     target_cp = np.stack([np.dot(invsqrtm(mean_target), np.dot(ti, invsqrtm(mean_target))) for ti in target_cp])  
     source = np.stack([np.dot(invsqrtm(mean_source_org), np.dot(si, invsqrtm(mean_source_org))) for si in source_org])  # move source to id
 
-    axs3.append(fig3.add_subplot(1, 5, 2))
-    axs3[1].set_title("Recenter to id")
-    plot_diffusion_embedding(source, target, axs3[1])
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 2))
+        axs3[1].set_title("Recenter to id")
+        plot_diffusion_embedding(source, target, axs3[1])
 
     ### stretch target at id ###
     disp_source = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in source_nn]) / len(source_nn)  # get stretching factor
@@ -753,10 +866,10 @@ def icp_iteration(source_org, target, dist, plotting=False):
     target = np.stack([powm(ti, s) for ti in target])  # stretch target at id
     target_cp = np.stack([powm(ti, s) for ti in target_cp])  # stretch target at id
 
-
-    axs3.append(fig3.add_subplot(1, 5, 3))
-    axs3[2].set_title("Stretch at id")
-    plot_diffusion_embedding(source, target, axs3[2], idx_s, idx_t)
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 3))
+        axs3[2].set_title("Stretch at id")
+        plot_diffusion_embedding(source, target, axs3[2], idx_s, idx_t)
 
     ### find R and rotate all targets ###
     itermax=100
@@ -796,20 +909,22 @@ def icp_iteration(source_org, target, dist, plotting=False):
     target = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
     target_cp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_cp])
 
-    axs3.append(fig3.add_subplot(1, 5, 4))
-    axs3[3].set_title("Rotate wrt subsamples")
-    plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t)
-    #plot_diffusion_embedding(source, target, axs2[3])
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 4))
+        axs3[3].set_title("Rotate wrt subsamples")
+        plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t)
+        #plot_diffusion_embedding(source, target, axs2[3])
 
 
     ### move to source ###
     target = np.stack([np.dot(sqrtm(mean_source_org), np.dot(ti, sqrtm(mean_source_org))) for ti in target]) 
     target_cp = np.stack([np.dot(sqrtm(mean_source_org), np.dot(ti, sqrtm(mean_source_org))) for ti in target_cp]) 
 
-    axs3.append(fig3.add_subplot(1, 5, 5))
-    axs3[4].set_title("Move to source")
-    plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t)
-    fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
+    if plotting:
+        axs3.append(fig3.add_subplot(1, 5, 5))
+        axs3[4].set_title("Move to source")
+        plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t)
+        fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
 
     return target_cp, s, rotation_matrix_iter, [mean_target, mean_source_org]
 
@@ -861,7 +976,7 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 20
+iter = 25
 dist = "rie"
 
 source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
@@ -900,6 +1015,8 @@ if run_map_find:
     T_list=list()
     s_list=list()
 
+    print("RUNNING ICP 2")
+
 
 
     fig2 = plt.figure(figsize=(20, 7))
@@ -925,12 +1042,14 @@ if run_map_find:
         print("Iteration %i/%i" %(iter_i, iter))
 
         if iter_i == 0:
-            target, s_iter, rotation_matrix_iter, Ts = icp_iteration(source, target, dist, True)
+            # target, s_iter, rotation_matrix_iter, Ts = icp_iteration(source, target, dist, True)
+            #target, s_iter, rotation_matrix_iter, Ts = icp_iteration_sing2sing(source, target, dist, True)
+            target, s_iter, rotation_matrix_iter, Ts = icp_iteration_most_singular(source, target, dist, True)
         else:
 
-            # target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_sing2sing(source, target, dist)
-            # target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_most_singular(source, target, dist)
-            target, s_iter, rotation_matrix_iter, Ts  = icp_iteration(source, target, dist, False)
+            #target, s_iter, rotation_matrix_iter, Ts = icp_iteration_sing2sing(source, target, dist, False)
+            target, s_iter, rotation_matrix_iter, Ts = icp_iteration_most_singular(source, target, dist, False)
+            #target, s_iter, rotation_matrix_iter, Ts  = icp_iteration(source, target, dist, False)
             print("target back from icp iteration:", target.shape)
 
 
@@ -956,10 +1075,34 @@ if run_map_find:
         #     min_idx = err_list.index(min(err_list))
         #     print("best iteration found: %i" %(min_idx))
         #     rotation_matrix_iter=R[min_idx]
-
+        print("Current mdist between means: %.3f" % (distance_riemann(mean_riemann(source_org), mean_riemann(target))) )
         print("-------------------------------------------------------------")
     if iter == 0:
         R_list.append(np.eye(3))
+
+    ######
+    ### move target to id ###
+    mean_source = mean_riemann(source)
+    mean_target = mean_riemann(target)
+    target = np.stack([np.dot(invsqrtm(mean_target), np.dot(ti, invsqrtm(mean_target))) for ti in target]) 
+    T_list.append(mean_target) 
+
+
+    ### stretch target at id ###
+    disp_source = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in source]) / len(source)  # get stretching factor
+    disp_target = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in target]) / len(target)
+    s = 1.0 / round(np.sqrt(disp_target / disp_source),4)
+    target = np.stack([powm(ti, s) for ti in target])  # stretch target at id
+    s_list.append(s)
+
+    # final moving to source mean
+    target = np.stack([np.dot(sqrtm(mean_source), np.dot(ti, sqrtm(mean_source))) for ti in target]) 
+    print("Current mdist between means: %.3f" % (distance_riemann(mean_riemann(source_org), mean_riemann(target))) )
+
+    T_list.append(mean_source)
+
+    ######
+
 
 
     R_arr=np.zeros((len(R_list),3,3))

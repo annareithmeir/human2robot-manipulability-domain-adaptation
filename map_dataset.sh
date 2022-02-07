@@ -5,7 +5,9 @@ source py/venv3-6/bin/activate
 
 robot_teacher="panda"
 robot_student="toy_data"
+
 base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
+# map_dataset="reach_up"
 map_dataset="10_new"
 lookup_dataset="100"
 
@@ -67,8 +69,8 @@ fi
 
 if [ $redo -ge 1 ]; then
 	echo "###	 Running ICP now	###"
-	python3 -W ignore py/run_icp2.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
-	# python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
+	# python3 -W ignore py/run_icp2.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
+	python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
 else
 	echo "### 	ICP mapping parameters found. 	###"
 	echo "### 	Mapping new data with naive ICP	###"

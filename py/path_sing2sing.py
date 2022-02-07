@@ -29,10 +29,10 @@ def find_singular_geodesic_path_angle(source, n, start_idx):
         path_points_si.append(b_s)
         path_idx_si.append(sing_idxs_min_s[diff_max_i[n]])
     else:
-        vt,wt = np.linalg.eig(a_s)
+        vt,wt = np.linalg.eigh(a_s)
         w_min_as = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
 
-        vt,wt = np.linalg.eig(b_s)
+        vt,wt = np.linalg.eigh(b_s)
         w_min_bs = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
         eta = 1-((1-abs(w_min_as.dot(w_min_bs)))/10) #angle
         print("ETA: ", eta)
@@ -45,14 +45,14 @@ def find_singular_geodesic_path_angle(source, n, start_idx):
             etatmp=eta
 
             ### angle difference of singularity
-            vt,wt = np.linalg.eig(a_s)
+            vt,wt = np.linalg.eigh(a_s)
             w_min_as = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
 
-            vt,wt = np.linalg.eig(b_s)
+            vt,wt = np.linalg.eigh(b_s)
             w_min_bs = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             
             for i in np.arange(source_tmp.shape[0]):
-                vt,wt = np.linalg.eig(source[i])
+                vt,wt = np.linalg.eigh(source[i])
                 w_min_s = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
                 d_a.append(abs(w_min_as.dot(w_min_s))) # collect all angle differences from a to si
                 d_s_b.append(abs(w_min_s.dot(w_min_bs))) # collect all angle differences from si to b
@@ -76,7 +76,7 @@ def find_singular_geodesic_path_angle(source, n, start_idx):
                     break
             for d_a_filtered_i in np.arange(len(d_a_filtered)):
                 if d_a_filtered[d_a_filtered_i] == 1:
-                    vt,wt = np.linalg.eig(source_tmp[d_a_filtered_i])
+                    vt,wt = np.linalg.eigh(source_tmp[d_a_filtered_i])
                     w_min_s = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
                     d_b.append(abs(w_min_s.dot(w_min_bs))) # collect all angle differences of most singular dimension
                 else:
@@ -106,9 +106,9 @@ def find_singular_geodesic_path_logeuc(source, a_s, b_s, start_idx):
     source_tmp = copy.deepcopy(source)
 
 
-    eta=distance_logeuc(a_s, b_s)/3 # find b right away
+    eta=distance_logeuc(a_s, b_s)/10 # find b right away
 
-    print("ETA set to: ", eta)
+    # print("ETA set to: ", eta)
     #construct path for s
     while True:
         d_a=list()
@@ -134,7 +134,7 @@ def find_singular_geodesic_path_logeuc(source, a_s, b_s, start_idx):
             #print("dafiltered: ", d_a_filtered)
             if sum(d_a_filtered)==0:
                 etatmp+=eta
-                print("new eta: ", etatmp)
+                # print("new eta: ", etatmp)
             else:
                 break
         for d_a_filtered_i in np.arange(len(d_a_filtered)):
@@ -158,6 +158,90 @@ def find_singular_geodesic_path_logeuc(source, a_s, b_s, start_idx):
     return path_points_si, path_idx_si
 
 
+def find_most_singular_points_conv(source, target, num, with_iso=True):
+    s=list()
+    t=list()
+
+    path_points_t=list()
+    path_points_s=list()
+    path_idx_t=list()
+    path_idx_s=list()
+
+    print("SING2SING with %i points" %(num))
+
+    # find most singular samples in s
+    sing_idxs_s=list()
+    sing_idxs_t=list()
+    for i in np.arange(source.shape[0]):
+        w, _ = np.linalg.eigh(source[i])
+        sing_idxs_s.append(max(w)/min(w)) # if ratio very big then singular
+
+    sing_idxs_min_s = np.array(sing_idxs_s).argsort()[-num:]
+    iso_idx_s = np.array(sing_idxs_s).argsort()[0] # most isotropic sample
+    print("most isotropic samples found: ",np.sort(np.array(sing_idxs_s))[0] )
+
+
+    # find most singular samples in t
+    for i in np.arange(target.shape[0]):
+        w, _ = np.linalg.eigh(target[i])
+        sing_idxs_t.append(max(w)/min(w)) # if ratio very small then singular
+
+    sing_idxs_min_t = np.array(sing_idxs_t).argsort()[-num:]
+    iso_idx_t = np.array(sing_idxs_t).argsort()[0]
+    print("most isotropic samples found: ",np.sort(np.array(sing_idxs_t))[0] )
+
+    v1,w1 = np.linalg.eigh(source[iso_idx_s])
+    w_min_1 = w1[:,np.argmin(v1)] # eigvec corresp to smallest eigval
+    v2,w2 = np.linalg.eigh(target[iso_idx_t])
+    w_min_2 = w2[:,np.argmin(v2)] # eigvec corresp to smallest eigval
+    print("Angle between isotropic samples: %.3f " %(w_min_1.dot(w_min_2)))
+    iso_angle = abs(w_min_1.dot(w_min_2))
+
+
+    # find most similar directing sample between s and t (dot product near 1)
+    corresp_idx_t = np.zeros(num, dtype=int)
+    for i in np.arange(num):
+        si=sing_idxs_min_s[i]
+        sii=sing_idxs_s[i]
+        vs,ws = np.linalg.eigh(source[si])
+        w_min_s = ws[:,np.argmin(vs)] # eigvec corresp to smallest eigval
+        w_max_s = ws[:,np.argmax(vs)] # eigvec corresp to smallest eigval
+        angles=list()
+        for j in sing_idxs_min_t:
+            tjj=sing_idxs_t[j]
+            vt,wt = np.linalg.eigh(target[j])
+            w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
+            w_max_t = wt[:,np.argmax(vt)] # eigvec corresp to smallest eigval
+            #print(w_min_s.dot(w_min_t), w_max_s.dot(w_max_t), abs(tjj-sii), 1/(1+abs(tjj-sii)))
+            #print((w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+100/(abs(tjj-sii)))
+            angles.append((w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+2/(1+abs(tjj-sii)**2)) # collect all convex combinations of biggest and smallest axes and diff of sing. index
+        angle_min = np.argmax(abs(np.array(angles))) #select smallest angle
+        #print("-")
+        t_max = target[sing_idxs_min_t[angle_min]] # source[i] and t_max are pair of similar pointing sing matrices
+        corresp_idx_t[i] = sing_idxs_min_t[angle_min]
+
+    if with_iso and iso_angle > 0.8:
+        source_sing = np.zeros((num+1,3,3))
+        target_sing = np.zeros((num+1,3,3))
+    else:
+        source_sing = np.zeros((num,3,3))
+        target_sing = np.zeros((num,3,3))
+
+    for i in np.arange(num):
+        source_sing[i] = source[sing_idxs_min_s[i]]
+        target_sing[i] = target[corresp_idx_t[i]]
+
+    if with_iso and iso_angle > 0.8:
+        source_sing[num] = source[iso_idx_s]
+        target_sing[num] = target[iso_idx_t]
+        np.append(sing_idxs_min_s,iso_idx_s)
+        np.append(corresp_idx_t,iso_idx_t)
+        angles.append(iso_angle)
+
+
+    return source_sing, target_sing, sing_idxs_min_s, corresp_idx_t, abs(np.array(angles))
+
+
 def find_most_singular_points(source, target, num, with_iso=True):
     s=list()
     t=list()
@@ -172,7 +256,7 @@ def find_most_singular_points(source, target, num, with_iso=True):
     # find most singular samples in s
     sing_idxs=list()
     for i in np.arange(source.shape[0]):
-        w, _ = np.linalg.eig(source[i])
+        w, _ = np.linalg.eigh(source[i])
         sing_idxs.append(max(w)/min(w)) # if ratio very big then singular
 
     sing_idxs_min_s = np.array(sing_idxs).argsort()[-num:]
@@ -183,16 +267,16 @@ def find_most_singular_points(source, target, num, with_iso=True):
     # find most singular samples in t
     sing_idxs=list()
     for i in np.arange(target.shape[0]):
-        w, _ = np.linalg.eig(target[i])
+        w, _ = np.linalg.eigh(target[i])
         sing_idxs.append(max(w)/min(w)) # if ratio very small then singular
 
     sing_idxs_min_t = np.array(sing_idxs).argsort()[-num:]
     iso_idx_t = np.array(sing_idxs).argsort()[0]
     print("most isotropic samples found: ",np.sort(np.array(sing_idxs))[0] )
 
-    v1,w1 = np.linalg.eig(source[iso_idx_s])
+    v1,w1 = np.linalg.eigh(source[iso_idx_s])
     w_min_1 = w1[:,np.argmin(v1)] # eigvec corresp to smallest eigval
-    v2,w2 = np.linalg.eig(target[iso_idx_t])
+    v2,w2 = np.linalg.eigh(target[iso_idx_t])
     w_min_2 = w2[:,np.argmin(v2)] # eigvec corresp to smallest eigval
     print("Angle between isotropic samples: %.3f " %(w_min_1.dot(w_min_2)))
     iso_angle = abs(w_min_1.dot(w_min_2))
@@ -202,11 +286,11 @@ def find_most_singular_points(source, target, num, with_iso=True):
     corresp_idx_t = np.zeros(num, dtype=int)
     for i in np.arange(num):
         si=sing_idxs_min_s[i]
-        vs,ws = np.linalg.eig(source[si])
+        vs,ws = np.linalg.eigh(source[si])
         w_min_s = ws[:,np.argmin(vs)] # eigvec corresp to smallest eigval
         angles=list()
         for j in sing_idxs_min_t:
-            vt,wt = np.linalg.eig(target[j])
+            vt,wt = np.linalg.eigh(target[j])
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             angles.append(w_min_s.dot(w_min_t)) # collect all angles
         angle_min = np.argmax(abs(np.array(angles))) #select smallest angle
@@ -229,10 +313,17 @@ def find_most_singular_points(source, target, num, with_iso=True):
         target_sing[num] = target[iso_idx_t]
         np.append(sing_idxs_min_s,iso_idx_s)
         np.append(corresp_idx_t,iso_idx_t)
+        angles.append(iso_angle)
+
+    #for the weighting, weigh good ones even more and bad ones even less
+    #for i in np.arange(len(angles)):
+    #    if angles[i]<0.4:
+    #        angles[i]=angles[i]/2
+    #    if angles[i] > 0.6:
+    #        angles[i]=angles[i]*2
 
 
-
-    return source_sing, target_sing, sing_idxs_min_s, corresp_idx_t
+    return source_sing, target_sing, sing_idxs_min_s, corresp_idx_t, abs(np.array(angles))
 
 
 def find_most_singular_points_diff_dir(source, target, num):
@@ -250,7 +341,7 @@ def find_most_singular_points_diff_dir(source, target, num):
     # find most singular samples in s
     sing_idxs=list()
     for i in np.arange(source.shape[0]):
-        w, _ = np.linalg.eig(source[i])
+        w, _ = np.linalg.eigh(source[i])
         sing_idxs.append(max(w)/min(w)) # if ratio very small then singular
 
     sing_idxs_min_s = np.array(sing_idxs).argsort()[-3*num:]
@@ -259,7 +350,7 @@ def find_most_singular_points_diff_dir(source, target, num):
     # find most singular samples in t
     sing_idxs=list()
     for i in np.arange(target.shape[0]):
-        w, _ = np.linalg.eig(target[i])
+        w, _ = np.linalg.eigh(target[i])
         sing_idxs.append(max(w)/min(w)) # if ratio very small then singular
 
     sing_idxs_min_t = np.array(sing_idxs).argsort()[-3*num:]
@@ -268,14 +359,14 @@ def find_most_singular_points_diff_dir(source, target, num):
     diff_matrix=np.ones((3*num,3*num))*999
     for i in np.arange(3*num):
         si=sing_idxs_min_s[i]
-        vi,wi = np.linalg.eig(source[si])
+        vi,wi = np.linalg.eigh(source[si])
         w_min_i = wi[:,np.argmin(vi)] # eigvec corresp to smallest eigval
 
         for j in np.arange(num):
             if (i != j):
                 sj=sing_idxs_min_s[j]
                 #print(sj)
-                vj,wj = np.linalg.eig(source[sj])
+                vj,wj = np.linalg.eigh(source[sj])
                 #print(vj)
                 #print(wj)
                 w_min_j = wj[:,np.argmin(vj)] # eigvec corresp to smallest eigval
@@ -291,11 +382,11 @@ def find_most_singular_points_diff_dir(source, target, num):
     angles_list=list()
     for i in np.arange(num):
         si=sing_idxs_min_s[i]
-        vs,ws = np.linalg.eig(source[si])
+        vs,ws = np.linalg.eigh(source[si])
         w_min_s = ws[:,np.argmin(vs)] # eigvec corresp to smallest eigval
         angles=list()
         for j in sing_idxs_min_t:
-            vt,wt = np.linalg.eig(target[j])
+            vt,wt = np.linalg.eigh(target[j])
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             angles.append(w_min_s.dot(w_min_t)) # collect all angles for ti corresp to si
         angle_min = np.argmax(abs(np.array(angles))) #select smallest angle for si
@@ -334,7 +425,6 @@ def find_most_singular_points_diff_dir(source, target, num):
     return source_sing, target_sing, s_list, np.array(t_list)
 
 
-
 def find_singular_geodesic_paths(source, target, num): # number of singular points to select
     s=list()
     t=list()
@@ -343,13 +433,14 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
     path_points_s=list()
     path_idx_t=list()
     path_idx_s=list()
+    weights=list()
 
     print("SING2SING with %i points" %(num))
 
     # find most singular samples in s
     sing_idxs=list()
     for i in np.arange(source.shape[0]):
-        w, _ = np.linalg.eig(source[i])
+        w, _ = np.linalg.eigh(source[i])
         #print(w)
         #print(min(w),max(w),max(w)/min(w))
         sing_idxs.append(max(w)/min(w)) # if ratio very small then singular
@@ -361,7 +452,7 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
     # find most singular samples in t
     sing_idxs=list()
     for i in np.arange(target.shape[0]):
-        w, _ = np.linalg.eig(target[i])
+        w, _ = np.linalg.eigh(target[i])
         sing_idxs.append(min(w)/max(w)) # if ratio very small then singular
 
     sing_idxs_min_t = np.array(sing_idxs).argsort()[:num]
@@ -372,11 +463,11 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
     corresp_idx_t = np.zeros(num, dtype=int)
     for i in np.arange(num):
         si=sing_idxs_min_s[i]
-        vs,ws = np.linalg.eig(source[si])
+        vs,ws = np.linalg.eigh(source[si])
         w_min_s = ws[:,np.argmin(vs)] # eigvec corresp to smallest eigval
         angles=list()
         for j in sing_idxs_min_t:
-            vt,wt = np.linalg.eig(target[j])
+            vt,wt = np.linalg.eigh(target[j])
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             #angle = arccos(dot(A,B) / (|A|* |B|))
             angles.append(w_min_s.dot(w_min_t)) # collect all angles
@@ -386,18 +477,19 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
         corresp_idx_t[i] = sing_idxs_min_t[angle_min]
     #print(corresp_idx_t)
 
+
     # find most different pointing samples within s
     diff_matrix=np.ones((num,num))*999
     for i in np.arange(num):
         si=sing_idxs_min_s[i]
-        vi,wi = np.linalg.eig(source[si])
+        vi,wi = np.linalg.eigh(source[si])
         w_min_i = wi[:,np.argmin(vi)] # eigvec corresp to smallest eigval
 
         for j in np.arange(num):
             if (i != j):
                 sj=sing_idxs_min_s[j]
                 #print(sj)
-                vj,wj = np.linalg.eig(source[sj])
+                vj,wj = np.linalg.eigh(source[sj])
                 #print(vj)
                 #print(wj)
                 w_min_j = wj[:,np.argmin(vj)] # eigvec corresp to smallest eigval
@@ -414,13 +506,16 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
     # create paths for each pair (if not already in othetr direction done)
     paths_done=list()
 
-    path_points_si=list()
-    path_points_ti=list()
-    path_idx_si=list()
-    path_idx_ti=list()
+    # path_points_si=list()
+    # path_points_ti=list()
+    # path_idx_si=list()
+    # path_idx_ti=list()
     for n in np.arange(num):
+        path_points_si=list()
+        path_points_ti=list()
+        path_idx_si=list()
+        path_idx_ti=list()
         print("---")
-        #print(sing_idxs_min_s[n],sing_idxs_min_s[diff_max_i[n]])
 
         if {sing_idxs_min_s[n],sing_idxs_min_s[diff_max_i[n]]} in paths_done:
             print("PATH ALREADY DONE BEFORE!")
@@ -442,21 +537,20 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
         else:
             print("USING LOG EUC IN SING2SING")
             path_points_si, path_idx_si = find_singular_geodesic_path_logeuc(source, a_s, b_s, sing_idxs_min_s[n])
-            #print("USING SING ANGLE IN SING2SING")
-            #path_points_si, path_idx_si = find_singular_geodesic_path_angle(source, a_s, b_s, sing_idxs_min_s[n])
 
         if corresp_idx_t[n] == corresp_idx_t[diff_max_i[n]]: # at same as bt
             print("a_t same as b_t")
             path_points_ti.append(b_t)
             path_idx_ti.append(corresp_idx_t[diff_max_i[n]])
         else:
-            #path_points_ti, path_idx_ti = find_singular_geodesic_path_angle(target, a_t, b_t, corresp_idx_t[n])
             path_points_ti, path_idx_ti = find_singular_geodesic_path_logeuc(target, a_t, b_t, corresp_idx_t[n])
         
 
         # find nearest neighbors
         source_tmp = np.array(path_points_si)
         target_tmp = np.array(path_points_ti)
+        #print(source_tmp.shape[0], target_tmp.shape[0])
+        #print(len(path_idx_si), len(path_idx_ti))
 
         if source_tmp.shape[0] >= target_tmp.shape[0]:
             # if more target points than source points
@@ -486,6 +580,24 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
             for i in np.arange(target_rearranged.shape[0]):
                 target_rearranged[i] = target_tmp[nns[i]]
 
+            for t in target_rearranged:
+                path_points_t.append(t)
+
+            for s in source_tmp:
+                path_points_s.append(s)
+            
+
+            for tidx in np.arange(target_rearranged.shape[0]):
+                l=target_rearranged.shape[0]
+                l = math.ceil(l/2)
+                dlt  = 1/l
+
+                if tidx < l:
+                    weights.append(1-tidx*dlt)
+                else:
+                    weights.append(1-(target_rearranged.shape[0]-tidx-1)*dlt)
+            print("W:", weights)
+
         else:
             # if more target points than source points
             nns = np.zeros(target_tmp.shape[0], dtype=np.int)  # for each target search smallest source
@@ -514,12 +626,23 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
             for i in np.arange(source_rearranged.shape[0]):
                 source_rearranged[i] = source_tmp[nns[i]]
 
+            for t in target_tmp:
+                path_points_t.append(t)
 
-        for t in target_rearranged:
-            path_points_t.append(t)
+            for s in source_rearranged:
+                path_points_s.append(s)
+            
+            for tidx in np.arange(source_rearranged.shape[0]):
+                l=source_rearranged.shape[0]
+                l = math.ceil(l/2)
+                dlt  = 1/l
 
-        for s in source_tmp:
-            path_points_s.append(s)
+                if tidx < l:
+                    weights.append(1-tidx*dlt)
+                else:
+                    weights.append(1-(source_rearranged.shape[0]-tidx-1)*dlt)
+            print("W:", weights)
+
 
         for t in path_idx_ti:
             path_idx_t.append(t)
@@ -527,12 +650,7 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
         for s in path_idx_si:
             path_idx_s.append(s)
 
-        print("path_t: %i, path_s: %i, idx_s: %i, idx_t: %i" %(len(path_points_t), len(path_points_s), len(path_idx_s), len(path_idx_t)))
 
-
-    print("TOTAL LENGHTS OF SING2SING PATHS")
-    print(len(path_points_s))
-    print(len(path_points_t))
     path_points_t=np.array(path_points_t)
     path_points_s=np.array(path_points_s)
-    return path_points_s, path_points_t, np.array(path_idx_s), np.array(path_idx_t)
+    return path_points_s, path_points_t, np.array(path_idx_s), np.array(path_idx_t), np.array(weights)

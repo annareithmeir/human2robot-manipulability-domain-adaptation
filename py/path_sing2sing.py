@@ -654,3 +654,17 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
     path_points_t=np.array(path_points_t)
     path_points_s=np.array(path_points_s)
     return path_points_s, path_points_t, np.array(path_idx_s), np.array(path_idx_t), np.array(weights)
+
+
+
+
+source = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities.csv", delimiter=',')
+target = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities.csv", delimiter=',')
+
+source = source.reshape((source.shape[0], 3, 3))
+target = target.reshape((target.shape[0], 3, 3))
+source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 50) # 12 best so far
+source_nns = source_nns.reshape((source_nns.shape[0], 9))
+target_nns = target_nns.reshape((target_nns.shape[0], 9))
+np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities_sing18.csv", source_nns, delimiter=',')
+np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities_sing18.csv", target_nns, delimiter=',')

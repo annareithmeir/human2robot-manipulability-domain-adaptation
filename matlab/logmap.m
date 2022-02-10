@@ -17,8 +17,6 @@ N = size(X,3);
 for n = 1:N
     % 	U(:,:,n) = S^.5 * logm(S^-.5 * X(:,:,n) * S^-.5) * S^.5;
     % 	U(:,:,n) = S * logm(S\X(:,:,n));
-    [v,d] = eig(S\X(:,:,n))
-    diag(d)
-    log(diag(d))
+    [v,d] = eig(S\X(:,:,n));
     U(:,:,n) = S * v*diag(log(diag(d)))*v^-1;
 end

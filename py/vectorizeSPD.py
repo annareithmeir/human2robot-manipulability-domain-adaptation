@@ -11,6 +11,7 @@ from pyriemann.utils.base import invsqrtm, sqrtm, logm, expm, powm
 from numpy import linalg as LA
 from get_cov_ellipsoid import get_volume, scale_volume_to_desired_vol, get_logeuclidean_distance
 import math
+import sys
 
 
 def get_errors(data1, data2):
@@ -26,8 +27,6 @@ def get_errors(data1, data2):
 	n_points = data1.shape[0]
 	print("MSE (riemann): %.3f " %(mse_icp/n_points))
 	print("MSE (LogEuc): %.3f " %(le_mse_icp/n_points))
-
-
 
 
 def plot_ellipsoids(datalist, labellist=None): # nx3x3 format
@@ -99,7 +98,11 @@ def SPD_from_6d():
 	return 0
 
 # main and minor axis and volume
-def SPD_to_8d(data):
+def SPD_to_8d(datapath):
+	data = np.genfromtxt(datapath, delimiter=',')
+	if(data.shape[1]==10):
+		data=data[:,1:]
+	data = np.reshape(data,(data.shape[0],3,3))
 	data_vec=np.zeros((data.shape[0], 8))
 
 	for i in np.arange(data.shape[0]):
@@ -108,8 +111,10 @@ def SPD_to_8d(data):
 		data_vec[i,3:6] = ws[:,np.argmax(vs)] # eigvec corresp to smallest eigval -> major axis
 		data_vec[i,6]= math.sqrt(np.max(vs)) / math.sqrt(np.min(vs)) # ratio of lengths
 		data_vec[i,7] = get_volume(data[i])
-
-	return data_vec
+	pathls=datapath.split("/")
+	pathls.insert(9, "8d")
+	pathsave= '/'.join(pathls)
+	np.savetxt(pathsave, data_vec, delimiter=",")
 
 # main/minor axis/volume and middle of axes as secondary axis
 def SPD_from_8d(data_vectorized):
@@ -222,7 +227,7 @@ def SPD_from_3d():
 # np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/toy_data/100/3d/manipulabilities.csv", data_v3, delimiter=",")
 
 
-plot_8d_original_and_mapped()
+#plot_8d_original_and_mapped()
 
 
 
@@ -239,15 +244,7 @@ plot_8d_original_and_mapped()
 
 
 
-
-
-
-
-
-
-
-
-#data_re= SPD_from_8d(data_v)
-#plot_ellipsoids([data_franka[:10], data_re])
-
-#data_v=SPD_to_3d(data_franka)
+if __name__ == '__main__':
+    function = getattr(sys.modules[__name__], sys.argv[1])
+    filename = sys.argv[2]
+    function(filename)

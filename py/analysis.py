@@ -256,4 +256,5 @@ def eigenvalues_analysis():
 
 	plt.show()
 
-eigenvalues_analysis()
+if __name__ == "__main__":
+	eigenvalues_analysis()

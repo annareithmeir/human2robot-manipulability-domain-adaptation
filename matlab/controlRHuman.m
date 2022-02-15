@@ -56,12 +56,12 @@
 
 
 
-
+% move side
 % figure; 
-% rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true);
+% rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
 % theta=zeros(7,1); 
-% theta(2)=150*pi/180; %100/90/80
-% n_points=20;
+% theta(2)=90*pi/180; %90,120,150
+% n_points=39;
 % 
 % manipulabilities=zeros(n_points, 9);
 % manipulabilities_normalized=zeros(n_points, 9); % all volume = 1
@@ -74,6 +74,7 @@
 % 
 % % Rotation the first joint (keeping the second constant)
 % % We can use some different values for the second joint: {30,60, 90,120}
+% cnt=1
 % delta = (rhuman.kineconfig.joint_upperlimits(1)*180/pi - rhuman.kineconfig.joint_lowerlimits(1)*180/pi)/n_points
 % for i= rhuman.kineconfig.joint_lowerlimits(1)*180/pi :delta: rhuman.kineconfig.joint_upperlimits(1)*180/pi 
 %     
@@ -100,18 +101,23 @@
 %     scales(cnt)= vol_i;
 %     
 %     rhuman.plot(theta1); 
+%     cnt=cnt+1;
 %     
 %     pause(0.3); 
 % end
 
+
+
+
 % Keeping the first constant = {0, 45, 90} VERTICAL
 % Moving the second from 0 to 180
+% move up
 
-rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true);
+rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
 figure; 
 theta=zeros(7,1); 
-theta(1)=90*pi/180; %30
-n_points=20;
+theta(1)=90*pi/180; %90,45,0
+n_points=39;
 
 rhuman.plot(theta); 
 view(-79,22); 
@@ -153,14 +159,14 @@ for i= 79 :delta: rhuman.kineconfig.joint_upperlimits(2)*180/pi
     
     rhuman.plot(theta1); 
     cnt=cnt+1
-    pause(0.6); 
+    %pause(0.6); 
 end
 
 base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
 dataset="sing_up_90"
-dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
-csvwrite(base_path+"/rhuman/"+dataset+"/scales.csv", scales');
-dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities.csv", manipulabilities, 'delimiter', ',', 'precision', 64);
+%dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
+%csvwrite(base_path+"/rhuman/"+dataset+"/scales.csv", scales');
+dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities_40.csv", manipulabilities, 'delimiter', ',', 'precision', 64);
 
 
 

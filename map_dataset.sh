@@ -17,7 +17,7 @@ axes_scaling="2,2,1"
 redo=0
 redo_dataset=0
 
-algorithm=0 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
+algorithm=1 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
 
 #echo $redo $redo_dataset
 

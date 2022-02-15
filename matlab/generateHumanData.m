@@ -1,7 +1,7 @@
 % add rhuman to path
 
 function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
-     rhuman = rHuManModel('shoulderHeight',shoulderHeight,'verbose',true);
+     rhuman = rHuManModel('shoulderHeight',shoulderHeight,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
      joints=rhuman.getRandJoints('length',num, 'seed', 123);
 
      positions=zeros(num, 3);
@@ -38,7 +38,7 @@ function [scales, positions] = generateHumanData(shoulderHeight, num, basePath)
 % 	csvwrite(basePath+"/h_positions.csv", positions);
     
     dataset=int2str(num);
-    dlmwrite(basePath+"/rhuman/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
+    dlmwrite(basePath+"/rhuman/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 64);
 	csvwrite(basePath+"/rhuman/"+dataset+"/scales.csv", scales');
 	csvwrite(basePath+"/rhuman/"+dataset+"/scales_normalized.csv", scales_normalized');
     dlmwrite(basePath+"/rhuman/"+dataset+"/manipulabilities.csv", manipulabilities, 'delimiter', ',', 'precision', 64);

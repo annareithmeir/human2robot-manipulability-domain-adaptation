@@ -6,8 +6,9 @@ source py/venv3-6/bin/activate
 robot_teacher="rhuman"
 robot_student="panda"
 base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
-map_dataset="sing_up_0"
-lookup_dataset="100"
+map_dataset="sing_side_140"
+# map_dataset="sing_up_60"
+lookup_dataset="sing_combined"
 
 
 map_data_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities.csv"
@@ -18,7 +19,7 @@ echo "###	 Map dataset ${map_dataset} from ${robot_teacher} to ${robot_student} 
 
 
 redo=0
-algorithm=1 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
+algorithm=2 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
 
 
 
@@ -38,7 +39,6 @@ if [[ algorithm -eq 1 ]]; then
 	echo "###	 Running ICP now	###"
 	python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
 	echo "### 	Mapping new data with ICP	###"
-	#python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 1 --map_dataset $map_dataset
 	icp_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities_mapped_icp.csv"
 	input_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities.csv"
 	ground_truth_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities.csv"
@@ -66,8 +66,9 @@ if [[ $algorithm -eq 2 ]]; then
 
 	echo "###	Plotting 	###"
 	cpd_path="${base_path}/${robot_student}/${map_dataset}/8d/manipulabilities_mapped_cpd.csv"
+	ground_truth_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities.csv"
 	input_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities.csv"
-	paths_list="${input_path},${cpd_path}"
+	paths_list="${input_path},${ground_truth_path},${cpd_path}"
 	python3 py/plot_artificial_data.py -mapping_paths ${paths_list}
 fi
 

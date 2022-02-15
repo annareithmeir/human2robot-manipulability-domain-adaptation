@@ -12,6 +12,9 @@ from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.base import invsqrtm, sqrtm, logm
 
 from functools import partial
+from scipy.optimize import minimize
+
+ALPHA=400
 
 
 def cost_function_pair_euc(M, Mtilde, Q):
@@ -25,7 +28,7 @@ def cost_function_pair_rie(M, Mtilde, Q):
     return distance_riemann(t1, t2)**2
 
 def cost_function_pair_rie_reg(M, Mtilde, Q):
-    alpha=100
+    alpha=ALPHA
     #print("Using regularization with parameter alpha = %.3f" %(alpha))
     t1 = M
     t2 = np.dot(Q, np.dot(Mtilde, Q.T))
@@ -84,7 +87,7 @@ def egrad_function_full_rie_reg(Q, M, Mtilde, weights=None):
         weights = np.array(weights)
 
     g = []
-    alpha=100
+    alpha=ALPHA
 
     for Mi, Mitilde, wi in zip(M, Mtilde, weights):
         gi = egrad_function_pair_rie_reg(Mi, Mitilde, Q, alpha)
@@ -145,7 +148,8 @@ def get_rotation_matrix(M, Mtilde, weights=None, dist=None, x=None):
     
     # let Pymanopt do the rest
     #print("Using x for init in rotation matrix finding: ", x)
-    Q_opt = solver.solve(problem, x=x)    
+    Q_opt = solver.solve(problem, x=x)   
+    print("det of q_opt= %.3f" %(np.determinant(q_opt))) 
     #print(Q_opt[1])
     #Q_opt = Q_opt[0]
     
@@ -160,35 +164,17 @@ def get_rotation_matrix(M, Mtilde, weights=None, dist=None, x=None):
     
 #     n = M[0].shape[0]
         
-#     # (1) Instantiate a manifold
-#     manifold = Euclidean(n)
-#     # manifold = SymmetricPositiveDefinite(n)
-    
-#     # (2) Define cost function and a problem
-#     if dist == 'euc':
-#         cost = partial(cost_function_full, M=M, Mtilde=Mtilde, weights=weights, dist=dist)    
-#         problem = Problem(manifold=manifold, cost=cost, verbosity=0)
+
 #     elif dist == 'rie':
 #         cost = partial(cost_function_full, M=M, Mtilde=Mtilde, weights=weights, dist=dist)    
-#         #egrad = partial(egrad_function_full_rie, M=M, Mtilde=Mtilde, weights=weights) 
-#         egrad = partial(egrad_function_full_rie_reg, M=M, Mtilde=Mtilde, weights=weights) 
+#         egrad = partial(egrad_function_full_rie, M=M, Mtilde=Mtilde, weights=weights) 
 #         problem = Problem(manifold=manifold, cost=cost, egrad=egrad, verbosity=0)
-#     elif dist == 'logeuc':
-#         cost = partial(cost_function_full, M=M, Mtilde=Mtilde, weights=weights, dist=dist)    
-#         egrad = partial(egrad_function_full_logeuc, M=M, Mtilde=Mtilde, weights=weights) 
-#         problem = Problem(manifold=manifold, cost=cost, egrad=egrad, verbosity=0)
-        
-#     # (3) Instantiate a Pymanopt solver
-#     #solver = SteepestDescent(mingradnorm=1e-3)  
-#     solver = SteepestDescent(logverbosity=0, mingradnorm=1e-3)   
+
+#         cons = ({'type': 'eq', 'fun': lambda x:  x[0] - 2 * x[1] + 2})
+#         res = minimize(cost, x, jac=egrad, tol=1e-3, maxiter=100, constraints=cons)
+
     
-#     # let Pymanopt do the rest
-#     #print("Using x for init in rotation matrix finding: ", x)
-#     Q_opt = solver.solve(problem, x=x)    
-#     #print(Q_opt[1])
-#     #Q_opt = Q_opt[0]
-    
-#     return Q_opt
+#     return res
     
 
 

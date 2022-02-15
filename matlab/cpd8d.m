@@ -4,23 +4,28 @@ function cpd8d(base_path, robot_teacher, robot_student, lookup_dataset, mapping_
     addpath(genpath("/home/nnrthmr/CLionProjects/ma_thesis/matlab/CPD/github/CoherentPointDrift-master"));
     
     % find transformation based on lookup datatset
+    disp(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/8d/manipulabilities.csv");
+    disp(base_path+"/"+robot_student+"/"+lookup_dataset+"/8d/manipulabilities.csv");
+    
     Y = csvread(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/8d/manipulabilities.csv");
     X = csvread(base_path+"/"+robot_student+"/"+lookup_dataset+"/8d/manipulabilities.csv");
+    %X=X(1:10:end,:);
+    %Y=Y(1:10:end,:);
     disp("Number of samples used in CPD: ")
     size(X,1)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     opt.method='affine'; % use rigid registration
     %opt.viz=1;          % show every iteration
-    opt.outliers=0;     % do not assume any noise 
+    opt.outliers=0.001;     % do not assume any noise 
 
-    opt.normalize=0;    % normalize to unit variance and zero mean before registering (default)
+    opt.normalize=1;    % normalize to unit variance and zero mean before registering (default)
     opt.scale=0;        % estimate global scaling too (default)
     opt.rot=1;          % estimate strictly rotational matrix (default)
     opt.corresp=0;      % do not compute the correspondence vector at the end of registration (default)
 
-    opt.max_it=1000;     % max number of iterations
-    opt.tol=1e-20;       % tolerance
+    opt.max_it=10000;     % max number of iterations
+    opt.tol=1e-30;       % tolerance
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %     opt.method='nonrigid'; % use nonrigid registration

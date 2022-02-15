@@ -212,9 +212,8 @@ def find_most_singular_points_conv(source, target, num, with_iso=True):
             vt,wt = np.linalg.eigh(target[j])
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             w_max_t = wt[:,np.argmax(vt)] # eigvec corresp to smallest eigval
-            #print(w_min_s.dot(w_min_t), w_max_s.dot(w_max_t), abs(tjj-sii), 1/(1+abs(tjj-sii)))
-            #print((w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+100/(abs(tjj-sii)))
-            angles.append((w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+2/(1+abs(tjj-sii)**2)) # collect all convex combinations of biggest and smallest axes and diff of sing. index
+            # angles.append((w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+2/(1+abs(tjj-sii)**2)) # collect all convex combinations of biggest and smallest axes and diff of sing. index
+            angles.append((2*w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t))+1/(1+abs(tjj-sii)**2)) # collect all convex combinations of biggest and smallest axes and diff of sing. index
         angle_min = np.argmax(abs(np.array(angles))) #select smallest angle
         #print("-")
         t_max = target[sing_idxs_min_t[angle_min]] # source[i] and t_max are pair of similar pointing sing matrices
@@ -657,14 +656,14 @@ def find_singular_geodesic_paths(source, target, num): # number of singular poin
 
 
 
+if __name__ == "__main__":
+    source = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities.csv", delimiter=',')
+    target = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities.csv", delimiter=',')
 
-source = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities.csv", delimiter=',')
-target = np.genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities.csv", delimiter=',')
-
-source = source.reshape((source.shape[0], 3, 3))
-target = target.reshape((target.shape[0], 3, 3))
-source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 50) # 12 best so far
-source_nns = source_nns.reshape((source_nns.shape[0], 9))
-target_nns = target_nns.reshape((target_nns.shape[0], 9))
-np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities_sing18.csv", source_nns, delimiter=',')
-np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities_sing18.csv", target_nns, delimiter=',')
+    source = source.reshape((source.shape[0], 3, 3))
+    target = target.reshape((target.shape[0], 3, 3))
+    source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 50) # 12 best so far
+    source_nns = source_nns.reshape((source_nns.shape[0], 9))
+    target_nns = target_nns.reshape((target_nns.shape[0], 9))
+    np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100/manipulabilities_sing18.csv", source_nns, delimiter=',')
+    np.savetxt("/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/rhuman/100/manipulabilities_sing18.csv", target_nns, delimiter=',')

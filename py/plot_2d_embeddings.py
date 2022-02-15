@@ -7,6 +7,8 @@ from rpa.diffusion_map import get_diffusionEmbedding
 from pyriemann.utils.distance import distance_riemann
 from rpa.helpers.transfer_learning.utils import mean_riemann
 
+plt.rcParams['text.usetex'] = True
+
 
 #
 # TSNE embedding
@@ -52,7 +54,7 @@ def embed_2d_target_new(source, target, target_new, ax):
     ax.scatter([], [], facecolor=colors[1], label='source (robot)')
     ax.scatter([], [], facecolor=colors[2], label='target (human)')
     ax.scatter([], [], facecolor=colors[3], label='target new (human)')
-    ax.legend(loc='lower right')
+    # ax.legend(loc='lower right')
     return ax
 
 
@@ -121,10 +123,10 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None, pairwi
         tmp+=1
 
 
-    ax1.scatter([], [], facecolor=colors[1], label='source (student)')
-    ax1.scatter([], [], facecolor=colors[2], label='target (teacher)')
+    ax1.scatter([], [], facecolor=colors[1], label='\\textit{source (student)}')
+    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target (teacher)}')
 
-    ax1.legend(loc='lower center')
+    #ax1.legend(loc='lower center')
     return ax1
 
 
@@ -139,10 +141,10 @@ def plot_diffusion_embedding_target_new(source, target, target_new, ax1):
 
     for ui, si in zip(uorg, sess):
         ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
-    ax1.scatter([], [], facecolor=colors[1], label='source (student)')
-    ax1.scatter([], [], facecolor=colors[2], label='target (teacher)')
-    ax1.scatter([], [], facecolor=colors[3], label='target new samples')
-    ax1.legend(loc='lower right')
+    ax1.scatter([], [], facecolor=colors[1], label='\\textit{source (student)}')
+    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target (teacher)}')
+    ax1.scatter([], [], facecolor=colors[3], label='\\textit{target new samples}')
+    #ax1.legend(loc='lower right')
     return ax1
 
 
@@ -157,8 +159,8 @@ def plot_diffusion_embedding_target_new_and_naive(groundtruth, target_icp, targe
 
     for ui, si in zip(uorg, sess):
         ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
-    ax1.scatter([], [], facecolor=colors[1], label='ground truth')
-    ax1.scatter([], [], facecolor=colors[2], label='target mapped ICP')
-    ax1.scatter([], [], facecolor=colors[3], label='target mapped naive')
-    ax1.legend(loc='lower right')
+    ax1.scatter([], [], facecolor=colors[1], label='\\textit{ground truth}')
+    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target mapped ICP}')
+    ax1.scatter([], [], facecolor=colors[3], label='\\textit{target mapped naive}')
+    #ax1.legend(loc='lower right')
     return ax1

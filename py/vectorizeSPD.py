@@ -103,6 +103,14 @@ def SPD_to_8d(datapath):
 	if(data.shape[1]==10):
 		data=data[:,1:]
 	data = np.reshape(data,(data.shape[0],3,3))
+
+	for i in np.arange(data.shape[0]): #rhuman sing paths
+	    m=data[i]
+	    w,v = np.linalg.eigh(m)
+	    w[w<1e-12]=0.0001
+	    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+	    data[i]=m
+	    
 	data_vec=np.zeros((data.shape[0], 8))
 
 	for i in np.arange(data.shape[0]):

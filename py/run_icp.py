@@ -154,7 +154,6 @@ def find_nearest_neighbors(source, target, distance='rie', filterdup=True):
 
     return source, target, w, mean_dist_3
 
-
 # assumes make_pairs already called!
 def reject_max_distance(source, target, max_dist, dist='rie'):
     idx_rm=list()
@@ -688,16 +687,19 @@ def icp_iteration_most_singular(source_org, target, dist):
     err_all=list()
 
     #source_nns, target_nns, idx_s, idx_t = find_most_singular_points_diff_dir(source, target, 6)
-    # source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 18) # 12 best so far
+    # source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source, target, 75) # 12 best so far, 75 for human to robot
     source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points(source, target, 3) # 12 best so far
-    print(w)
-    print(np.argmax(w))
     print("USING %i MOST SINGULAR POINTS " %(idx_s.shape[0]))
     r_init_guess = initial_R_estimate(source_nns[np.argmax(w)], target[np.argmax(w)])
 
     while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
-        # rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=r_init_guess)
+        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w*w, dist='rie', x=gen_orth(3)) # www best for robot human
+        # if iter_curr < target_nns.shape[0]:
+        #     print("using initR from w")
+        #     r_init_guess = initial_R_estimate(source_nns[iter_curr], target[iter_curr])
+        #     rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=r_init_guess)
+        # else:
+        #     rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
         # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
         target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
 
@@ -773,6 +775,45 @@ def icp_iteration(source_org, target, dist):
     return target, s, [rotation_matrix_iter]
 
 
+def icp_iteration_pairs(source_org, target, dist):
+
+    ### find R and rotate all targets ###
+    itermax=1
+    iter_curr=0
+    mean_t=999
+    mean_nns=999
+    R=list()
+    err_all=list()
+
+    while (iter_curr < itermax) and (mean_t > 1e-1*1):
+        rotation_matrix_iter = get_rotation_matrix(M=source_org, Mtilde=target, weights=None, dist='rie', x=gen_orth(3))
+        # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+        target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+
+        mean_t=0
+        for i in np.arange(source_org.shape[0]):
+            mean_t+= distance_riemann(source_org[i], target[i])
+        iter_curr+=1
+        mean_t =mean_t/target.shape[0]
+        print("Mean after iteration %i: %.3f" %(iter_curr, mean_t))
+        err_all.append(mean_t)
+        R.append(rotation_matrix_iter)
+
+    if(iter_curr == itermax):
+        print("[MAX ITER] Looking for smallest error because maxiter reached!")
+        min_idx = err_all.index(min(err_all))
+        print("best iteration found: %i" %(min_idx))
+        rotation_matrix_iter=R[min_idx]
+        
+    else:
+        rotation_matrix_iter = R[-1]
+
+    target = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+    print("Mean distance between pairs= %.3f" %(get_mean_dist_pairs(source_org, target, dist)))
+
+    return target, s, [rotation_matrix_iter]
+
+
 def perform_transformation(target, T, R, s):
     #assert(len(T)==len(R)==len(s))
 
@@ -789,8 +830,6 @@ def perform_transformation(target, T, R, s):
     # recenter to source (all Ti same)
     target = np.stack([np.dot(sqrtm(T[-1]), np.dot(ti, sqrtm(T[-1]))) for ti in target])
     return target
-
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("base_path", help="base_path.", type=str)
@@ -816,7 +855,7 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 2
+iter = 1
 dist = "rie"
 
 source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
@@ -827,14 +866,31 @@ target = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dat
 source_org = source.reshape((source.shape[0], 3, 3))
 target_org = target.reshape((target.shape[0], 3, 3))
 
+for i in np.arange(target_org.shape[0]):
+    m=target_org[i]
+    w,v = np.linalg.eigh(m)
+    w[w<1e-12]=0.0001
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    target_org[i]=m
+
+for i in np.arange(source_org.shape[0]):
+    m=source_org[i]
+    w,v = np.linalg.eigh(m)
+    w[w<1e-12]=0.0001
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    source_org[i]=m
+
+#source_org = source_org[::4]
+#target_org = target_org[::4]
 
 source = copy.deepcopy(source_org)
+# target = copy.deepcopy(source_org)
 target = copy.deepcopy(target_org)
 
-shuf_order = np.arange(target.shape[0])
-np.random.shuffle(shuf_order)
+#shuf_order = np.arange(target.shape[0])
+#np.random.shuffle(shuf_order)
 
-target = target[shuf_order]
+#target = target[shuf_order]
 
 results_path = args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset
 results_path2 = args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset
@@ -862,9 +918,10 @@ if run_map_find:
     fig2 = plt.figure(figsize=(20, 7))
     fig2.suptitle('Diffusion Map')
     axs2 = list()
-    axs2.append(fig2.add_subplot(1, iter + 2, 1))
+    axs2.append(fig2.add_subplot(1, iter + 1, 1))
     axs2[0].set_title("Original")
     plot_diffusion_embedding(source_org, target, axs2[0])
+    axs2[0].legend(loc='lower right')
 
     #if iter==0:
     #    R,s,T,target = initial_iteration_sing2sing(source_org, target, results_path2, dist)
@@ -889,27 +946,29 @@ if run_map_find:
     
     #source, target, w, mean_dist = find_nearest_neighbors(source_org, target)
     #print("After initial iter and NN search mean dist = %.3f " %(mean_dist))
-    print("After initial iter and NN search mean dist = 000 ")
+    #print("After initial iter and NN search mean dist = 000 ")
 
-    axs2.append(fig2.add_subplot(1, iter + 2, 2))
-    axs2[1].set_title("Initial (000)" )
-    # axs2[1].set_title("Initial (%.2f)" %(mean_dist))
-    plot_diffusion_embedding(source_org, target, axs2[1])
+    # axs2.append(fig2.add_subplot(1, iter + 2, 2))
+    # axs2[1].set_title("Initial (000)" )
+    # # axs2[1].set_title("Initial (%.2f)" %(mean_dist))
+    # plot_diffusion_embedding(source_org, target, axs2[1])
 
     print("-------------------------------------------------------------")
 
     fig3 = plt.figure(figsize=(20, 7))
-    fig3.suptitle('Initial iteration process')
+    fig3.suptitle('\\textit{Initial iteration process}')
     axs3 = list()
     axs3.append(fig3.add_subplot(1, 5, 1))
-    axs3[0].set_title("Original")
+    axs3[0].set_title("\\textit{Original}")
     plot_diffusion_embedding(source_org, target, axs3[0])
+    axs3[0].legend(loc='lower right')
 
     
 
 
     mean_target = mean_riemann(target)
     mean_source_org = mean_riemann(source_org)
+    print(target.shape)
 
     print("Original distance between means: %.3f" %(distance_riemann(mean_target, mean_source_org)))
     T[0]=mean_riemann(source_org)
@@ -919,7 +978,7 @@ if run_map_find:
     source = np.stack([np.dot(invsqrtm(mean_source_org), np.dot(si, invsqrtm(mean_source_org))) for si in source_org])  # move source to id
 
     axs3.append(fig3.add_subplot(1, 5, 2))
-    axs3[1].set_title("Recenter to id")
+    axs3[1].set_title("\\textit{Recenter to id}")
     plot_diffusion_embedding(source, target, axs3[1])
 
     ### stretch target at id ###
@@ -942,25 +1001,29 @@ if run_map_find:
             target_tmpplot =copy.deepcopy(target)
 
         #target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_sing2sing(source, target, dist)
-        target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_most_singular(source, target, dist)
-        # target, s_iter, rotation_matrix_iter = icp_iteration(source, target, dist)
+        #target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_most_singular(source, target, dist)
+        target, s_iter, rotation_matrix_iter = icp_iteration_pairs(source, target, dist)
         assert(target.shape[0]==target_org.shape[0])
         for r in rotation_matrix_iter:
             R_list.append(r)
 
         if iter_i == 0: # just to get the indices into the plot
             axs3.append(fig3.add_subplot(1, 5, 3))
-            axs3[2].set_title("Stretch at id")
-            plot_diffusion_embedding(source, target_tmpplot, axs3[2], idx_s, idx_t, True)
+            axs3[2].set_title("\\textit{Stretch at id}")
+            plot_diffusion_embedding(source, target_tmpplot, axs3[2])
+            # plot_diffusion_embedding(source, target_tmpplot, axs3[2], idx_s, idx_t, True)
 
-        axs2.append(fig2.add_subplot(1, iter + 2, iter_i + 3))
-        plot_diffusion_embedding(source, target, axs2[iter_i + 2], idx_s, idx_t)
+        axs2.append(fig2.add_subplot(1, iter + 1, iter_i + 2))
+        plot_diffusion_embedding(source, target, axs2[iter_i + 1])
+        # plot_diffusion_embedding(source, target, axs2[iter_i + 1], idx_s, idx_t)
 
-        source_tmp, target_tmp, _, _ = find_nearest_neighbors(source, target, dist, filterdup=False)
-        err_iter=get_mean_dist_pairs(source_tmp, target_tmp)
+        #source_tmp, target_tmp, _, _ = find_nearest_neighbors(source, target, dist, filterdup=False)
+        # err_iter=get_mean_dist_pairs(source_tmp, target_tmp)
+        err_iter=get_mean_dist_pairs(source, target)
         err_list.append(err_iter)
-        axs2[iter_i + 2].set_title("%.2f" % (err_iter))
+        axs2[iter_i + 1].set_title("%.2f" % (err_iter))
 
+        # if(err_iter <=1):
         if(err_iter <=1e-3*8):
             break
 
@@ -975,18 +1038,26 @@ if run_map_find:
         R_list.append(np.eye(3))
 
 
+    if iter_i == (iter-1):
+        print("[OUTER MAX ITER] Looking for smallest error because maxiter reached!")
+        min_idx = err_list.index(min(err_list))
+        print("best iteration found: %i" %(min_idx))
+        R_list = R_list[:min_idx+1]
+
+
 
     axs3.append(fig3.add_subplot(1, 5, 4))
-    axs3[3].set_title("Rotate wrt subsamples")
-    plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t, True)
-    #plot_diffusion_embedding(source, target, axs2[3])
+    axs3[3].set_title("\\textit{Rotate wrt subsamples}")
+    plot_diffusion_embedding(source, target, axs3[3])
+    # plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t, True)
 
     ### move to source ###
     target = np.stack([np.dot(sqrtm(mean_source_org), np.dot(ti, sqrtm(mean_source_org))) for ti in target]) 
 
     axs3.append(fig3.add_subplot(1, 5, 5))
-    axs3[4].set_title("Move to source")
-    plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, True)
+    axs3[4].set_title("\\textit{Move to source}")
+    plot_diffusion_embedding(source_org, target, axs3[4])
+    # plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, True)
     fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
 
     R_arr=np.zeros((len(R_list),3,3))
@@ -995,10 +1066,10 @@ if run_map_find:
 
 
 
-    unshuf_order = np.zeros_like(shuf_order)
-    unshuf_order[shuf_order] = np.arange(target.shape[0])
+    #unshuf_order = np.zeros_like(shuf_order)
+    #unshuf_order[shuf_order] = np.arange(target.shape[0])
 
-    target = target[unshuf_order]
+    #target = target[unshuf_order]
 
     #source_tmp, target_tmp, _, _ = find_nearest_neighbors(source_org, target, dist, filterdup=False)
     print("AFTER ALL ITERATIONS MEAN DIST TO GROUND TRUTH: %.3f" % (get_mean_dist_pairs(source_org, target)) )
@@ -1041,11 +1112,9 @@ if run_map_new:
             #manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth.shape[0], 3, 3))   
             for i in np.arange(target_new.shape[0]):
                 m=target_new[i]
-                #u,s,v = np.linalg.svd(m)
-                #s[s<1e-12] = 0.01
-                #m=np.matmul(np.matmul(u, np.diag(s)), v)
                 w,v = np.linalg.eigh(m)
-                w[w<1e-12]=0.01
+                #print(w)
+                w[w<1e-12]=0.0001
                 m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
                 target_new[i]=m
         else:
@@ -1083,10 +1152,13 @@ if run_map_new:
     fig2 = plt.figure(figsize=(16.5, 6))
     axs2 = list()
     axs2.append(fig2.add_subplot(1, 2, 1))
-    axs2[0].set_title("Input before transformation")
+    axs2[0].set_title("\\textit{Input before transformation}")
     plot_diffusion_embedding_target_new(source_org, target, target_new, axs2[0])
 
     target_new = perform_transformation(target_new, T, R, s)
+
+    for m in target_new:
+        print("eigs new: ", np.linalg.eigvalsh(m))
 
 
     if args.cv_k is None:
@@ -1103,19 +1175,19 @@ if run_map_new:
     axs2.append(fig2.add_subplot(1, 2, 2))
 
     #plot naive mapping too in 2d embedding to be able to compare results
-    target_mapped_naive = target_mapped_naive.reshape((target_mapped_naive.shape[0], 3, 3))
-    for i in target:
-        assert(np.all(np.linalg.eigvals(i) > 0))
-    for i in target_new:
-        assert(np.all(np.linalg.eigvals(i) > 0))
-    for i in target_mapped_naive:
-        assert(np.all(np.linalg.eigvals(i) > 0))
+    # target_mapped_naive = target_mapped_naive.reshape((target_mapped_naive.shape[0], 3, 3))
+    # for i in target:
+    #     assert(np.all(np.linalg.eigvals(i) > 0))
+    # for i in target_new:
+    #     assert(np.all(np.linalg.eigvals(i) > 0))
+    # for i in target_mapped_naive:
+    #     assert(np.all(np.linalg.eigvals(i) > 0))
 
-    axs2[1].set_title("Input after transformation (Naive/ICP)")
-    plot_diffusion_embedding_target_new_and_naive(manip_groundtruth, target_new, target_mapped_naive, axs2[1])
+    # axs2[1].set_title("Input after transformation (Naive/ICP)")
+    # plot_diffusion_embedding_target_new_and_naive(manip_groundtruth, target_new, target_mapped_naive, axs2[1])
 
-    fig2.tight_layout()
-    fig2.savefig(results_path2+"/mapped_diffusion_map.pdf")
+    # fig2.tight_layout()
+    # fig2.savefig(results_path2+"/mapped_diffusion_map.pdf")
 
     #find_nearest_neighbors(manip_groundtruth, target_new) # just for error between source and target without mapping
 

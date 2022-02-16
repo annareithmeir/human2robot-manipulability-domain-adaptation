@@ -235,10 +235,22 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     if (proband=="") mPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/all_m.csv";
     else mPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/all_m.csv";
 
+
+//    if (proband=="") tPath = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/all_t.csv";
+//    else tPath="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/"+proband+"/all_t.csv";
+//
+//    if (proband=="") mPath = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/all_m.csv";
+//    else mPath="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/"+proband+"/all_m.csv";
+
     deb(tPath)
     deb(mPath)
     loadCSVSkipFirst(tPath, &data);
     loadCSVSkipFirst(mPath, &m);
+    deb(data)
+    deb(m)
+
+    data.rightCols(3) = data.rightCols(3) * 10;
+    m=m*10;
 
     MatrixXd tmp;
     dataVectorized.leftCols(1) = data.leftCols(1);
@@ -282,9 +294,15 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     //Write model2.muMan, model2.sigma, xhat to files
 //    writeCSV(model2.m_muMan, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2MuMan.csv");
 //    writeCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
-    writeCSV(vec2Symmat(xHat),
+
+
+    writeCSV(vec2Symmat(xHat / 10),
              "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhat.csv");
-    writeCSV(xd, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv");
+    writeCSV(xd / 10, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv");
+
+
+
+
 //    writeCSV(data/10, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyTrajectories.csv");
 //    vector<MatrixXd> manips = vec2Symmat(dataVectorized.rightCols(6).transpose());
 //    writeCSV(manips, "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/human_arm/dummyManipulabilities.csv");

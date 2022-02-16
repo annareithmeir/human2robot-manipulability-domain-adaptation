@@ -332,21 +332,25 @@ int main() {
  * Perform learning part on Luis experiment data, RHuMAn model data
  */
 
-//string exp="cut_userchoice";
-//string proband="4";
-//
-//string infoPath;
-//if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";
-//else infoPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/info.txt";
-//
-//ifstream infile(infoPath);
-//int nPoints, nDemos, totalPoints;
-//infile >> nPoints >> nDemos >> totalPoints;
-//assert(nPoints*nDemos==totalPoints);
+string exp="drill_optimal";
+string proband="2";
 
-//MatrixXd xd(3,nPoints);
-//MatrixXd xHat(6,nPoints);
-//learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
+string infoPath;
+if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";
+else infoPath="/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/"+proband+"/info.txt";
+
+
+//if (proband=="") infoPath = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/info.txt";
+//else infoPath="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated/agg/"+proband+"/info.txt";
+
+ifstream infile(infoPath);
+int nPoints, nDemos, totalPoints;
+infile >> nPoints >> nDemos >> totalPoints;
+assert(nPoints*nDemos==totalPoints);
+
+MatrixXd xd(3,nPoints);
+MatrixXd xHat(6,nPoints);
+learn3dRHumanMotion(xd, xHat, nPoints, nDemos, totalPoints, exp, proband);
 //controlManipulabilitiesRHumanArm(exp, proband, nPoints, nDemos, totalPoints);
 
 /**
@@ -387,10 +391,10 @@ int main() {
 /**
  * Moving to a goal with a simple control loop
  */
-    Franka robot = Franka(false);
-    VectorXd q_goal(7);
-    q_goal << -pi/2.0, 0.004, 0.0, -1.57156, 0.0, 1.57075, 0.0;
-    robot.moveToQGoal(q_goal);
+//    Franka robot = Franka(false);
+//    VectorXd q_goal(7);
+//    q_goal << -pi/2.0, 0.004, 0.0, -1.57156, 0.0, 1.57075, 0.0;
+//    robot.moveToQGoal(q_goal);
 
 
 //MatrixXd jtfull(6,4);

@@ -14,15 +14,15 @@ from get_cov_ellipsoid import get_cov_ellipsoid
 
 
 
-experiment_name="cut_userchoice"
-proband=4
+experiment_name="drill_optimal"
+proband=2
 
 
 plot_trajectories_all = False
 plot_manipulabilities_selected = False
 plot_GMM = 0
-plot_time_traj = 0
-plot_time_loop = 1
+plot_time_traj = 1
+plot_time_loop = 0
 plot_test = 0
 
 
@@ -157,8 +157,9 @@ if plot_GMM:
     fig = plt.figure(3, figsize=plt.figaspect(0.3))
     plt.suptitle('Demonstrations rhuman experiments')
     plot_every_nth=500
-    scaling_factor=1e-4
+    scaling_factor=1e-3
 
+    # with open("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+experiment_name+"/interpolated/agg/"+str(proband)+"/info.txt") as f:
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
     nPoints= int(info.strip().split(' ')[0])
@@ -167,7 +168,9 @@ if plot_GMM:
 
     ax = plt.axes(projection='3d')
     ax.title.set_text(experiment_name+', proband '+str(proband))
+    # files = sorted(glob.glob("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+experiment_name+"/interpolated/exp"+str(proband)+"*_t.csv"))
     files = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+str(proband)+"*_t.csv"))
+    # files_m = sorted(glob.glob("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+experiment_name+"/interpolated/exp"+str(proband)+"*_m.csv"))
     files_m = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+str(proband)+"*_m.csv"))
 
     for i in np.arange(len(files)):
@@ -198,27 +201,29 @@ if plot_GMM:
     #trajectories GMM result
     mu_tmp = genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+experiment_name+"/"+str(proband)+"/xd.csv", delimiter=',')
     sigma_tmp = genfromtxt("/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+experiment_name+"/"+str(proband)+"/xhat.csv", delimiter=',')
+    #print(mu_tmp.shape, sigma_tmp.shape)
 
-    sigma_tmp = scaling_factor*sigma_tmp
+    #sigma_tmp = scaling_factor*sigma_tmp
     mu_tmp=mu_tmp
 
     mu=list()
-    sigma=list()
+    #sigma=list()
 
     for i in np.arange(mu_tmp.shape[1]):
         mu.append(mu_tmp[:,i])
-        sigma.append(sigma_tmp[i,:].reshape(3,3))
+        #sigma.append(sigma_tmp[i,:].reshape(3,3))
 
     for i in np.arange(len(mu)):
         mu_i = mu[i]
-        ax.scatter(mu_i[0],mu_i[1],mu_i[2], color='black', alpha=0.4, s=1)
+        ax.scatter(mu_i[0],mu_i[1],mu_i[2], color='black', alpha=1, s=1)
+    ax.plot(mu_tmp[0,:], mu_tmp[1,:], mu_tmp[2,:], c='black', alpha=0.25)
 
     
-    for i in np.arange(0,len(mu),plot_every_nth):
-        mu_i = mu[i]
-        sigma_i=sigma[i]
-        X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, mu_i, 1)
-        ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.1)
+    # for i in np.arange(0,len(mu),plot_every_nth):
+    #     mu_i = mu[i]
+    #     sigma_i=sigma[i]
+    #     X2,Y2,Z2 = get_cov_ellipsoid(sigma_i, mu_i, 1)
+    #     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.6)
     
     fig.tight_layout()
     #plt.show()
@@ -232,7 +237,7 @@ if plot_time_traj:
     plt.title('Manipulabilities over time')
     n_demos=1
     scaling_factor=1e-2
-    plot_every_nth = 5
+    plot_every_nth = 50
 
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
@@ -240,7 +245,7 @@ if plot_time_traj:
     print(experiment_name, ' ', proband,' nPoints =', nPoints)
     nPoints=int(nPoints)
 
-    plot_time_demos = False
+    plot_time_demos = True
     if plot_time_demos:
         files_m = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+str(proband)+"*_m.csv"))
         
@@ -258,10 +263,10 @@ if plot_time_traj:
             for i in np.arange(0,len(demo),plot_every_nth):
                 m_i = demo[i]
                 X2,Y2,Z2 = get_cov_ellipsoid(m_i, [cnt,0,0], 1)
-                ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
+                ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
                 cnt+=1
 
-    plot_time_learned = True
+    plot_time_learned = False
     if plot_time_learned:
         file_m = "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/"+experiment_name+"/"+str(proband)+"/xhat.csv"
         
@@ -281,7 +286,7 @@ if plot_time_traj:
             ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
             cnt+=1
 
-    plot_time_controlled = True
+    plot_time_controlled = False
     if plot_time_controlled:
         filename_controlled="/home/nnrthmr/CLionProjects/ma_thesis/data/tracking/rhuman/"+experiment_name+"/"+str(proband)+"/controlledManipulabilities.csv"
         controlled_tmp = genfromtxt(filename_controlled, delimiter=',')

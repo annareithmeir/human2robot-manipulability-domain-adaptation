@@ -3,7 +3,7 @@
 
 function data_preparation_rhuman_luis_t_manips(tasks)
 
-rhuman = rHuManModel('shoulderHeight',1.55,'verbose',true); % shoulderheight does not effect J
+rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true); % shoulderheight does not effect J
 base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/";
 
 if ~exist(strcat(base_path+'data/', tasks), 'dir')
@@ -29,7 +29,8 @@ for i=1:L
 
     for jj=1:s
          jtmp=rhuman.getJacobGeom(joints_interp(jj,2:8));
-         m(jj,2:10) = reshape(jtmp(1:3,:)*jtmp(1:3,:)', 1,9);
+         m(jj,2:10) = reshape(jtmp(4:6,:)*jtmp(4:6,:)', 1,9);
+         %m(jj,2:10) = reshape(jtmp(1:3,:)*jtmp(1:3,:)', 1,9);
          t(jj,2:4)= reshape(getPos(rhuman, joints_interp(jj,2:8)),1,3);
     end
 

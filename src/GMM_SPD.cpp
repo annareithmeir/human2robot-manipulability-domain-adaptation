@@ -8,7 +8,7 @@ GMM_SPD::GMM_SPD() {
     this->m_n = -1;
     this->m_maxDiffLL = 1e-4; //Likelihood increase threshold to stop algorithm
     this->m_minIterEM=1;
-    this->m_maxIterEM = 10;
+    this->m_maxIterEM = 1;
     this->m_maxIterM = 10;
 
     if(dimensions==2){

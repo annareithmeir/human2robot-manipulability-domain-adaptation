@@ -27,10 +27,11 @@ ax = plt.axes(projection='3d')
 plt.title('Demonstrations and GMR results')
 
 
-'''
+
 #data_path = "/home/nnrthmr/Desktop/master-thesis/promps-code/tum_tuda_project/recorded_data/Session_25_06_2021/run1.csv"
 #data_path = "../data/demos/trajectories.csv"
-data_path = "../data/demos/human_arm/dummyTrajectories.csv"
+# data_path = "../data/demos/human_arm/dummyTrajectories.csv"
+data_path="/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/"+exp+"/interpolated"
 data = pd.read_csv(data_path, sep=",", names=['s','EE_x','EE_y','EE_z'])
 #data = pd.read_csv(data_path, sep=",")
 print(data)
@@ -96,29 +97,29 @@ for i in np.arange(0,n_points,plot_every_nth):
 
 
 
-'''
+
 
 ###### rotated dummy data human arm #######
 
 
-data_path = "../data/demos/human_arm/rotationDummyDemo/data_centered.csv"
-data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
-print(data)
+# data_path = "../data/demos/human_arm/rotationDummyDemo/data_centered.csv"
+# data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
+# print(data)
 
-xdata= np.array(data['EE_x'])[:n_demos*n_points]
-ydata= np.array(data['EE_y'])[:n_demos*n_points]
-zdata= np.array(data['EE_z'])[:n_demos*n_points]
-ax.plot(xdata, ydata, zdata, c='grey', alpha=0.5)
+# xdata= np.array(data['EE_x'])[:n_demos*n_points]
+# ydata= np.array(data['EE_y'])[:n_demos*n_points]
+# zdata= np.array(data['EE_z'])[:n_demos*n_points]
+# ax.plot(xdata, ydata, zdata, c='grey', alpha=0.5)
 
-for i in np.arange(2,5):
-    data_path = "../data/demos/human_arm/rotationDummyDemo/data"+str(i)+"_centered.csv"
-    data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
-    print(data)
+# for i in np.arange(2,5):
+#     data_path = "../data/demos/human_arm/rotationDummyDemo/data"+str(i)+"_centered.csv"
+#     data = pd.read_csv(data_path, sep=",", names=['EE_x','EE_y','EE_z'])
+#     print(data)
 
-    xdata= np.array(data['EE_x'])[:n_demos*n_points]
-    ydata= np.array(data['EE_y'])[:n_demos*n_points]
-    zdata= np.array(data['EE_z'])[:n_demos*n_points]
-    ax.plot(xdata, ydata, zdata, c=colors[i], alpha=0.5)
+#     xdata= np.array(data['EE_x'])[:n_demos*n_points]
+#     ydata= np.array(data['EE_y'])[:n_demos*n_points]
+#     zdata= np.array(data['EE_z'])[:n_demos*n_points]
+#     ax.plot(xdata, ydata, zdata, c=colors[i], alpha=0.5)
 
 
 ########

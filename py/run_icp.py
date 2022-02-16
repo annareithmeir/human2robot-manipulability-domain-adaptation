@@ -855,7 +855,7 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 1
+iter = 100
 dist = "rie"
 
 source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
@@ -1105,9 +1105,9 @@ if run_map_new:
         # manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth[:,1:].shape[0], 3, 3))   
 
         if(args.robot_teacher=="rhuman"):
-            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities.csv", delimiter=',')
+            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_40.csv", delimiter=',')
             target_new = target_new.reshape((target_new.shape[0], 3, 3)) 
-            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities.csv" 
+            #filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities.csv" 
             #manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
             #manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth.shape[0], 3, 3))   
             for i in np.arange(target_new.shape[0]):
@@ -1167,10 +1167,10 @@ if run_map_new:
             #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_mapped_naive.csv", delimiter=',', dtype=np.double) 
         else:
             np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
-            target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_naive.csv", delimiter=',', dtype=np.double)
+            #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_naive.csv", delimiter=',', dtype=np.double)
     else:
         np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
-        target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_naive.csv", delimiter=',', dtype=np.double)
+        #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_naive.csv", delimiter=',', dtype=np.double)
     
     axs2.append(fig2.add_subplot(1, 2, 2))
 

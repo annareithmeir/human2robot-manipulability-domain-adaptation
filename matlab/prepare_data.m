@@ -38,7 +38,8 @@ for i=2:5 %loop over users
                 for jj=1:s
                     joints(jj,2:8)=data.expData_openSimFKM.task{tasknumber}.joints(:,jj)';
                      jtmp=rhuman.getJacobGeom(data.expData_openSimFKM.task{tasknumber}.joints(:,jj));
-                     m(jj,2:10) = reshape(jtmp(1:3,:)*jtmp(1:3,:)', 1,9);
+                     %m(jj,2:10) = reshape(jtmp(1:3,:)*jtmp(1:3,:)', 1,9);
+                     m(jj,2:10) = reshape(jtmp(4:6,:)*jtmp(4:6,:)', 1,9);
                      t(jj,2:4)= reshape(getPos(rhuman, data.expData_openSimFKM.task{tasknumber}.joints(:,jj)),1,3);
                 end
 

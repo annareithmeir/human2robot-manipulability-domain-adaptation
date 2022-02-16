@@ -37,7 +37,7 @@ def interpolate_equidistant(x, trajectory, interpolate_N_points):
 COLS=["joint1","joint2","joint3","joint4","joint5","joint6","joint7"]
 COLS2=["s","joint1","joint2","joint3","joint4","joint5","joint6","joint7"]
 
-BASE_PATH = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/cut_random/"
+BASE_PATH = "/home/nnrthmr/CLionProjects/ma_thesis/data/demos/rhuman_luis/data/cut_optimal/"
 OUT_PATH = BASE_PATH+"interpolated/"
 
 if not os.path.exists(OUT_PATH):

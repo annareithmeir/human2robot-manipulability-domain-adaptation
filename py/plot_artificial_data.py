@@ -33,11 +33,23 @@ def get_errors(data1p, data2p):
   for (mi,mj) in zip(data1, data2):
     mi=mi.reshape(3,3)
     mj=mj.reshape(3,3)
+
+    w,v = np.linalg.eigh(mi) # just for very singular cases as in trajectories generated
+    w[w<1e-12]=0.01
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    mi=m
+
+    w,v = np.linalg.eigh(mj) # just for very singular cases as in trajectories generated
+    w[w<1e-12]=0.01
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    mj=m
+
     print("%.3f " %(distance_riemann(mi, mj)))
     mse_icp += distance_riemann(mi, mj)**2
     le_mse_icp += get_logeuclidean_distance(mi, mj)**2
 
   n_points = data1.shape[0]
+  print("nPoints=%i"%(n_points))
   print("MSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, math.sqrt(mse_icp/n_points)))
   print("MSE (LogEuc): %.3f/%.3f " %(le_mse_icp/n_points, math.sqrt(le_mse_icp/n_points)))
 
@@ -55,12 +67,16 @@ if __name__ == "__main__":
   args.paths = [item for item in args.l[0].split(',')]
 
 
-  colors=['dimgray','darkblue', 'mediumorchid', 'plum', 'cornflowerblue']
-  # labellist=['input (RHuman)','CPD','mapped2']
-  # labellist=['input (RHuman)','ICP','CPD','mapped2']
-  labellist=['\\textit{input}','\\textit{ground truth}','\\textit{ICP}']
+  if(len(args.paths)==2):
+    labellist=['\\textit{input}','\\textit{ICP}']
+    colors=['dimgray','mediumorchid', 'plum', 'cornflowerblue']
+  else:
+    labellist=['\\textit{input}','\\textit{ground truth}','\\textit{ICP}']
+    colors=['dimgray','darkblue', 'mediumorchid', 'plum', 'cornflowerblue']
+
+
   scaling_factor=0.1
-  plot_every_nth=5
+  plot_every_nth=2
 
 
 
@@ -95,7 +111,6 @@ if __name__ == "__main__":
     for i in np.arange(data.shape[0]):
       mm=data[i].reshape(3,3)
       manip.append(scaling_factor*mm)
-    print(len(manip))
 
     cnt=0
     for i in np.arange(0,len(manip),plot_every_nth):
@@ -112,8 +127,10 @@ if __name__ == "__main__":
 
 
   # print errors
-  #get_errors(args.paths[0],args.paths[1])
-  get_errors(args.paths[1],args.paths[2])
+  if(len(args.paths)==2):
+    get_errors(args.paths[0],args.paths[1])
+  else:
+    get_errors(args.paths[1],args.paths[2])
 
   scale=np.diag([1, 0.5*cnt, 1, 1.0])
   scale=scale*(1.0/scale.max())

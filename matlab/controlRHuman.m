@@ -75,11 +75,11 @@
 % % Rotation the first joint (keeping the second constant)
 % % We can use some different values for the second joint: {30,60, 90,120}
 % cnt=1
-% delta = (rhuman.kineconfig.joint_upperlimits(1)*180/pi - rhuman.kineconfig.joint_lowerlimits(1)*180/pi)/n_points
-% for i= rhuman.kineconfig.joint_lowerlimits(1)*180/pi :delta: rhuman.kineconfig.joint_upperlimits(1)*180/pi 
+% delta = (rhuman.kineconfig.joint_upperlimits(1) - rhuman.kineconfig.joint_lowerlimits(1))/n_points
+% for i= rhuman.kineconfig.joint_lowerlimits(1) :delta: rhuman.kineconfig.joint_upperlimits(1)
 %     
 %     theta1=theta; 
-%     theta1(1)=i*pi/180; 
+%     theta1(1)=i; 
 %     j_geom_i=rhuman.getJacobGeom(theta1);
 %     manip_i = j_geom_i(4:6,:)*j_geom_i(4:6,:)';
 %     manipulabilities(cnt,:) = reshape(manip_i,1,9);
@@ -113,10 +113,117 @@
 % Moving the second from 0 to 180
 % move up
 
+% rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
+% figure; 
+% theta=zeros(7,1); 
+% theta(1)=90*pi/180; %90,45,0
+% n_points=39;
+% 
+% rhuman.plot(theta); 
+% view(-79,22); 
+% axis([-0.6 0.6 -0.3 0.6 0.0 1.8]); 
+% 
+% manipulabilities=zeros(n_points, 9);
+% manipulabilities_normalized=zeros(n_points, 9); % all volume = 1
+% scales=zeros(1,n_points);
+% format long
+% 
+% % Rotation the first joint (keeping the second constant)
+% % Keeping the second joint: {30,60, 90,120}
+% delta=(rhuman.kineconfig.joint_upperlimits(2)*180/pi -79)/n_points
+% cnt=1
+% for i= 79 :delta: rhuman.kineconfig.joint_upperlimits(2)*180/pi 
+%     
+%     theta1=theta; 
+%     theta1(2)=i*pi/180; 
+%     
+%     j_geom_i=rhuman.getJacobGeom(theta1);
+%     manip_i = j_geom_i(4:6,:)*j_geom_i(4:6,:)';
+%     manipulabilities(cnt,:) = reshape(manip_i,1,9);
+% 
+%     % Normalize manipulability to volume = 1
+%     eigs=eig(manip_i)
+%     if eigs(1)<0 % matlab rounding errors -> -0.00000
+%         eigs(1)=0
+%     end
+%     if eigs(2)<0
+%         eigs(2)=0
+%     end
+%     if eigs(3)<0
+%         eigs(3)=0
+%     end
+%     vol_i=prod(sqrt(eigs))*(4.0/3.0)*pi;
+%     manip_i_normalized = scaleEllipsoidVolume(manip_i, 1/vol_i);                   % has to be 1
+%     manipulabilities_normalized(cnt,:) = reshape(manip_i_normalized,1,9);
+%     scales(cnt)= vol_i;
+%     
+%     rhuman.plot(theta1); 
+%     cnt=cnt+1
+%     %pause(0.6); 
+% end
+
+
+% %
+% % elbow side fold
+% %
+% rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
+% figure; 
+% theta=zeros(7,1); 
+% theta(2)=90*pi/180;
+% n_points=39;
+% 
+% rhuman.plot(theta); 
+% view(-79,22); 
+% axis([-0.6 0.6 -0.3 0.6 0.0 1.8]); 
+% 
+% manipulabilities=zeros(n_points, 9);
+% manipulabilities_normalized=zeros(n_points, 9); % all volume = 1
+% scales=zeros(1,n_points);
+% format long
+% 
+% % Rotation the fourth joint (keeping the second constant)
+% delta=(rhuman.kineconfig.joint_upperlimits(4) -rhuman.kineconfig.joint_lowerlimits(4))/n_points
+% cnt=1
+% for i= rhuman.kineconfig.joint_lowerlimits(4) :delta: rhuman.kineconfig.joint_upperlimits(4)
+%     
+%     theta1=theta; 
+%     theta1(4)=i; 
+%     
+%     j_geom_i=rhuman.getJacobGeom(theta1);
+%     manip_i = j_geom_i(4:6,:)*j_geom_i(4:6,:)';
+%     manipulabilities(cnt,:) = reshape(manip_i,1,9);
+% 
+%     % Normalize manipulability to volume = 1
+%     eigs=eig(manip_i)
+%     if eigs(1)<0 % matlab rounding errors -> -0.00000
+%         eigs(1)=0
+%     end
+%     if eigs(2)<0
+%         eigs(2)=0
+%     end
+%     if eigs(3)<0
+%         eigs(3)=0
+%     end
+%     vol_i=prod(sqrt(eigs))*(4.0/3.0)*pi;
+%     manip_i_normalized = scaleEllipsoidVolume(manip_i, 1/vol_i);                   % has to be 1
+%     manipulabilities_normalized(cnt,:) = reshape(manip_i_normalized,1,9);
+%     scales(cnt)= vol_i;
+%     
+%     rhuman.plot(theta1); 
+%     cnt=cnt+1
+%     pause(0.6); 
+% end
+
+
+%
+% elbow and shoulder side fold
+%
 rhuman = rHuManModel('shoulderHeight',1.35,'verbose',true,'dq_shoulderBase',[cos(pi/4), 0,0,-sin(pi/4),0,0,0,1]);
 figure; 
 theta=zeros(7,1); 
-theta(1)=90*pi/180; %90,45,0
+theta(2)=90*pi/180;
+theta(3)=75*pi/180;
+theta(5)=0;
 n_points=39;
 
 rhuman.plot(theta); 
@@ -128,14 +235,16 @@ manipulabilities_normalized=zeros(n_points, 9); % all volume = 1
 scales=zeros(1,n_points);
 format long
 
-% Rotation the first joint (keeping the second constant)
-% Keeping the second joint: {30,60, 90,120}
-delta=(rhuman.kineconfig.joint_upperlimits(2)*180/pi -79)/n_points
+% Rotation the fourth joint (keeping the second constant)
+delta=(90*pi/180)/n_points %elbow
+%delta2=(rhuman.kineconfig.joint_upperlimits(1) -rhuman.kineconfig.joint_lowerlimits(1))/n_points %shoulder
+%i2= rhuman.kineconfig.joint_lowerlimits(1):delta2:rhuman.kineconfig.joint_upperlimits(1);
 cnt=1
-for i= 79 :delta: rhuman.kineconfig.joint_upperlimits(2)*180/pi 
+for i= 0 :delta: 90*pi/180
     
     theta1=theta; 
-    theta1(2)=i*pi/180; 
+    theta1(4)=i; 
+    theta1(1)=i; 
     
     j_geom_i=rhuman.getJacobGeom(theta1);
     manip_i = j_geom_i(4:6,:)*j_geom_i(4:6,:)';
@@ -159,13 +268,15 @@ for i= 79 :delta: rhuman.kineconfig.joint_upperlimits(2)*180/pi
     
     rhuman.plot(theta1); 
     cnt=cnt+1
-    %pause(0.6); 
+    pause(0.2); 
 end
 
 base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
-dataset="sing_up_90"
+dataset="side_elbow_shoulder_fold"
+
 %dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities_normalized.csv", manipulabilities_normalized, 'delimiter', ',', 'precision', 32);
 %csvwrite(base_path+"/rhuman/"+dataset+"/scales.csv", scales');
+
 dlmwrite(base_path+"/rhuman/"+dataset+"/manipulabilities_40.csv", manipulabilities, 'delimiter', ',', 'precision', 64);
 
 

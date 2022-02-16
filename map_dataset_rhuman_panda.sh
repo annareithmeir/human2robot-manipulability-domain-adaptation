@@ -8,6 +8,7 @@ robot_student="panda"
 base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping"
 map_dataset="sing_side_140"
 # map_dataset="sing_up_60"
+map_dataset="side_elbow_fold"
 lookup_dataset="sing_combined"
 
 
@@ -19,7 +20,7 @@ echo "###	 Map dataset ${map_dataset} from ${robot_teacher} to ${robot_student} 
 
 
 redo=0
-algorithm=2 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
+algorithm=1 # 0: Naive, 1:ICP, 2:CPD-8d, 3:CPD-3d
 
 
 
@@ -40,9 +41,23 @@ if [[ algorithm -eq 1 ]]; then
 	python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 2 --map_dataset $map_dataset
 	echo "### 	Mapping new data with ICP	###"
 	icp_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities_mapped_icp.csv"
-	input_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities.csv"
-	ground_truth_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities.csv"
-	paths_list="${input_path},${ground_truth_path},${icp_path}"
+	input_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities_40.csv"
+	#ground_truth_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities.csv"
+	# paths_list="${input_path},${ground_truth_path},${icp_path}"
+	paths_list="${input_path},${icp_path}"
+	echo "###	Plotting 	###"
+	python3 py/plot_artificial_data.py -mapping_paths ${paths_list}
+fi
+
+if [[ algorithm -eq 3 ]]; then
+	echo "###	 Running ICP now	###"
+	python3 -W ignore py/run_icp.py $base_path $robot_teacher $robot_student $lookup_dataset 1 --map_dataset $map_dataset
+	echo "### 	Mapping new data with ICP	###"
+	icp_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities_mapped_icp.csv"
+	input_path="${base_path}/${robot_teacher}/${map_dataset}/manipulabilities_40.csv"
+	#ground_truth_path="${base_path}/${robot_student}/${map_dataset}/manipulabilities.csv"
+	# paths_list="${input_path},${ground_truth_path},${icp_path}"
+	paths_list="${input_path},${icp_path}"
 	echo "###	Plotting 	###"
 	python3 py/plot_artificial_data.py -mapping_paths ${paths_list}
 fi

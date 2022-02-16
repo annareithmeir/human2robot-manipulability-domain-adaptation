@@ -149,7 +149,7 @@ def get_rotation_matrix(M, Mtilde, weights=None, dist=None, x=None):
     # let Pymanopt do the rest
     #print("Using x for init in rotation matrix finding: ", x)
     Q_opt = solver.solve(problem, x=x)   
-    print("det of q_opt= %.3f" %(np.determinant(q_opt))) 
+    #print("det of q_opt= %.3f" %(np.determinant(Q_opt)))
     #print(Q_opt[1])
     #Q_opt = Q_opt[0]
     

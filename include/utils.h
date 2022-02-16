@@ -58,7 +58,7 @@ int loadCSV (const string path, vector<vector<double>> &values) {
 }
 
 inline
-int loadCSVSkipFirst (const string path, vector<vector<double>> values) {
+int loadCSVSkipFirst (const string path, vector<vector<double>> &values) {
     ifstream indata;
     if(!fileExists(path)){
         cout<<" [ERROR] File "<<path<<" does not exist"<<endl;
@@ -88,6 +88,7 @@ int loadCSVSkipFirst (const string path, vector<vector<double>> values) {
         ++rows;
     }
     indata.close();
+    deb(values.size())
 
 
     return 0;
@@ -229,6 +230,7 @@ void loadCSVSkipFirst(const string data_path, MatrixXd *data_m){
 
     vector<vector<double>> data;
     loadCSVSkipFirst(data_path, data);
+    deb(data.size())
     for (int t = 0; t < data.size(); t++) {
         for (int c = 0; c < data[0].size(); c++) {
             (*data_m)(t, c) = data[t][c];

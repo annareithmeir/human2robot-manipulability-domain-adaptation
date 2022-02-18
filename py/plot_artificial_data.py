@@ -30,6 +30,8 @@ def get_errors(data1p, data2p):
   mse_icp=0.0
   le_mse_icp=0.0
 
+  f = open(final_results_path+"/info.txt","w+")
+
   for (mi,mj) in zip(data1, data2):
     mi=mi.reshape(3,3)
     mj=mj.reshape(3,3)
@@ -45,6 +47,7 @@ def get_errors(data1p, data2p):
     mj=m
 
     print("%.3f " %(distance_riemann(mi, mj)))
+    f.write("\n%.3f " %(distance_riemann(mi, mj)))
     mse_icp += distance_riemann(mi, mj)**2
     le_mse_icp += get_logeuclidean_distance(mi, mj)**2
 
@@ -52,6 +55,10 @@ def get_errors(data1p, data2p):
   print("nPoints=%i"%(n_points))
   print("MSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, math.sqrt(mse_icp/n_points)))
   print("MSE (LogEuc): %.3f/%.3f " %(le_mse_icp/n_points, math.sqrt(le_mse_icp/n_points)))
+  f.write("\n------------")
+  f.write("\nMSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, math.sqrt(mse_icp/n_points)))
+  f.write("\nMSE (LogEuc): %.3f/%.3f " %(le_mse_icp/n_points, math.sqrt(le_mse_icp/n_points)))
+  f.close()
 
 
 
@@ -77,6 +84,10 @@ if __name__ == "__main__":
 
   scaling_factor=0.1
   plot_every_nth=2
+
+  map_dataset=(args.paths[2]).split("/")[-2]
+  #print(map_dataset)
+  final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP-NNconvpairs/validation/"+map_dataset
 
 
 
@@ -192,12 +203,8 @@ if __name__ == "__main__":
 
   fig.tight_layout()
   fig2.tight_layout()
-  #plt.show()
-
-
-
-
-
+  fig.savefig(final_results_path+"/mapped_front_view.pdf")
+  fig2.savefig(final_results_path+"/mapped_top_view.pdf")
 
   #tmp_planes = ax2.xaxis._PLANES 
   #ax2.xaxis._PLANES = ( tmp_planes[2], tmp_planes[3], 
@@ -206,125 +213,6 @@ if __name__ == "__main__":
   #ax2.xaxis.set_rotate_label(False)  # disable automatic rotation
 
   
-  plt.show()
+  #plt.show()
 
-
-
-
-
-
-
-
-
-
-# fig = plt.figure()
-# ax = plt.axes(projection='3d')
-# plt.title('Mappings from Panda to Toy Data')
-
-# filename_manip_groundtruth = args.groundtruth_path
-# filename_manip_mapped_naive = args.naive_path
-# filename_manip_mapped_icp = args.icp_path
-# filename_manips_input = args.input_path
-
-# manip_groundtruth = genfromtxt(filename_manip_groundtruth, delimiter=',')
-# #manip_groundtruth=manip_groundtruth[1:,:]
-# #print(manip_groundtruth)
-# manip_naive = genfromtxt(filename_manip_mapped_naive, delimiter=',')
-# #manip_naive=manip_naive[1:,:]
-# manip_icp = genfromtxt(filename_manip_mapped_icp, delimiter=',')
-# manip_input = genfromtxt(filename_manips_input, delimiter=',')
-# # manip_input=manip_input[1:,:]
-
-# if "8d" in filename_manip_mapped_icp: # 8d data from cpd 
-#     manip_icp = SPD_from_8d(manip_icp) #list
-
-
-# n_points=manip_groundtruth.shape[0]
-# scaling_factor_plot = 0.3
-# plot_every_nth = 1
-
-# COLS=['s','x','y','z']
-
-# cnt=0
-# mse_naive=0.0
-# mse_icp=0.0
-
-# le_mse_naive=0.0
-# le_mse_icp=0.0
-
-# print("Errors between groundtruth and naive/icp")
-# print(manip_groundtruth.shape)
-# print(manip_naive.shape)
-# print(manip_icp.shape)
-# print(manip_input.shape)
-# for i in np.arange(0,n_points,plot_every_nth):
-#     m_i = manip_groundtruth[i,1:].reshape(3,3)
-#     m_i_n = manip_naive[i,:].reshape(3,3)
-#     m_i_icp = manip_icp[i,:].reshape(3,3)
-#     m_i_in = manip_input[i,1:].reshape(3,3)
-
-#     print("%.3f / %.3f" %(distance_riemann(m_i, m_i_n), distance_riemann(m_i, m_i_icp)))
-#     mse_icp += distance_riemann(m_i, m_i_icp)**2
-#     mse_naive+= distance_riemann(m_i, m_i_n)**2
-
-#     le_mse_icp += get_logeuclidean_distance(m_i, m_i_icp)**2
-#     le_mse_naive+= get_logeuclidean_distance(m_i, m_i_n)**2
-
-#     m_i=scaling_factor_plot*m_i
-#     m_i_n=scaling_factor_plot*m_i_n
-#     m_i_in=scaling_factor_plot*m_i_in
-#     m_i_icp=scaling_factor_plot*m_i_icp
-
-#     X2,Y2,Z2 = get_cov_ellipsoid(m_i, [1*cnt,0,0], 1)
-#     ax.plot_wireframe(X2,Y2,Z2, color='blue', alpha=0.05)
-
-#     X2,Y2,Z2 = get_cov_ellipsoid(m_i_n, [1*cnt,0,0], 1)
-#     ax.plot_wireframe(X2,Y2,Z2, color='red', alpha=0.05)
-
-#     X2,Y2,Z2 = get_cov_ellipsoid(m_i_icp, [1*cnt,0,0], 1)
-#     ax.plot_wireframe(X2,Y2,Z2, color='orange', alpha=0.05)
-
-#     X2,Y2,Z2 = get_cov_ellipsoid(m_i_in, [1*cnt,0,0], 1)
-#     ax.plot_wireframe(X2,Y2,Z2, color='green', alpha=0.05)
-
-#     cnt+=1
-
-# print("MSE (riemann): %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
-# print("MSE (LogEuc): %.3f / %.3f" %(le_mse_naive/n_points, le_mse_icp/n_points))
-# plt.title("MSE (riemann): %.3f / %.3f" %(mse_naive/n_points, mse_icp/n_points))
-
-# # ax.set_zlim(-1, 1)
-# # plt.xlim(-1 ,1)
-# # plt.ylim(-1, 1)
-# # plt.show()
-
-
-
-# scale=np.diag([cnt, 1, 1, 1.0])
-# scale=scale*(1.0/scale.max())
-# scale[3,3]=0.7
-# def short_proj():
-#   return np.dot(Axes3D.get_proj(ax), scale)
-
-
-# blue_patch = mpatches.Patch(color='blue', label='Ground Truth')
-# red_patch = mpatches.Patch(color='red', label='Naive')
-# orange_patch = mpatches.Patch(color='orange', label='ICP')
-# green_patch = mpatches.Patch(color='green', label='Input')
-# plt.legend(handles=[ blue_patch, red_patch, orange_patch, green_patch])
-
-# ax.get_proj=short_proj
-# ax.set_box_aspect(aspect = (1,1,1))
-
-# plt.xlim(-0.5, n_points/plot_every_nth)
-# plt.ylim(-0.5, 0.5)
-# ax.set_zlim(-0.5, 0.5)
-# #plt.ylim(-0.5, n_points/plot_every_nth)
-# #ax.set_zlim(-0.5, n_points/plot_every_nth)
-
-# results_path = "/".join(str.split(filename_manip_mapped_icp, "/")[:-1])
-# robot_teacher= str.split(filename_manips_input, "/")[-3]
-# robot_student= str.split(filename_manip_mapped_icp, "/")[-3]
-# plt.savefig(results_path+"/mapping_from_"+robot_teacher+"_to_"+robot_student+"_plot.pdf")
-# plt.show()
 

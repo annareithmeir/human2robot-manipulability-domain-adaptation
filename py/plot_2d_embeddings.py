@@ -130,20 +130,18 @@ def plot_diffusion_embedding(source, target, ax1, idx_s=None, idx_t=None, pairwi
     return ax1
 
 
-def plot_diffusion_embedding_target_new(source, target, target_new, ax1):
-    covs = np.concatenate([source, target])
-    covs = np.concatenate([covs, target_new])
-    sess = np.array([1] * len(source) + [2] * len(target) + [3] * len(target_new))
+def plot_diffusion_embedding_target_new(source, target_new, ax1):
+    covs = np.concatenate([source, target_new])
+    sess = np.array([1] * len(source) + [2] * len(target_new))
 
-    colors = {1: 'blue', 2: 'red', 3: 'green'}
+    colors = {1: 'blue', 2: 'red'}
 
     uorg, l = get_diffusionEmbedding(points=covs, distance=distance_riemann)
 
     for ui, si in zip(uorg, sess):
         ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
-    ax1.scatter([], [], facecolor=colors[1], label='\\textit{source (student)}')
-    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target (teacher)}')
-    ax1.scatter([], [], facecolor=colors[3], label='\\textit{target new samples}')
+    ax1.scatter([], [], facecolor=colors[1], label='\\textit{ground truth (student)}')
+    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target new (teacher)}')
     #ax1.legend(loc='lower right')
     return ax1
 

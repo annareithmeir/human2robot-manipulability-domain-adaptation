@@ -972,8 +972,10 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 5
+iter = 100
 dist = "rie"
+
+final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP2"
 
 source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
 # source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities_normalized.csv", delimiter=',')
@@ -983,11 +985,29 @@ target = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dat
 source_org = source.reshape((source.shape[0], 3, 3))
 target_org = target.reshape((target.shape[0], 3, 3))
 
+for i in np.arange(target_org.shape[0]):
+    m=target_org[i]
+    w,v = np.linalg.eigh(m)
+    w[w<1e-12]=0.0001
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    target_org[i]=m
+
+for i in np.arange(source_org.shape[0]):
+    m=source_org[i]
+    w,v = np.linalg.eigh(m)
+    w[w<1e-12]=0.0001
+    m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+    source_org[i]=m
+
+source_org = source_org[::4]
+target_org = target_org[::4]
 
 source = copy.deepcopy(source_org)
 target = copy.deepcopy(target_org)
 
-np.random.shuffle(target)
+shuf_order = np.arange(target.shape[0])
+np.random.shuffle(shuf_order)
+target = target[shuf_order]
 
 results_path = args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset
 results_path2 = args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset
@@ -1097,6 +1117,10 @@ if run_map_find:
 
     T_list.append(mean_source)
 
+    unshuf_order = np.zeros_like(shuf_order)
+    unshuf_order[shuf_order] = np.arange(target.shape[0])
+    target = target[unshuf_order]
+
     ######
 
 
@@ -1151,8 +1175,8 @@ if run_map_new:
             target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities.csv", delimiter=',')
             target_new = target_new.reshape((target_new.shape[0], 3, 3)) 
             filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities.csv" 
-            #manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
-            #manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth.shape[0], 3, 3))   
+            manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
+            manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth.shape[0], 3, 3))   
             for i in np.arange(target_new.shape[0]):
                 m=target_new[i]
                 w,v = np.linalg.eigh(m)

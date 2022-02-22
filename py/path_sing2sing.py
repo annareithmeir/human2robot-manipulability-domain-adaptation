@@ -201,19 +201,12 @@ def find_pairs_conv(source, target):
         target_rearranged[i] = target[corresp_idx_t[i]]
 
 
-    print(weights_pairs)
+    #print(weights_pairs)
 
     return source, target_rearranged, np.arange(source.shape[0]), np.arange(source.shape[0]),abs(np.array(weights_pairs))
 
 
 def find_most_singular_points_conv(source, target, num, with_iso=True):
-    s=list()
-    t=list()
-
-    path_points_t=list()
-    path_points_s=list()
-    path_idx_t=list()
-    path_idx_s=list()
 
     print("MOST SING POINTS CONV with %i points" %(num))
 
@@ -225,67 +218,49 @@ def find_most_singular_points_conv(source, target, num, with_iso=True):
         sing_idxs_s.append(max(w)/min(w)) # if ratio very big then singular
 
     sing_idxs_min_s = np.array(sing_idxs_s).argsort()[-num:]
-    #iso_idx_s = np.array(sing_idxs_s).argsort()[0] # most isotropic sample
-    #print("most isotropic samples found: ",np.sort(np.array(sing_idxs_s))[0] )
 
 
     # find most singular samples in t
     for i in np.arange(target.shape[0]):
         w, _ = np.linalg.eigh(target[i])
-        sing_idxs_t.append(max(w)/min(w)) # if ratio very small then singular
+        sing_idxs_t.append(max(w)/min(w)) # if ratio very big then singular
 
     sing_idxs_min_t = np.array(sing_idxs_t).argsort()[-num:]
-    # iso_idx_t = np.array(sing_idxs_t).argsort()[0]
-    # #print("most isotropic samples found: ",np.sort(np.array(sing_idxs_t))[0] )
-
-    # v1,w1 = np.linalg.eigh(source[iso_idx_s])
-    # w_min_1 = w1[:,np.argmin(v1)] # eigvec corresp to smallest eigval
-    # v2,w2 = np.linalg.eigh(target[iso_idx_t])
-    # w_min_2 = w2[:,np.argmin(v2)] # eigvec corresp to smallest eigval
-    # print("Angle between isotropic samples: %.3f " %(w_min_1.dot(w_min_2)))
-    # iso_angle = abs(w_min_1.dot(w_min_2))
-
 
     # find most similar directing sample between s and t (dot product near 1)
     corresp_idx_t = np.zeros(num, dtype=int)
     weights_pairs=list()
-    for i in np.arange(num):
-        si=sing_idxs_min_s[i]
-        sii=sing_idxs_s[i]
+    i=0
+    for si in sing_idxs_min_s:
+        #si=sing_idxs_min_s[i]
+        vols=get_volume(source[si])
+        sing_idx_s = sing_idxs_s[si]
         vs,ws = np.linalg.eigh(source[si])
         w_min_s = ws[:,np.argmin(vs)] # eigvec corresp to smallest eigval
         w_max_s = ws[:,np.argmax(vs)] # eigvec corresp to smallest eigval
         weights=list()
         
-        for j in sing_idxs_min_t:
-            tjj=sing_idxs_t[j]
-            vt,wt = np.linalg.eigh(target[j])
+        for tj in sing_idxs_min_t:
+            volt=get_volume(target[tj])
+            sing_idx_t = sing_idxs_t[tj]
+            vt,wt = np.linalg.eigh(target[tj])
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             w_max_t = wt[:,np.argmax(vt)] # eigvec corresp to smallest eigval
-            weights.append((abs(w_min_s.dot(w_min_t))+abs(w_max_s.dot(w_max_t)))+math.exp(-abs(tjj-sii))) # collect all convex combinations of biggest and smallest axes and diff of sing. index
+            #weights.append(w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t) +math.exp(-abs(sing_idx_t-sing_idx_s)))# collect all convex combinations of biggest and smallest axes and diff of sing. index
+            weights.append(w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t) +math.exp(-abs(sing_idx_t-sing_idx_s)) +math.exp(-abs(volt-vols)))# collect all convex combinations of biggest and smallest axes and diff of sing. index
         weight_max= np.argmax(np.array(weights)) #select smallest angle
         weights_pairs.append(np.max(np.array(weights)))
-        t_max = target[sing_idxs_min_t[weight_max]] # source[i] and t_max are pair of similar pointing sing matrices
+        #t_max = target[sing_idxs_min_t[weight_max]] # source[i] and t_max are pair of similar pointing sing matrices
         corresp_idx_t[i] = sing_idxs_min_t[weight_max]
+        i+=1
 
 
-    # if with_iso and iso_angle > 0.8:
-    #     source_sing = np.zeros((num+1,3,3))
-    #     target_sing = np.zeros((num+1,3,3))
-    # else:
     source_sing = np.zeros((num,3,3))
     target_sing = np.zeros((num,3,3))
 
     for i in np.arange(num):
         source_sing[i] = source[sing_idxs_min_s[i]]
         target_sing[i] = target[corresp_idx_t[i]]
-
-    # if with_iso and iso_angle > 0.8:
-    #     source_sing[num] = source[iso_idx_s]
-    #     target_sing[num] = target[iso_idx_t]
-    #     np.append(sing_idxs_min_s,iso_idx_s)
-    #     np.append(corresp_idx_t,iso_idx_t)
-    #     angles_pairs.append(iso_angle)
 
     print(weights_pairs)
 

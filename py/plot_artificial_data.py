@@ -18,8 +18,6 @@ def get_errors(data1p, data2p):
 
   data1 = genfromtxt(data1p, delimiter=',')
   data2 = genfromtxt(data2p, delimiter=',')
-  print(data1.shape)
-  print(data2.shape)
 
   if "8d" in data2p: # 8d data from cpd
      data2 = SPD_from_8d(data2) #list
@@ -47,7 +45,7 @@ def get_errors(data1p, data2p):
     mj=m
 
     print("%.3f " %(distance_riemann(mi, mj)))
-    f.write("\n%.3f " %(distance_riemann(mi, mj)))
+    #f.write("\n%.3f " %(distance_riemann(mi, mj)))
     mse_icp += distance_riemann(mi, mj)**2
     le_mse_icp += get_logeuclidean_distance(mi, mj)**2
 
@@ -63,15 +61,12 @@ def get_errors(data1p, data2p):
 
 
 if __name__ == "__main__":
-  ### artificial dataset with volume and axes scaling ###
   parser = argparse.ArgumentParser()
-  #parser.add_argument("input_path", help="input_path.", type=str)
-  #parser.add_argument("groundtruth_path", help="groundtruth_path", type=str)
   parser.add_argument('-mapping_paths','--l', nargs='+', type=str)
-  #parser.add_argument("icp_path", help="icp_path", type=str)
 
   args = parser.parse_args()
   args.paths = [item for item in args.l[0].split(',')]
+  print(args.paths)
 
 
   if(len(args.paths)==2):
@@ -85,9 +80,12 @@ if __name__ == "__main__":
   scaling_factor=0.1
   plot_every_nth=2
 
+
   map_dataset=(args.paths[2]).split("/")[-2]
-  #print(map_dataset)
-  final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP-NNconvpairs/validation/"+map_dataset
+  print(map_dataset)
+  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofvertical/CPD_8d/validation/"+map_dataset
+  final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofscaled/validation/"+map_dataset
+  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP-NNconvw/validation/"+map_dataset
 
 
 
@@ -127,7 +125,7 @@ if __name__ == "__main__":
     for i in np.arange(0,len(manip),plot_every_nth):
       m_i = manip[i]
       w,v = np.linalg.eigh(m_i) # just for very singular cases as in trajectories generated
-      w[w<1e-12]=0.01
+      w[w<1e-12]=0.001
       m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
       m_i=m
       X2,Y2,Z2 = get_cov_ellipsoid(m_i, [0,0.5*cnt,0], 1)
@@ -139,6 +137,7 @@ if __name__ == "__main__":
 
   # print errors
   if(len(args.paths)==2):
+    print("errs between 0 and 1")
     get_errors(args.paths[0],args.paths[1])
   else:
     get_errors(args.paths[1],args.paths[2])
@@ -203,8 +202,8 @@ if __name__ == "__main__":
 
   fig.tight_layout()
   fig2.tight_layout()
-  fig.savefig(final_results_path+"/mapped_front_view.pdf")
-  fig2.savefig(final_results_path+"/mapped_top_view.pdf")
+  fig.savefig(final_results_path+"/mapped_front_view.pdf", dpi=300)
+  fig2.savefig(final_results_path+"/mapped_top_view.pdf", dpi=300)
 
   #tmp_planes = ax2.xaxis._PLANES 
   #ax2.xaxis._PLANES = ( tmp_planes[2], tmp_planes[3], 

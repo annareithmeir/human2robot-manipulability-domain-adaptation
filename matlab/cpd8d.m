@@ -15,7 +15,7 @@ function cpd8d(base_path, robot_teacher, robot_student, lookup_dataset, mapping_
     size(X,1)
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    opt.method='affine'; % use rigid registration
+    opt.method='rigid'; % use rigid registration
     %opt.viz=1;          % show every iteration
     opt.outliers=0.001;     % do not assume any noise 
 
@@ -44,7 +44,7 @@ function cpd8d(base_path, robot_teacher, robot_student, lookup_dataset, mapping_
 
 
     % registering Y to X
-    [Transform, Correspondence]=cpd_register(X,Y,opt);
+    [Transform, Correspondence]=cpd_register(X,Y,opt)
 
 %     dlmwrite(base_path+"/"+robot_student+"/"+lookup_dataset+"/8d/manipulabilities_mapped.csv", Transform.Y,'delimiter', ',', 'precision', 64);
 %     dlmwrite(base_path+"/"+robot_teacher+"/"+lookup_dataset+"/8d/s_cpd_panda_to_toy_data.txt", Transform.s,'delimiter', ',', 'precision', 64);
@@ -53,7 +53,7 @@ function cpd8d(base_path, robot_teacher, robot_student, lookup_dataset, mapping_
     
     
     % apply transformation found before to map_dataset
-    if(robot_teacher=="rhuman")
+    if(robot_teacher=="rhuman") || (robot_teacher=="2dof")
         Y_new = csvread(base_path+"/"+robot_teacher+"/"+mapping_dataset+"/8d/manipulabilities.csv");
     else
         Y_new = csvread(base_path+"/"+robot_teacher+"/"+mapping_dataset+"/8d/manipulabilities_interpolated.csv");
@@ -67,8 +67,9 @@ function cpd8d(base_path, robot_teacher, robot_student, lookup_dataset, mapping_
 %     G=cpd_G(Y_new,Y_new,opt.beta)
 %     Transform.W
 %     Y_new_mapped=Y_new+G*Transform.W;
-    if(robot_teacher=="rhuman")
-        dlmwrite(base_path+"/"+robot_student+"/"+mapping_dataset+"/8d/manipulabilities_mapped_cpd.csv", Y_new_mapped,'delimiter', ',', 'precision', 64);
+    if(robot_teacher=="rhuman")|| (robot_teacher=="2dof")
+        dlmwrite("/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofvertical/CPD_8d/validation/"+mapping_dataset+"/manipulabilities_mapped_cpd.csv", Y_new_mapped,'delimiter', ',', 'precision', 64);
+        %dlmwrite(base_path+"/"+robot_student+"/"+mapping_dataset+"/8d/manipulabilities_mapped_cpd.csv", Y_new_mapped,'delimiter', ',', 'precision', 64);
     else
         dlmwrite(base_path+"/"+robot_student+"/"+mapping_dataset+"/8d/manipulabilities_interpolated_mapped_cpd.csv", Y_new_mapped,'delimiter', ',', 'precision', 64);
     end

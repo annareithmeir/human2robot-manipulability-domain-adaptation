@@ -118,7 +118,7 @@ def get_rotation_matrix(M, Mtilde, weights=None, dist=None, x=None):
     if dist is None:
         dist = 'rie'
     if dist is 'rie_reg':
-        print("USING REGULARISATION")
+        print("USING REGULARISATION WITH ALPHA=%.3f"%(ALPHA))
     
     n = M[0].shape[0]
         

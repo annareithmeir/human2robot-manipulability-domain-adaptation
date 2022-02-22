@@ -133,6 +133,7 @@ def SPD_from_8d(data_vectorized):
 		max_ax = data_vectorized[i,3:6] # eigvec corresp to smallest eigval -> major axis normalized
 		ratio = data_vectorized[i,6]
 		vol = data_vectorized[i,7]
+		#print(vol)
 
 		sec_ax = np.cross(min_ax, max_ax) # find secondary axis 
 		sec_ax = sec_ax / np.linalg.norm(sec_ax) # normalize to unit vector

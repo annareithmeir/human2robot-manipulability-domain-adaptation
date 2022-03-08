@@ -14,5 +14,5 @@ function Ac = transp_operator(S1,S2)
 A=S2/S1;
 tol = 1.e-6; % to avoid numerical instabilities
 A(A<tol & A>-tol) = 0;
-Ac = A^.5;
+Ac = real(A^.5);
 end

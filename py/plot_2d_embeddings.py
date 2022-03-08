@@ -73,14 +73,16 @@ def plot_diffusion_embedding_target_new_and_naive(groundtruth, target_icp, targe
     covs = np.concatenate([covs, target_naive])
     sess = np.array([1] * len(groundtruth) + [2] * len(target_icp) + [3] * len(target_naive))
 
-    colors = {1: 'blue', 2: 'purple', 3: 'orange'}
+    colors = {1: 'blue', 2: 'rebeccapurple', 3: 'limegreen'}
+    # colors = {1: 'royalblue', 2: 'firebrick', 3: 'limegreen'}
 
     uorg, l = get_diffusionEmbedding(points=covs, distance=distance_riemann)
 
     for ui, si in zip(uorg, sess):
         ax1.scatter(ui[1], ui[2], facecolor=colors[si], edgecolor='none', alpha=0.7)
-    ax1.scatter([], [], facecolor=colors[1], label='\\textit{ground truth}')
-    ax1.scatter([], [], facecolor=colors[2], label='\\textit{target mapped ICP}')
-    ax1.scatter([], [], facecolor=colors[3], label='\\textit{target mapped naive}')
+    
+    ax1.scatter([], [], facecolor=colors[2], label='\\textit{ICP}')
+    ax1.scatter([], [], facecolor=colors[1], label='\\textit{source}')
+    ax1.scatter([], [], facecolor=colors[3], label='\\textit{ground truth}')
     #ax1.legend(loc='lower right')
     return ax1

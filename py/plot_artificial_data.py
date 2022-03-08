@@ -10,6 +10,9 @@ from mpl_toolkits.mplot3d import Axes3D
 import argparse
 from vectorizeSPD import SPD_from_8d
 import math
+from rpa.helpers.transfer_learning.utils import mean_riemann
+from pyriemann.utils.base import invsqrtm, sqrtm, logm, expm, powm
+from pyriemann.utils.distance import distance_riemann
 
 plt.rcParams['text.usetex'] = True
 
@@ -18,6 +21,11 @@ def get_errors(data1p, data2p):
 
   data1 = genfromtxt(data1p, delimiter=',')
   data2 = genfromtxt(data2p, delimiter=',')
+
+  data2cp=data2.reshape((data2.shape[0],3,3))
+  mean_data=mean_riemann(data2cp)
+  data2cp = np.stack([np.dot(invsqrtm(mean_data), np.dot(ti, invsqrtm(mean_data))) for ti in data2cp])  
+  disp = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in data2cp]) / len(data2cp)
 
   if "8d" in data2p: # 8d data from cpd
      data2 = SPD_from_8d(data2) #list
@@ -45,16 +53,18 @@ def get_errors(data1p, data2p):
     mj=m
 
     print("%.3f " %(distance_riemann(mi, mj)))
-    #f.write("\n%.3f " %(distance_riemann(mi, mj)))
+    f.write("\n%.3f " %(distance_riemann(mi, mj)))
     mse_icp += distance_riemann(mi, mj)**2
     le_mse_icp += get_logeuclidean_distance(mi, mj)**2
 
   n_points = data1.shape[0]
   print("nPoints=%i"%(n_points))
-  print("MSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, math.sqrt(mse_icp/n_points)))
+  print("MSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, (math.sqrt(mse_icp/n_points))))
+  print("MSE/ RMSE (riemann)/disp: %.3f/%.3f " %(mse_icp/n_points, (math.sqrt(mse_icp/n_points))/disp))
   print("MSE (LogEuc): %.3f/%.3f " %(le_mse_icp/n_points, math.sqrt(le_mse_icp/n_points)))
   f.write("\n------------")
-  f.write("\nMSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, math.sqrt(mse_icp/n_points)))
+  f.write("\nMSE/ RMSE (riemann): %.3f/%.3f " %(mse_icp/n_points, (math.sqrt(mse_icp/n_points))))
+  f.write("\nMSE/ RMSE (riemann)/disp: %.3f/%.3f " %(mse_icp/n_points, (math.sqrt(mse_icp/n_points))/disp))
   f.write("\nMSE (LogEuc): %.3f/%.3f " %(le_mse_icp/n_points, math.sqrt(le_mse_icp/n_points)))
   f.close()
 
@@ -68,37 +78,40 @@ if __name__ == "__main__":
   args.paths = [item for item in args.l[0].split(',')]
   print(args.paths)
 
-
   if(len(args.paths)==2):
     labellist=['\\textit{input}','\\textit{ICP}']
-    colors=['dimgray','mediumorchid', 'plum', 'cornflowerblue']
+    # colors=['black','mediumorchid']
+    colors=['darkgray','firebrick']
   else:
     labellist=['\\textit{input}','\\textit{ground truth}','\\textit{ICP}']
-    colors=['dimgray','darkblue', 'mediumorchid', 'plum', 'cornflowerblue']
-
+    # colors=['black','darkblue', 'mediumorchid', 'plum', 'cornflowerblue']
+    #colors=['darkorange', 'limegreen','rebeccapurple', 'plum', 'darkgrey']
+    #colors=['darkgrey','darkblue', 'mediumorchid', 'plum', 'darkgrey']
+    colors=['darkgrey','royalblue', 'firebrick', 'plum', 'darkgrey']
 
   scaling_factor=0.1
-  plot_every_nth=2
+  plot_every_nth=3
 
-
-  map_dataset=(args.paths[2]).split("/")[-2]
+  map_dataset=(args.paths[0]).split("/")[-2]
   print(map_dataset)
-  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofvertical/CPD_8d/validation/"+map_dataset
-  final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofscaled/validation/"+map_dataset
-  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP-NNconvw/validation/"+map_dataset
+  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/realworld/validation/"+map_dataset
+  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/toydata/validation/"+map_dataset
+  # final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofvertical/specialTP/100points/validation/"+map_dataset
+  final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/newestExpHR/PT+ICP/25points"
 
 
 
   ### front view ###
-  fig = plt.figure()
+  fig = plt.figure(figsize=(40, 15))
   fig.subplots_adjust(bottom=-0.15,top=1.2,wspace=0, hspace=0, right=1)
-  ax = plt.axes(projection='3d')
+  #ax = plt.axes(projection='3d')
+  ax = fig.gca(projection='3d')
 
   ### top view ###
-  fig2 = plt.figure()
+  fig2 = plt.figure(figsize=(40, 15))
   fig2.subplots_adjust(bottom=-0.15,top=1.2,wspace=0, hspace=0, right=1)
-  ax2 = plt.axes(projection='3d')
-
+  #ax2 = plt.axes(projection='3d')
+  ax2 = fig2.gca(projection='3d')
 
   c=0
   mse_icp=0.0
@@ -107,13 +120,21 @@ if __name__ == "__main__":
   le_mse_icp=0.0
 
   for p in args.paths:
+
+
     data = genfromtxt(p, delimiter=',')
+
+    
 
     if "8d" in p: # 8d data from cpd
          data = SPD_from_8d(data) #list
 
     if data.shape[1]==10:
       data=data[:,1:]
+
+    print("DATA SHAPE: ", data.shape)
+
+    alpha=0.1
 
     manip=list()
 
@@ -129,8 +150,28 @@ if __name__ == "__main__":
       m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
       m_i=m
       X2,Y2,Z2 = get_cov_ellipsoid(m_i, [0,0.5*cnt,0], 1)
-      ax.plot_wireframe(X2,Y2,Z2, color=colors[c], alpha=0.06)
-      ax2.plot_wireframe(X2,Y2,Z2, color=colors[c], alpha=0.06)
+
+      # if c>0:
+      #   alpha=0.2
+      # if c==0:
+      #   alpha=0.1
+      # if c==0:
+      #   alpha=0.09
+      if c==0:
+         alpha=0.3
+      # if c==2:
+      #   alpha=0.3
+      # ax.plot_surface(X2,Y2,Z2, color=colors[c], alpha=alpha)
+      ax.plot_wireframe(X2,Y2,Z2, color=colors[c], alpha=alpha)
+      # ax2.plot_surface(X2,Y2,Z2, color=colors[c], alpha=alpha)
+
+      # if c==0:
+      #   alpha=0.035
+      # if c==1:
+      #   alpha=0.1
+      # if c==2:
+      #   alpha=0.1
+      ax2.plot_wireframe(X2,Y2,Z2, color=colors[c], alpha=alpha)
       cnt+=1
     c+=1
 
@@ -156,17 +197,21 @@ if __name__ == "__main__":
   ax.view_init(azim=0, elev=0)
 
 
-  blue_patch = mpatches.Patch(color='darkblue', label=labellist[1])
-  red_patch = mpatches.Patch(color='dimgray', label=labellist[0])
+  blue_patch = mpatches.Patch(color='royalblue', label=labellist[1])
+  # blue_patch = mpatches.Patch(color='royalblue', label=labellist[1])
+  red_patch = mpatches.Patch(color='darkgrey', label=labellist[0])
+  # red_patch = mpatches.Patch(color='limegreen', label=labellist[0])
   if len(args.paths)==3:
-    orange_patch = mpatches.Patch(color='mediumorchid', label=labellist[2])
-    ax.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
-    ax2.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
+    orange_patch = mpatches.Patch(color='firebrick', label=labellist[2])
+    ax.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51),fontsize=20)
+    ax2.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51),fontsize=20)
   elif len(args.paths)==4:
     orange_patch = mpatches.Patch(color='plum', label=labellist[3])
     ax.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
     ax2.legend(handles=[ blue_patch, red_patch, orange_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
   else:
+    blue_patch = mpatches.Patch(color='firebrick', label=labellist[1])
+    red_patch = mpatches.Patch(color='dimgray', label=labellist[0])
     ax.legend(handles=[ blue_patch, red_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
     ax2.legend(handles=[ blue_patch, red_patch], loc='center left', bbox_to_anchor=(1.07, 0.51))
 
@@ -200,10 +245,13 @@ if __name__ == "__main__":
 
   #ax.set_title("Front view")
 
+
   fig.tight_layout()
   fig2.tight_layout()
-  fig.savefig(final_results_path+"/mapped_front_view.pdf", dpi=300)
-  fig2.savefig(final_results_path+"/mapped_top_view.pdf", dpi=300)
+  fig.savefig(final_results_path+"/mapped_front_view.svg")
+  fig2.savefig(final_results_path+"/mapped_top_view.svg")
+  fig.savefig(final_results_path+"/mapped_front_view.svg")
+  fig2.savefig(final_results_path+"/mapped_top_view.svg")
 
   #tmp_planes = ax2.xaxis._PLANES 
   #ax2.xaxis._PLANES = ( tmp_planes[2], tmp_planes[3], 

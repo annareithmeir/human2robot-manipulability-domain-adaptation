@@ -332,8 +332,8 @@ int main() {
  * Perform learning part on Luis experiment data, RHuMAn model data
  */
 
-string exp="drill_optimal";
-string proband="2";
+string exp="cut_optimal";
+string proband="3";
 
 string infoPath;
 if (proband=="") infoPath = "/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+exp+"/agg/info.txt";

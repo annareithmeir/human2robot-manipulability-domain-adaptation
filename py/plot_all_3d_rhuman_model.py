@@ -14,12 +14,12 @@ from get_cov_ellipsoid import get_cov_ellipsoid
 
 
 
-experiment_name="drill_optimal"
-proband=2
+experiment_name="cut_optimal"
+proband=3
 
 
-plot_trajectories_all = False
-plot_manipulabilities_selected = False
+plot_trajectories_all = 0
+plot_manipulabilities_selected = 0
 plot_GMM = 0
 plot_time_traj = 1
 plot_time_loop = 0
@@ -125,6 +125,7 @@ if plot_manipulabilities_selected:
     ax = plt.axes(projection='3d')
 
     experiment_name="cut_optimal"
+    proband=3
     files_m = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp" + str(proband)+"*_m.csv"))
     files_t = sorted(glob.glob("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/exp"+ str(proband) +"*_t.csv"))
 
@@ -142,13 +143,12 @@ if plot_manipulabilities_selected:
         manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
 
     #for i in np.arange(0,len(manip),plot_every_nth):
-    for i in np.arange(0,970,plot_every_nth):
+    for i in np.arange(0,len(manip),plot_every_nth):
         m_i = manip[i]
         X2,Y2,Z2 = get_cov_ellipsoid(m_i, [xdata[i],ydata[i],zdata[i]], 1)
         ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
 
     fig.tight_layout()
-    #plt.show()
 
 
 ### GMM results ###
@@ -185,17 +185,17 @@ if plot_GMM:
 
         
         # manips demos
-        filename_manip = files_m[i]
-        manip_tmp = genfromtxt(filename_manip, delimiter=',')
-        manip=list()
+        # filename_manip = files_m[i]
+        # manip_tmp = genfromtxt(filename_manip, delimiter=',')
+        # manip=list()
 
-        for i in np.arange(0, manip_tmp.shape[0]):
-            manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
+        # for i in np.arange(0, manip_tmp.shape[0]):
+        #     manip.append(scaling_factor*manip_tmp[i,1:].reshape(3,3))
 
-        for i in np.arange(0,nPoints,plot_every_nth):
-            m_i = manip[i]
-            X2,Y2,Z2 = get_cov_ellipsoid(m_i, [xdata[i],ydata[i],zdata[i]], 1)
-            ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
+        # for i in np.arange(0,nPoints,plot_every_nth):
+        #     m_i = manip[i]
+        #     X2,Y2,Z2 = get_cov_ellipsoid(m_i, [xdata[i],ydata[i],zdata[i]], 1)
+        #     ax.plot_wireframe(X2,Y2,Z2, color='grey', alpha=0.05)
         
 
     #trajectories GMM result
@@ -236,8 +236,12 @@ if plot_time_traj:
     ax = plt.axes(projection='3d')
     plt.title('Manipulabilities over time')
     n_demos=1
-    scaling_factor=1e-2
-    plot_every_nth = 50
+    scaling_factor=1e-1
+    plot_every_nth = 80
+
+
+    experiment_name="cut_random"
+    proband=3
 
     with open("/home/nnrthmr/Desktop/RHuMAn-arm-model/data/"+experiment_name+"/agg/"+str(proband)+"/info.txt") as f:
         info = f.readline()
@@ -305,7 +309,7 @@ if plot_time_traj:
 
     fig.tight_layout()
 
-    scale=np.diag([10, 1, 1, 1.0])
+    scale=np.diag([len(demo)/plot_every_nth, 1, 1, 1.0])
     scale=scale*(1.0/scale.max())
     scale[3,3]=1.0
 

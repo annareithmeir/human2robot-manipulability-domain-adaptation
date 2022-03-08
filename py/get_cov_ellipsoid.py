@@ -33,7 +33,7 @@ def get_cov_ellipsoid(cov, mu=np.zeros((3)), nstd=1):
     #print(eigvals)
 
     # Set of all spherical angles to draw our ellipsoid
-    n_points = 50 #100
+    n_points = 200 #100
     theta = np.linspace(0, 2*np.pi, n_points)
     phi = np.linspace(0, np.pi, n_points)
 

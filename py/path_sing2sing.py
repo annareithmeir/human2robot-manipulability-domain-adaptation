@@ -187,6 +187,7 @@ def find_pairs_conv(source, target):
             sing_idxs_t=np.max(wt)/np.min(wt)
             w_min_t = wt[:,np.argmin(vt)] # eigvec corresp to smallest eigval
             w_max_t = wt[:,np.argmax(vt)] # eigvec corresp to smallest eigval
+            # weights.append(w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t) +math.exp(-abs(sing_idxs_t-sing_idxs_s)))# collect all convex combinations of biggest and smallest axes 
             weights.append(w_min_s.dot(w_min_t)+w_max_s.dot(w_max_t) +math.exp(-abs(sing_idxs_t-sing_idxs_s)) +math.exp(-abs(volt-vols)))# collect all convex combinations of biggest and smallest axes 
 
         weight_max = np.argmax(abs(np.array(weights))) #select best match

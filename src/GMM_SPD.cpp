@@ -333,9 +333,13 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
         } else {
             xHat.col(t) = xHat.col(t - 1);
         }
+        deb(t)
+        deb(xHat.col(t))
+        deb(this->m_muMan)
 
         // Iterative computation
         for (int iter = 0; iter < 10; iter++) {
+            deb(iter)
             uHat.col(t).setZero();
             uoutTmp.setZero();
 
@@ -345,6 +349,7 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
             pSigma.clear();
 
             for (int k = 0; k < this->m_k; k++) {
+                deb(k)
                 if(dimensions==2){
                     S1 = vec2Symmat(this->m_muMan.block(1, k, 3, 1));
                     S2 = vec2Symmat(xHat.col(t));
@@ -353,7 +358,9 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
                 }
                 else{
                     S1 = vec2Symmat(this->m_muMan.block(1, k, 6, 1));
+//                    deb(S1[0])
                     S2 = vec2Symmat(xHat.col(t));
+//                    deb(S2[0])
                     Ac(0, 0) = 1;
                     Ac.bottomRightCorner(3, 3) = parallelTransport(S1[0], S2[0]);
                 }
@@ -362,6 +369,7 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
                 vMatK.clear();
                 pvKTmp.setZero();
                 for (int j = 0; j < V[0].cols(); j++) {
+//                    deb(j)
                     if(dimensions==2){
                         vMatTmp.setZero();
                         vMatTmp(0, 0) = V[k](0, j);
@@ -375,6 +383,9 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
                     }
                     else{
                         vMatTmp.setZero();
+//                        deb(V[k])
+//                        deb(V[k].block(1, j, 6, 1))
+
                         vMatTmp(0, 0) = V[k](0, j);
                         vMatTmp.bottomRightCorner(3, 3) = vec2Symmat(
                                 V[k].block(1, j, 6, 1))[0]; //vec2Symmat only one matrix here
@@ -382,6 +393,8 @@ void GMM_SPD::GMR(MatrixXd& xHat, vector<MatrixXd>& sigmaXd) {
 
                         pvMatK.push_back(Ac * pow(D[k](j, j), 0.5) * vMatK[j] * Ac.transpose());
                         pvKTmp(0, j) = pvMatK[j](0, 0);
+//                        deb(pvMatK[j])
+//                        deb(pvMatK[j].block(1, 1, 3, 3))
                         pvKTmp.col(j).bottomRows(6) = symmat2Vec(pvMatK[j].block(1, 1, 3, 3)).transpose();
                     }
                 }

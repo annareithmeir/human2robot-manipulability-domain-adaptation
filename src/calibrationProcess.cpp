@@ -327,12 +327,12 @@ void plot(string base_path_py, int robot_type){
 
 int main(){
    // create_panda_data_from_manipulabilities("/home/nnrthmr/CLionProjects/ma_thesis/data/demos/towards_singularities");
-    string base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/100";
+    string base_path = "/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/panda/10";
 //    string base_path = "/home/nnrthmr/PycharmProjects/ma_thesis/5000";
     int robot_type = 1;
 //    if(!fileExists(base_path+"/manipulabilities.csv")
 //        || (!fileExists(base_path+"/data/"+robots[robot_type]+"/r_manipulabilities.csv") && robot_type>0 ))
-        generate_human_robot_data_random(base_path, 100, 1.35, 1);
+        generate_human_robot_data_random(base_path, 10, 1.35, 1);
 //    else
 //        cout<< "Data already generated ..." << endl;
 //

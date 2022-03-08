@@ -1,6 +1,6 @@
 import numpy as np
 
-base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/2dof_scaled"
+base_path="/home/nnrthmr/CLionProjects/ma_thesis/data/mapping/2dof_vertical"
 
 
 # # data1= np.genfromtxt(base_path+"/sing_side_90/manipulabilities_40.csv", delimiter=',')
@@ -56,8 +56,14 @@ data13= np.genfromtxt(base_path+"/links_combined/manipulabilities_13.csv", delim
 data14= np.genfromtxt(base_path+"/links_combined/manipulabilities_14.csv", delimiter=',')
 data15= np.genfromtxt(base_path+"/links_combined/manipulabilities_15.csv", delimiter=',')
 data16= np.genfromtxt(base_path+"/links_combined/manipulabilities_16.csv", delimiter=',')
+data17= np.genfromtxt(base_path+"/links_combined/manipulabilities_17.csv", delimiter=',')
+#data18= np.genfromtxt(base_path+"/links_combined/manipulabilities_18.csv", delimiter=',')
+data19= np.genfromtxt(base_path+"/links_combined/manipulabilities_19.csv", delimiter=',')
+data20= np.genfromtxt(base_path+"/links_combined/manipulabilities_20.csv", delimiter=',')
+data21= np.genfromtxt(base_path+"/links_combined/manipulabilities_21.csv", delimiter=',')
+data22= np.genfromtxt(base_path+"/links_combined/manipulabilities_22.csv", delimiter=',')
 
-data=np.concatenate((data0, data1, data3, data5, data6, data7, data8, data9, data10, data11, data12, data13, data14, data15, data16))
+data=np.concatenate((data0, data1, data3, data5, data6, data7, data8, data9, data10, data11, data12, data13, data14, data15, data16, data17, data19, data20, data21, data22))
 print(data.shape)
 np.savetxt(base_path+"/links_combined/manipulabilities.csv", data, delimiter=',')
 

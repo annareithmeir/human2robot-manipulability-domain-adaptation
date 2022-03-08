@@ -249,8 +249,8 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
     deb(data)
     deb(m)
 
-    data.rightCols(3) = data.rightCols(3) * 10;
-    m=m*10;
+    data.rightCols(3) = data.rightCols(3) * 100;
+    m=m*100;
 
     MatrixXd tmp;
     dataVectorized.leftCols(1) = data.leftCols(1);
@@ -296,9 +296,9 @@ void learn3dRHumanMotion(MatrixXd &xd, MatrixXd &xHat, const int nPoints, const 
 //    writeCSV(model2.m_sigma, "/home/nnrthmr/CLionProjects/ma_thesis/data/model2Sigma.csv");
 
 
-    writeCSV(vec2Symmat(xHat / 10),
+    writeCSV(vec2Symmat(xHat / 100),
              "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xhat.csv");
-    writeCSV(xd / 10, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv");
+    writeCSV(xd / 100, "/home/nnrthmr/CLionProjects/ma_thesis/data/learning/rhuman/" + exp + "/" + proband + "/xd.csv");
 
 
 

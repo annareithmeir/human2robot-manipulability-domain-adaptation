@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyriemann.utils.distance import distance_riemann, distance_wasserstein
 from SPDMetrics import distance_logeuc
-from pyriemann.utils.base import invsqrtm, logm, expm, powm
+from pyriemann.utils.base import invsqrtm, sqrtm, logm, expm, powm
 from rpa.helpers.transfer_learning.utils import mean_riemann, parallel_transport_covariances
 from get_rotation_matrix import get_rotation_matrix
 #from rpa.helpers.transfer_learning.manopt import get_rotation_matrix
@@ -12,7 +12,7 @@ from plot_2d_embeddings import plot_diffusion_embedding, \
     plot_diffusion_embedding_target_new, plot_diffusion_embedding_target_new_and_naive
 import tkinter
 import copy
-from scipy.linalg import eigh, sqrtm
+from scipy.linalg import eigh
 import matplotlib
 import math
 from path_sing2sing import find_singular_geodesic_paths, find_pairs_conv, find_most_singular_points, find_most_singular_points_conv, find_most_singular_points_diff_dir
@@ -579,6 +579,7 @@ def initial_R_estimate(source_subsample, target_subsample):
     return np.dot(vt, vs.transpose())
 
 
+
 # move to id, scale, then find nns then rotate
 def initial_iteration_sing2sing(source_org, target, results_path, dist):
 
@@ -678,7 +679,7 @@ def icp_iteration_sing2sing(source_org, target, dist):
 def icp_iteration_most_singular(source_org, target, dist):
 
     ### find R and rotate all targets ###
-    itermax=50
+    itermax=5
     iter_curr=0
     mean_t=999
     mean_nns=999
@@ -688,14 +689,23 @@ def icp_iteration_most_singular(source_org, target, dist):
 
 
     #source_nns, target_nns, idx_s, idx_t = find_most_singular_points_diff_dir(source_org, target, 6)
-    #source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source_org, target, 12) # 12 best so far, 75 for human to robot
+    #source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points_conv(source_org, target, 25) # 12 best so far, 75 for human to robot
     source_nns, target_nns, idx_s, idx_t, w = find_pairs_conv(source_org, target)
     #source_nns, target_nns, idx_s, idx_t, w = find_most_singular_points(source_org, target, 12) # 12 best so far
     print("USING %i MOST SINGULAR POINTS " %(idx_s.shape[0]))
+    #r_init_guess = initial_R_estimate(source_nns[np.argmax(w)], target[np.argmax(w)])
 
 
     while (iter_curr < itermax) and (mean_nns > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w*w*w, dist='rie', x=gen_orth(3)) # www best for robot human
+        rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3)) # www best for robot human
+        # if iter_curr < target_nns.shape[0]:
+        #     print("using initR from w")
+        #     r_init_guess = initial_R_estimate(source_nns[iter_curr], target[iter_curr])
+        #     rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=r_init_guess)
+        # else:
+        #     rotation_matrix_iter = get_rotation_matrix(M=source_nns, Mtilde=target_nns, weights=w, dist='rie', x=gen_orth(3))
+        # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
+
         target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target_nns])
 
         mean_t=0
@@ -781,7 +791,7 @@ def icp_iteration_pairs(source_org, target, dist):
     err_iter=0
 
     while (iter_curr < itermax) and (mean_t > 1e-1*1):
-        rotation_matrix_iter = get_rotation_matrix(M=source_org, Mtilde=target, weights=None, dist='rie', x=gen_orth(3))
+        rotation_matrix_iter = get_rotation_matrix(M=source_org, Mtilde=target, weights=None, dist='rie', x=gen_orth(2))
         # target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
         target_tmp = np.stack([np.dot(rotation_matrix_iter, np.dot(t, rotation_matrix_iter.T)) for t in target])
 
@@ -811,14 +821,14 @@ def icp_iteration_pairs(source_org, target, dist):
     return target, s, [rotation_matrix_iter], err_iter
 
 
-def perform_transformation(source_org, target, T, R, s, map_dataset, groundtruth):
+def perform_transformation(source_org, target, T, R, s, map_dataset):
     fig3 = plt.figure(figsize=(20, 7))
-    #fig3.suptitle('\\textit{Mapping new data}')
+    fig3.suptitle('\\textit{Mapping new data}')
     axs3 = list()
 
     axs3.append(fig3.add_subplot(1, 5, 1))
     axs3[0].set_title("\\textit{Original}")
-    plot_diffusion_embedding_target_new_and_naive(source_org, target, groundtruth, axs3[0])
+    plot_diffusion_embedding(source_org, target, axs3[0])
     axs3[0].legend(loc='lower right')
 
     # recenter to id
@@ -827,14 +837,14 @@ def perform_transformation(source_org, target, T, R, s, map_dataset, groundtruth
 
     axs3.append(fig3.add_subplot(1, 5, 2))
     axs3[1].set_title("\\textit{Recenter to id}")
-    plot_diffusion_embedding_target_new_and_naive(source_org, target, groundtruth, axs3[1])
+    plot_diffusion_embedding(source, target, axs3[1])
 
     # stretch
     target = np.stack([powm(covi, s[0]) for covi in target])
 
     axs3.append(fig3.add_subplot(1, 5, 3))
     axs3[2].set_title("\\textit{Stretch at id}")
-    plot_diffusion_embedding_target_new_and_naive(source_org, target, groundtruth, axs3[2])
+    plot_diffusion_embedding(source, target, axs3[2])
 
     for i in np.arange(len(R)):
         target = np.stack([np.dot(R[i], np.dot(t, R[i].T)) for t in target])
@@ -842,7 +852,7 @@ def perform_transformation(source_org, target, T, R, s, map_dataset, groundtruth
 
     axs3.append(fig3.add_subplot(1, 5, 4))
     axs3[3].set_title("\\textit{Rotate wrt subsamples}")
-    plot_diffusion_embedding_target_new_and_naive(source_org, target, groundtruth, axs3[3])
+    plot_diffusion_embedding(source, target, axs3[3])
 
     # recenter to source (all Ti same)
     target = np.stack([np.dot(sqrtm(T[-1]), np.dot(ti, sqrtm(T[-1]))) for ti in target])
@@ -850,42 +860,13 @@ def perform_transformation(source_org, target, T, R, s, map_dataset, groundtruth
 
     axs3.append(fig3.add_subplot(1, 5, 5))
     axs3[4].set_title("\\textit{Move to source}")
-    plot_diffusion_embedding_target_new_and_naive(source_org, target, groundtruth, axs3[4])
+    plot_diffusion_embedding(source_org, target, axs3[4])
 
     if not os.path.exists(final_results_path+"/validation/"+map_dataset):
         os.makedirs(final_results_path+"/validation/"+map_dataset)
     fig3.savefig(final_results_path+"/validation/"+map_dataset+"/mapping_process.pdf")
-    fig3.savefig(final_results_path+"/validation/"+map_dataset+"/mapping_process.svg")
 
     return target
-
-
-def optimal_transport(source_org, target):
-
-    source_mean= mean_riemann(source_org)
-    target_mean= mean_riemann(target)
-    # print("pyriemann sqrtm")
-    # print(source_mean)
-    # print(target_mean)
-    # print(powm(target_mean, -1))
-    # print(np.dot(source_mean, powm(target_mean, -1)))
-    # print("scipy sqrtm")
-    # print(scipy.linalg.sqrtm(np.dot(source_mean, powm(target_mean, -1))))
-    # print("pyriemann sqrtm")
-    # print(sqrtm(np.dot(source_mean, powm(target_mean, -1))))
-
-    E = sqrtm(np.dot(source_mean, powm(target_mean, -1)))
-    # print(E)
-    target = np.stack([np.dot(E, np.dot(ti, E.T)) for ti in target]) 
-
-    return target, E
-
-
-def perform_ot_transformation(target_new, E):
-    target_mapped = np.stack([np.dot(E, np.dot(ti, E.T)) for ti in target_new]) 
-    return target_mapped
-
-
 
 parser = argparse.ArgumentParser()
 parser.add_argument("base_path", help="base_path.", type=str)
@@ -911,41 +892,45 @@ if(args.map_run==3):
     run_map_find = False
     run_map_new = False
 
-iter = 50
+iter = 10
 dist = "rie"
 
-# final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/realworld"
-# final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/toydata"
-final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/newestExpHR/ICPonly/100points"
-# final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/sing_paths/ICP-NNconvpairs/50pointsPerTraj"
+final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/2dof-2dofvertical"
 
-source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
-target = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
+# source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
+source = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/manipulabilities_20.csv", delimiter=',')
+# target = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset+"/manipulabilities.csv", delimiter=',')
+target = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.lookup_dataset+"/manipulabilities_20.csv", delimiter=',')
 
 source_org = source.reshape((source.shape[0], 3, 3))
 target_org = target.reshape((target.shape[0], 3, 3))
 
-for i in np.arange(target_org.shape[0]):
-    m=target_org[i]
+source = np.zeros((source.shape[0], 2,2))
+target = np.zeros((target.shape[0], 2,2))
+
+for i in np.arange(source.shape[0]):
+    source[i] = source_org[i][:2,:2]
+    target[i] = target_org[i][:2,:2]
+
+for i in np.arange(target.shape[0]):
+    m=target[i]
     w,v = np.linalg.eigh(m)
-    w[w<1e-12]=0.001
+    w[w<1e-12]=0.0001
     m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
-    target_org[i]=m
+    target[i]=m
 
-for i in np.arange(source_org.shape[0]):
-    m=source_org[i]
+for i in np.arange(source.shape[0]):
+    m=source[i]
     w,v = np.linalg.eigh(m)
-    w[w<1e-12]=0.001
+    w[w<1e-12]=0.0001
     m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
-    source_org[i]=m
+    source[i]=m
 
-print(source.shape)
-source_org = source_org[::20]
-target_org = target_org[::20]
-print(source.shape)
+source_org = source
+#target_org = target_org[::20]
 
-source = copy.deepcopy(source_org)
-target = copy.deepcopy(target_org)
+#source = copy.deepcopy(source_org)
+#target = copy.deepcopy(target_org)
 
 print("ORIGINAL RMSE GROUND TRUTH=%.3f"%(get_mean_dist_pairs(source, target)))
 
@@ -970,8 +955,9 @@ if args.cv_k is not None:
 ### the alignment is performed s.t. target matches source afterwards, so target is rotated, source not
 if run_map_find:
 
+    #R = np.zeros((iter, 3, 3))
     R_list=list()
-    T = np.zeros((1, 3, 3))
+    T = np.zeros((1, 2, 2))
     s = np.zeros(1)
 
 
@@ -993,35 +979,15 @@ if run_map_find:
     plot_diffusion_embedding(source_org, target, axs3[0])
     axs3[0].legend(loc='lower right')
 
+    
+
 
     mean_target = mean_riemann(target)
     mean_source_org = mean_riemann(source_org)
+    print(target.shape)
 
     print("Original distance between means: %.3f" %(distance_riemann(mean_target, mean_source_org)))
     T[0]=mean_riemann(source_org)
-
-
-
-    ### OT INIT ###
-    target, _ = optimal_transport(source_org, target)
-    ### OT INIT ###
-    print("OT DONE")
-
-    ###### LESS POINTS ######
-    #source_org = source_org[::5]
-    #target = target[::5]
-
-    #shuf_order = np.arange(target.shape[0])
-    #np.random.shuffle(shuf_order)
-    #target = target[shuf_order]
-    #########################
-
-    mean_target = mean_riemann(target)
-    mean_source_org = mean_riemann(source_org)
-
-    print("AFTER OT distance between means: %.3f" %(distance_riemann(mean_target, mean_source_org)))
-
-
 
     ### move target to id ###
     target = np.stack([np.dot(invsqrtm(mean_target), np.dot(ti, invsqrtm(mean_target))) for ti in target])  
@@ -1032,8 +998,8 @@ if run_map_find:
     plot_diffusion_embedding(source, target, axs3[1])
 
     ### stretch target at id ###
-    disp_source = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in source]) / len(source)  # get stretching factor
-    disp_target = np.sum([distance_riemann(covi, np.eye(3)) ** 2 for covi in target]) / len(target)
+    disp_source = np.sum([distance_riemann(covi, np.eye(2)) ** 2 for covi in source]) / len(source)  # get stretching factor
+    disp_target = np.sum([distance_riemann(covi, np.eye(2)) ** 2 for covi in target]) / len(target)
     s[0] = 1.0 / round(np.sqrt(disp_target / disp_source),4)
     target = np.stack([powm(ti, s[0]) for ti in target])  # stretch target at id
 
@@ -1047,9 +1013,9 @@ if run_map_find:
             target_tmpplot =copy.deepcopy(target)
 
         #target, s_iter, rotation_matrix_iter, idx_s, idx_t = icp_iteration_sing2sing(source, target, dist)
-        target, s_iter, rotation_matrix_iter, idx_s, idx_t, err_iter = icp_iteration_most_singular(source, target, dist)
-        #target, s_iter, rotation_matrix_iter, err_iter = icp_iteration_pairs(source, target, dist)
-        #assert(target.shape[0]==target_org.shape[0])
+        #target, s_iter, rotation_matrix_iter, idx_s, idx_t, err_iter = icp_iteration_most_singular(source, target, dist)
+        target, s_iter, rotation_matrix_iter, err_iter = icp_iteration_pairs(source, target, dist)
+        assert(target.shape[0]==target_org.shape[0])
         for r in rotation_matrix_iter:
             R_list.append(r)
 
@@ -1063,11 +1029,15 @@ if run_map_find:
         plot_diffusion_embedding(source, target, axs2[iter_i + 1])
         # plot_diffusion_embedding(source, target, axs2[iter_i + 1], idx_s, idx_t)
 
+        #source_tmp, target_tmp, _, _ = find_nearest_neighbors(source, target, dist, filterdup=False)
+        # err_iter=get_mean_dist_pairs(source_tmp, target_tmp)
+        #err_iter=get_mean_dist_pairs(source, target)
         err_list.append(err_iter)
         print("After iteration %i error between nn pairs is %.3f"%(iter_i, err_iter))
         axs2[iter_i + 1].set_title("%.2f" % (err_iter))
 
-        if(err_iter <=1e-2):
+        # if(err_iter <=1):
+        if(err_iter <=1e-3*8):
             break
 
     print("-------------------------------------------------------------")
@@ -1075,8 +1045,7 @@ if run_map_find:
     if iter == 0:
         R_list.append(np.eye(3))
 
-    if iter==0:
-        iter_i = 0
+
     if iter_i == (iter-1):
         print("[OUTER MAX ITER] Looking for smallest error because maxiter reached!")
         min_idx = err_list.index(min(err_list))
@@ -1084,10 +1053,11 @@ if run_map_find:
         R_list = R_list[:min_idx+1]
 
 
+
     axs3.append(fig3.add_subplot(1, 5, 4))
     axs3[3].set_title("\\textit{Rotate wrt subsamples}")
     plot_diffusion_embedding(source, target, axs3[3])
-    #plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t, True)
+    # plot_diffusion_embedding(source, target, axs3[3], idx_s, idx_t, True)
 
     ### move to source ###
     target = np.stack([np.dot(sqrtm(mean_source_org), np.dot(ti, sqrtm(mean_source_org))) for ti in target]) 
@@ -1095,11 +1065,10 @@ if run_map_find:
     axs3.append(fig3.add_subplot(1, 5, 5))
     axs3[4].set_title("\\textit{Move to source}")
     plot_diffusion_embedding(source_org, target, axs3[4])
-
-    #plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, True)
+    # plot_diffusion_embedding(source_org, target, axs3[4], idx_s, idx_t, True)
     fig3.savefig(results_path2+"/icp_initial_iteration.pdf", bbox_inches='tight')
 
-    R_arr=np.zeros((len(R_list),3,3))
+    R_arr=np.zeros((len(R_list),2,2))
     for i in np.arange(len(R_list)):
         R_arr[i]=R_list[i]
 
@@ -1109,21 +1078,24 @@ if run_map_find:
     #unshuf_order[shuf_order] = np.arange(target.shape[0])
     #target = target[unshuf_order]
 
+    #source_tmp, target_tmp, _, _ = find_nearest_neighbors(source_org, target, dist, filterdup=False)
     print("AFTER ALL ITERATIONS MEAN DIST TO GROUND TRUTH: %.3f" % (get_mean_dist_pairs(source_org, target)) )
 
 
     # save results
     if iter==0:
-        np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 9)), delimiter=',')
-        np.savetxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 9)), delimiter=',')
+        #np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R, (1, 9)), delimiter=',')
+        np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 4)), delimiter=',')
+        np.savetxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 4)), delimiter=',')
         np.savetxt(results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", s, delimiter=',')
     else:
-        np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 9)), delimiter=',')
-        np.savetxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 9)), delimiter=',')
+        #np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R, (iter, 9)), delimiter=',')
+        np.savetxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 4)), delimiter=',')
+        np.savetxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 4)), delimiter=',')
         np.savetxt(results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", s, delimiter=',')
 
-        np.savetxt(final_results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 9)), delimiter=',')
-        np.savetxt(final_results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 9)), delimiter=',')
+        np.savetxt(final_results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(R_arr, (len(R_list), 4)), delimiter=',')
+        np.savetxt(final_results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", np.reshape(T, (1, 4)), delimiter=',')
         np.savetxt(final_results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", s, delimiter=',')
         with open(final_results_path+"/info.txt", 'w+') as f:
             f.write("Teacher: "+args.robot_teacher+"\nStudent: "+args.robot_student+"\nniter: "+str(iter)+"\nnpoints: "+str(source_org.shape[0]))
@@ -1135,7 +1107,6 @@ if run_map_find:
 
     fig2.tight_layout()
     fig2.savefig(results_path2+"/icp.pdf", bbox_inches='tight')
-
 
 print("-------------------------------------------------------------")
 print("-------------------------------------------------------------")
@@ -1154,19 +1125,24 @@ if run_map_new:
         # manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth[:,1:].shape[0], 3, 3))   
 
         if(args.robot_teacher=="rhuman"):
-            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_20.csv", delimiter=',')
-            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_40.csv", delimiter=',') # rhuman to panda
-            target_new = np.genfromtxt(args.base_path+"/realworld/"+args.map_dataset+"/manipulabilities.csv", delimiter=',') # 2dof
+            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_20.csv", delimiter=',')
+            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_40.csv", delimiter=',')
             target_new = target_new.reshape((target_new.shape[0], 3, 3)) 
-            print(target_new.shape)
-            target_new=target_new[::20]
-            print(target_new.shape)
-            # filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_20.csv" 
-            filename_manip_groundtruth="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/naive/"+args.map_dataset+"/manipulabilities_mapped_naive.csv"
-            # filename_manip_groundtruth=args.base_path+"/realworld/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_40.csv" 
+            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_20.csv" 
+            # filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_40.csv" 
             manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
-            print(manip_groundtruth.shape)
-            manip_groundtruth = manip_groundtruth.reshape((manip_groundtruth.shape[0], 3, 3))   
+            manip_groundtruth = manip_groundtruth.reshape((manip_groundtruth.shape[0], 3, 3)) 
+
+            target_new2 = np.zeros((source.shape[0], 2,2))
+            manip_groundtruth2 = np.zeros((target.shape[0], 2,2))
+
+            for i in np.arange(source.shape[0]):
+                target_new2[i] = target_new[i][:2,:2]
+                manip_groundtruth2[i] = manip_groundtruth[i][:2,:2]  
+
+            target_new = target_new2
+            manip_groundtruth=manip_groundtruth2
+
             for i in np.arange(target_new.shape[0]):
                 m=target_new[i]
                 w,v = np.linalg.eigh(m)
@@ -1174,20 +1150,29 @@ if run_map_new:
                 m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
                 target_new[i]=m
             for i in np.arange(manip_groundtruth.shape[0]):
-               m=manip_groundtruth[i]
-               w,v = np.linalg.eigh(m)
-               w[w<1e-12]=0.0001
-               m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
-               manip_groundtruth[i]=m
+                m=manip_groundtruth[i]
+                w,v = np.linalg.eigh(m)
+                w[w<1e-12]=0.0001
+                m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
+                manip_groundtruth[i]=m
 
-        elif(args.robot_teacher=="2dof"):
-            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+".csv", delimiter=',')
-            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities.csv", delimiter=',')
+        if(args.robot_teacher=="2dof"):
+            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_20.csv", delimiter=',')
             target_new = target_new.reshape((target_new.shape[0], 3, 3)) 
-            # filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+".csv" 
-            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities.csv" 
+            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_20.csv" 
             manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
             manip_groundtruth = manip_groundtruth.reshape((manip_groundtruth.shape[0], 3, 3))   
+
+            target_new2 = np.zeros((source.shape[0], 2,2))
+            manip_groundtruth2 = np.zeros((target.shape[0], 2,2))
+
+            for i in np.arange(source.shape[0]):
+                target_new2[i] = target_new[i][:2,:2]
+                manip_groundtruth2[i] = manip_groundtruth[i][:2,:2]  
+
+            target_new = target_new2
+            manip_groundtruth=manip_groundtruth2
+
             for i in np.arange(target_new.shape[0]):
                 m=target_new[i]
                 w,v = np.linalg.eigh(m)
@@ -1201,61 +1186,172 @@ if run_map_new:
                 m=np.matmul(np.matmul(v, np.diag(w)), v.transpose())
                 manip_groundtruth[i]=m
         else:
-            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_20.csv", delimiter=',')
-            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_interpolated.csv", delimiter=',')
-            # filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_20.csv" 
-            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_groundtruth.csv" 
-            # target_new = target_new.reshape((target_new.shape[0], 3, 3))  
-            target_new = target_new[:,1:].reshape((target_new[:,1:].shape[0], 3, 3))  
+            target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_20.csv", delimiter=',')
+            # target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_interpolated.csv", delimiter=',')
+            filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_20.csv" 
+            # filename_manip_groundtruth=args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_groundtruth.csv" 
+            target_new = target_new.reshape((target_new.shape[0], 3, 3))  
+            # target_new = target_new[:,1:].reshape((target_new[:,1:].shape[0], 3, 3))  
             manip_groundtruth = np.genfromtxt(filename_manip_groundtruth, delimiter=',')
-            # manip_groundtruth = manip_groundtruth.reshape((manip_groundtruth.shape[0], 3, 3))   
-            manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth[:,1:].shape[0], 3, 3))   
+            manip_groundtruth = manip_groundtruth.reshape((manip_groundtruth.shape[0], 3, 3))   
+            # manip_groundtruth = manip_groundtruth[:,1:].reshape((manip_groundtruth[:,1:].shape[0], 3, 3))   
 
 
-    R = np.genfromtxt(final_results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
-    T = np.genfromtxt(final_results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
-    s = np.genfromtxt(final_results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+        #####
+        #manip_groundtruth = perform_transformation(target_new, T, R, s)
+        #mg=np.zeros((manip_groundtruth.shape[0],10))
+        #mg[:,1:]=np.reshape(manip_groundtruth, (manip_groundtruth.shape[0],9))
+
+        #np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_groundtruth.csv", mg, delimiter=",")
+        ####
+
+    R = np.genfromtxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+    T = np.genfromtxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+    s = np.genfromtxt(results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
 
 
 
     if R.ndim == 1:
-        R = np.reshape(R, (1, 3, 3))
+        R = np.reshape(R, (1, 2,2))
     else:
-        R = np.reshape(R, (R.shape[0], 3, 3))
-    T = np.reshape(T, (1, 3, 3))
+        R = np.reshape(R, (R.shape[0], 2,2))
+    T = np.reshape(T, (1, 2,2))
     s=s.ravel()
 
-    print(R[0])
-    print(s)
+    # for i in np.arange(target_new.shape[0]):
+    #     print(np.linalg.eigvals(target_new[i]))
 
     fig2 = plt.figure(figsize=(16.5, 6))
     axs2 = list()
     axs2.append(fig2.add_subplot(1, 2, 1))
     axs2[0].set_title("\\textit{Input before transformation}")
-    #plot_diffusion_embedding_target_new(manip_groundtruth, target_new, axs2[0])
+    plot_diffusion_embedding_target_new(manip_groundtruth, target_new, axs2[0])
 
-    # target_new = perform_ot_transformation(target_new, T[0])
-    target_new = perform_transformation(source_org, target_new, T, R, s, args.map_dataset, manip_groundtruth)
 
-    final_results_path="/home/nnrthmr/CLionProjects/ma_thesis/data/final_results/realworld"
+    print("ORIGINAL RMSE=%.3f"%(get_mean_dist_pairs(target_new, manip_groundtruth)))
+
+    target_new = perform_transformation(source_org, target_new, T, R, s, args.map_dataset)
+
+    target_new2 = np.zeros((target_new.shape[0], 3,3))
+
+    for i in np.arange(target_new.shape[0]):
+        target_new2[i][:2,:2]  = target_new[i][:2,:2]  
+        target_new2[i][2,2]  = 0.0001  
+
+    #target_new = target_new2
+
+    #for m in target_new:
+    #    print("eigs new: ", np.linalg.eigvalsh(m))
 
 
     if args.cv_k is None:
         if(args.robot_teacher=="rhuman" or args.robot_teacher=="2dof"):
-            #np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
-            np.savetxt(final_results_path+"/validation/"+args.map_dataset+"/manipulabilities_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
+            np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_mapped_icp.csv", np.reshape(target_new2, (target_new.shape[0], 9)), delimiter=",")
+            np.savetxt(final_results_path+"/validation/"+args.map_dataset+"/manipulabilities_mapped_icp.csv", np.reshape(target_new2, (target_new2.shape[0], 9)), delimiter=",")
+            #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_mapped_naive.csv", delimiter=',', dtype=np.double) 
         else:
-            np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
-            np.savetxt(final_results_path+"/validation/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
+            np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new2, (target_new2.shape[0], 9)), delimiter=",")
+            np.savetxt(final_results_path+"/validation/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new2, (target_new2.shape[0], 9)), delimiter=",")
+            #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_naive.csv", delimiter=',', dtype=np.double)
     else:
-        np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_icp.csv", np.reshape(target_new, (target_new.shape[0], 9)), delimiter=",")
+        np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_icp.csv", np.reshape(target_new2, (target_new2.shape[0], 9)), delimiter=",")
+        #target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.lookup_dataset+"/cv/manipulabilities_mapped_naive.csv", delimiter=',', dtype=np.double)
     
     axs2.append(fig2.add_subplot(1, 2, 2))
 
+    #plot naive mapping too in 2d embedding to be able to compare results
+    #target_mapped_naive = target_mapped_naive.reshape((target_mapped_naive.shape[0], 3, 3))
+    for i in target:
+        assert(np.all(np.linalg.eigvals(i) > 0))
+    for i in target_new:
+        assert(np.all(np.linalg.eigvals(i) > 0))
+    #for i in target_mapped_naive:
+    #    assert(np.all(np.linalg.eigvals(i) > 0))
+
     axs2[1].set_title("Input after transformation")
-    #plot_diffusion_embedding_target_new(manip_groundtruth, target_new, axs2[1])
+    plot_diffusion_embedding_target_new(manip_groundtruth, target_new, axs2[1])
 
     fig2.tight_layout()
     fig2.savefig(results_path2+"/mapped.pdf")
     fig2.savefig(final_results_path+"/validation/"+args.map_dataset+"/mapped.pdf")
 
+    #find_nearest_neighbors(manip_groundtruth, target_new) # just for error between source and target without mapping
+
+
+
+
+
+
+
+
+
+
+
+
+# if (run_map_new==False and run_map_find==False):
+#     results_path = args.base_path+"/"+args.robot_student+"/"+args.map_dataset
+#     target_new = np.genfromtxt(args.base_path+"/"+args.robot_teacher+"/"+args.map_dataset+"/manipulabilities_interpolated.csv", delimiter=',')
+#     R = np.genfromtxt(results_path+"/R_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+#     T = np.genfromtxt(results_path+"/T_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+#     s = np.genfromtxt(results_path+"/s_icp_"+args.robot_teacher+"_to_"+args.robot_student+".txt", delimiter=',')
+#     R = np.reshape(R, (iter, 3, 3))
+#     T = np.reshape(T, (iter, 3, 3))
+
+#     #source = source.reshape((source.shape[0], 3, 3))
+#     #target = target.reshape((target.shape[0], 3, 3))
+#     target_new = target_new.reshape((target_new.shape[0], 3, 3))
+
+
+#     #print(R)
+#     #print(T)
+#     #print(s)
+
+#     # fig1 = plt.figure(figsize=(16.5, 6))
+#     # fig2 = plt.figure(figsize=(16.5, 6))
+#     # axs1 = list()
+#     # axs2 = list()
+#     # axs1.append(fig1.add_subplot(1, 2, 1))
+#     # axs2.append(fig2.add_subplot(1, 2, 1))
+#     # axs1[0].set_title("TSNE")
+#     # axs2[0].set_title("Diffusion")
+#     # axs2[0].set_xlim([-5, 5])
+#     # axs2[0].set_ylim([-5, 5])
+#     #embed_2d_target_new(source, target, target_new, axs1[0])
+#     #plot_diffusion_embedding_target_new(source, target, target_new, axs2[0])
+
+#     target_new_rct = perform_translation_and_stretching(target_new, T[-1], s)
+#     target_rct = perform_translation_and_stretching(target, T[-1], s)
+#     source_rct = source
+
+#     target_rt = perform_rotation(target_rct, R)
+#     source_rt = source_rct
+#     target_new_rt = perform_rotation(target_new_rct, R)
+
+#     np.savetxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_icp.csv", np.reshape(target_new_rt, (target_new_rt.shape[0], 9)))
+
+#     #axs1.append(fig1.add_subplot(1, 2, 2))
+#     #axs2.append(fig2.add_subplot(1, 2, 2))
+
+#     for i in target_rt:
+#         assert(np.all(np.linalg.eigvals(i) > 0))
+#     for i in target_new_rt:
+#         assert(np.all(np.linalg.eigvals(i) > 0))
+#     for i in target_mapped_naive:
+#         assert(np.all(np.linalg.eigvals(i) > 0))
+
+#     #plot naive mapping too in 2d embedding to be able to compare results
+#     target_mapped_naive = np.genfromtxt(args.base_path+"/"+args.robot_student+"/"+args.map_dataset+"/manipulabilities_interpolated_mapped_naive.csv", delimiter=',', dtype=np.double)
+#     target_mapped_naive = target_mapped_naive.reshape((target_mapped_naive.shape[0], 3, 3)) # + 1e-3
+#     print("Naive mapped points: ", target_mapped_naive.shape)
+
+#     #embed_2d_target_new_and_naive(source_rt, target_rt, target_new_rt, target_mapped_naive, axs1[1])
+#     #plot_diffusion_embedding_target_new_and_naive(source_rt, target_rt, target_new_rt, target_mapped_naive, axs2[1])
+
+#     #embed_2d_target_new(source_rt, target_rt, target_new_rt, axs1[1])
+#     #plot_diffusion_embedding_target_new(source_rt, target_rt, target_new_rt, axs2[1])
+
+#     #plt.show()
+#     #fig1.tight_layout()
+#     #fig2.tight_layout()
+#     #fig1.savefig(results_path+"/mapped_tsne.pdf")
+#     #fig2.savefig(results_path+"/mapped_diffusion_map.pdf")

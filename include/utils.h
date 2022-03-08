@@ -320,6 +320,7 @@ vector<MatrixXd> symmat2Vec(const vector<MatrixXd>& mat_vec) {
 // Checked!
 inline
 vector<MatrixXd> vec2Symmat(const MatrixXd& vec) {
+//    deb(vec)
     vector<MatrixXd> MVector;
     MatrixXd vn, Mn;
     int d = vec.rows();
@@ -347,6 +348,9 @@ vector<MatrixXd> vec2Symmat(const MatrixXd& vec) {
                 tmp2(k, row) = vn(0, id(i - 1) + row) * (1 / sqrt(2));
                 row++;
             }
+//            deb(vec)
+//            deb(tmp1)
+//            deb(tmp2)
             Mn = Mn + tmp1 + tmp2;
         }
         MVector.push_back(Mn);

@@ -5,6 +5,8 @@ Code for **"Human-to-Robot Manipulability Domain Adaptation with Parallel Transp
 
 [Paper (DOI)](https://doi.org/10.1109/IROS47612.2022.9981796) · [arXiv](https://arxiv.org/abs/2208.07588)
 
+**Keywords:** SPD Matrices · ICP · Riemannian Manifolds
+
 ## Overview
 
 ![image](ma-thesis-vis-abstract.png)
